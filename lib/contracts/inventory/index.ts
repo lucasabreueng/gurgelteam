@@ -1,0 +1,17 @@
+export type {
+  InventoryTabKey,
+  InventoryCategory,
+  InventoryKpi,
+  InventoryPart,
+  MovementType,
+  InventoryMovement,
+  PurchaseStatus,
+  PurchaseOrder,
+  CriticalStockItem,
+  SupplierStatus,
+  InventorySupplier,
+  InventoryAlert,
+  HistoryEventType,
+  InventoryHistoryEvent,
+  PartDetail,
+} from "@/lib/admin-inventory-mocks";

@@ -1,0 +1,26 @@
+import * as newMaintenanceMocks from "@/lib/admin-new-maintenance-mocks";
+
+export const NewMaintenanceRepositoryMock = {
+  getDefaultResponsible: () => newMaintenanceMocks.DEFAULT_RESPONSIBLE,
+  generateOsNumber: newMaintenanceMocks.generateOsNumber,
+  getNowLabel: () => newMaintenanceMocks.NOW_MAINTENANCE_LABEL,
+  getKartOptions: () => newMaintenanceMocks.MAINTENANCE_KART_OPTIONS,
+  searchKarts: newMaintenanceMocks.searchMaintenanceKarts,
+  getTypeOptions: () => newMaintenanceMocks.MAINTENANCE_TYPE_OPTIONS,
+  getPriorityOptions: () => newMaintenanceMocks.PRIORITY_OPTIONS,
+  getOriginOptions: () => newMaintenanceMocks.ORIGIN_OPTIONS,
+  getOriginLinkMock: () => newMaintenanceMocks.ORIGIN_LINK_MOCK,
+  getDiagnosisAreas: () => newMaintenanceMocks.DIAGNOSIS_AREAS,
+  buildInitialDiagnosis: newMaintenanceMocks.buildInitialDiagnosis,
+  getMockProblem: () => newMaintenanceMocks.MOCK_PROBLEM,
+  getPlannedServices: () => newMaintenanceMocks.PLANNED_SERVICES,
+  getDefaultPlannedServices: () => newMaintenanceMocks.DEFAULT_PLANNED_SERVICES,
+  getLaborRate: () => newMaintenanceMocks.LABOR_RATE_MOCK,
+  getTimeline: () => newMaintenanceMocks.MAINTENANCE_TIMELINE,
+  getSmartAlerts: () => newMaintenanceMocks.SMART_MAINTENANCE_ALERTS,
+  getAffectedBookings: () => newMaintenanceMocks.AFFECTED_BOOKINGS,
+  getSignature: () => newMaintenanceMocks.SIGNATURE_MAINTENANCE,
+  searchParts: newMaintenanceMocks.searchPartsForMaintenance,
+  computeEstimatedCosts: newMaintenanceMocks.computeEstimatedCosts,
+  getDefaultKart: () => newMaintenanceMocks.DEFAULT_KART,
+};

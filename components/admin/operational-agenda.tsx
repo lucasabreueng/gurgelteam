@@ -1,0 +1,54 @@
+"use client";
+
+import { useOperationalAgenda } from "@/lib/query/hooks/use-dashboard";
+
+type Props = {
+  className?: string;
+};
+
+export function OperationalAgenda({ className = "" }: Props) {
+  const { data: agenda = [] } = useOperationalAgenda();
+
+  return (
+    <div
+      className={`flex h-full flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-7 ${className}`}
+    >
+      <div>
+        <h3 className="text-xl font-bold text-[#0d1f3c]">Agenda operacional</h3>
+        <p className="mt-1 text-sm text-neutral-600">Hoje · horários agendados</p>
+      </div>
+
+      <div className="mt-6 min-h-0 flex-1 overflow-x-auto">
+        <table className="w-full min-w-[280px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-[rgba(17,17,17,0.08)] text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+              <th className="pb-3 pr-3 font-bold">Horário</th>
+              <th className="pb-3 pr-3 font-bold">Piloto</th>
+              <th className="hidden pb-3 pr-3 font-bold sm:table-cell">Categoria</th>
+              <th className="pb-3 font-bold">Nível</th>
+            </tr>
+          </thead>
+          <tbody>
+            {agenda.map((slot) => (
+              <tr
+                key={slot.id}
+                className="border-b border-[rgba(17,17,17,0.06)] last:border-0"
+              >
+                <td className="py-3.5 pr-3 text-[13px] font-semibold tabular-nums text-[#0d1f3c]">
+                  {slot.startTime} – {slot.endTime}
+                </td>
+                <td className="py-3.5 pr-3 font-semibold text-[#111]">
+                  {slot.pilotName}
+                </td>
+                <td className="hidden py-3.5 pr-3 text-neutral-700 sm:table-cell">
+                  {slot.category}
+                </td>
+                <td className="py-3.5 text-neutral-700">{slot.level}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
