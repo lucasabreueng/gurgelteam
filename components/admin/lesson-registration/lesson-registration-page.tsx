@@ -60,10 +60,10 @@ export function LessonRegistrationPage() {
     [router],
   );
 
-  const allSessions = useMemo(
-    () => LessonServiceMock.getAllSessionsWithOverrides(),
-    [sessionVersion],
-  );
+  const allSessions = useMemo(() => {
+    void sessionVersion;
+    return LessonServiceMock.getAllSessionsWithOverrides();
+  }, [sessionVersion]);
 
   const categories = useMemo(() => {
     return LessonServiceMock.getLessonCategories(allSessions);
@@ -77,7 +77,7 @@ export function LessonRegistrationPage() {
         category,
         search,
       }),
-    [selectedDate, statusFilter, category, search, sessionVersion],
+    [selectedDate, statusFilter, category, search],
   );
 
   const selectedSession = useMemo(

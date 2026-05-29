@@ -1,16 +1,5 @@
 import type { ParseResult, RawCsvRow } from "../types";
 
-function countDelimiter(line: string, delimiter: string): number {
-  let count = 0;
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') inQuotes = !inQuotes;
-    else if (c === delimiter && !inQuotes) count++;
-  }
-  return count;
-}
-
 function parseCsvLine(line: string, delimiter: string): string[] {
   const fields: string[] = [];
   let current = "";
@@ -127,10 +116,6 @@ function looksLikeUnitsRow(fields: string[]): boolean {
   if (hits >= 2) return true;
   const nonNumeric = fields.filter((f) => f.trim() && parseNumber(f) == null).length;
   return fields.length >= 4 && nonNumeric >= Math.ceil(fields.length * 0.45);
-}
-
-function looksLikeHeader(fields: string[]): boolean {
-  return scoreHeaderCandidate(fields) >= 5;
 }
 
 function scoreHeaderCandidate(fields: string[]): number {

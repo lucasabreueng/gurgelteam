@@ -356,7 +356,7 @@ export function reconstructLapsAndSectors(
     lines.startFinishLine,
     lines.sectors,
   );
-  let allCrossings = detectLineCrossings(rawPoints, lineDefs, {
+  const allCrossings = detectLineCrossings(rawPoints, lineDefs, {
     minIntervalSec: 3,
     startFinishMinIntervalSec: 12,
   });

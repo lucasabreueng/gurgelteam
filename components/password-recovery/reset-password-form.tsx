@@ -9,9 +9,6 @@ import { PasswordRulesTooltip } from "@/components/cadastro/password-rules-toolt
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
 import { PasswordChangedDialog } from "./password-changed-dialog";
 
-const inputClassName =
-  "mt-2 w-full rounded-xl border border-[rgba(17,17,17,0.12)] bg-[#fafbfc] px-4 py-3.5 text-[15px] text-[#111] outline-none transition placeholder:text-neutral-400 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15";
-
 const labelClassName =
   "text-[11px] font-bold uppercase tracking-wider text-neutral-600";
 

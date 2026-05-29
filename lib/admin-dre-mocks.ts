@@ -760,7 +760,6 @@ export function getDreAccountEntries(
   filter: DrePeriodFilter
 ): DreAccountEntry[] {
   const entries = ACCOUNT_ENTRIES_CACHE[accountId] ?? [];
-  const dataset = getDreDataset(filter);
 
   if (filter.key === "custom" && filter.customStart && filter.customEnd) {
     return entries.filter(

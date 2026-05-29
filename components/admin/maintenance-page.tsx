@@ -177,13 +177,16 @@ export function MaintenancePage() {
     [router],
   );
 
-  const fleet = data?.fleet ?? [];
-  const kpis = data?.kpis ?? [];
-  const responsibles = data?.responsibles ?? [];
+  const fleet = useMemo(() => data?.fleet ?? [], [data?.fleet]);
+  const kpis = useMemo(() => data?.kpis ?? [], [data?.kpis]);
+  const responsibles = useMemo(() => data?.responsibles ?? [], [data?.responsibles]);
   const filterOptions = data?.filterOptions;
-  const inspections = data?.inspections ?? [];
-  const maintenances = data?.maintenances ?? [];
-  const checklistHistory = data?.checklistHistory ?? [];
+  const inspections = useMemo(() => data?.inspections ?? [], [data?.inspections]);
+  const maintenances = useMemo(() => data?.maintenances ?? [], [data?.maintenances]);
+  const checklistHistory = useMemo(
+    () => data?.checklistHistory ?? [],
+    [data?.checklistHistory],
+  );
 
   const kpisDisplay = useMemo(
     () => kpis.map((k) => ({ ...k, sub: null, delta: null })),

@@ -1,6 +1,5 @@
 import type {
   GpsLine,
-  LapSector,
   LineCrossing,
   SessionLap,
   TelemetryPoint,

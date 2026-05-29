@@ -335,14 +335,6 @@ export function inferCoordinateColumnsFromData(
   return { latitude, longitude };
 }
 
-function matchHeader(header: string, alias: string): boolean {
-  const h = normalizeKey(header);
-  const a = normalizeKey(alias);
-  if (h === a) return true;
-  if (h.includes(a) || a.includes(h)) return true;
-  return false;
-}
-
 export function buildColumnMapping(
   headers: string[],
   overrides?: Partial<ColumnMapping>,

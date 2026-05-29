@@ -2,7 +2,6 @@ export enum LessonStatus {
   // Mapeamento para compatibilidade com o status legada no frontend
   // (sera substituido por enums backend-first no futuro).
   SCHEDULED = "aguardando",
-  CONFIRMED = "pendente_registro",
   IN_PROGRESS = "em_andamento",
   PENDING_REGISTRATION = "pendente_registro",
   COMPLETED = "concluida",

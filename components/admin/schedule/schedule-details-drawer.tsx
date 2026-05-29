@@ -112,7 +112,7 @@ export function ScheduleDetailsDrawer({
       events,
       pilotCategoryIds,
     );
-  }, [event, rescheduleDate, pilotCategoryIds]);
+  }, [event, rescheduleDate, pilotCategoryIds, events]);
 
   const kartOptions = useMemo(() => {
     if (!event) return [];

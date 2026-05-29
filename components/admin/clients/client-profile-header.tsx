@@ -3,7 +3,7 @@
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 
-import type { ClientListItem, ClientProfileDetail } from "@/lib/contracts/clients";
+import type { ClientListItem } from "@/lib/contracts/clients";
 
 
 import Image from "next/image";

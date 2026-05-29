@@ -100,7 +100,7 @@ export function UsersPermissionsPanel({
   const [editUserId, setEditUserId] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>("admin");
 
-  const touch = () => onDirty();
+  const touch = useCallback(() => onDirty(), [onDirty]);
 
   const activeUser =
     users.find((u) => u.id === activeUserId) ?? users[0] ?? null;
@@ -163,7 +163,7 @@ export function UsersPermissionsPanel({
       setEditUserId(null);
       touch();
     },
-    [editUserId, onDirty, onUsersChange, users],
+    [editUserId, onUsersChange, touch, users],
   );
 
   const toggleGroup = (groupKey: string) => {

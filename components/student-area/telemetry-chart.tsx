@@ -3,7 +3,7 @@
 import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock";
 import type { TelemetryTabKey } from "@/lib/contracts/student-area";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useCallback } from "react";
 import ReactECharts from "echarts-for-react";
 import type { ECharts, EChartsOption } from "echarts";
 
@@ -155,7 +155,7 @@ export function TelemetryEChart({
     syncTelemetryChartsToIndex(peers, dataIndex);
   };
 
-  const attachPointerListener = (chart: ECharts) => {
+  const attachPointerListener = useCallback((chart: ECharts) => {
     pointerCleanupRef.current?.();
     pointerCleanupRef.current = null;
 
@@ -183,7 +183,7 @@ export function TelemetryEChart({
     pointerCleanupRef.current = () => {
       zr.off("mousemove", handleZrMove);
     };
-  };
+  }, []);
 
   const option = useMemo<EChartsOption>(() => {
     const yMeta = TelemetryServiceMock.getTelemetryYAxis()[telemetryTab];
@@ -368,7 +368,7 @@ export function TelemetryEChart({
       pointerCleanupRef.current?.();
       pointerCleanupRef.current = null;
     };
-  }, [option, chartGroup]);
+  }, [option, chartGroup, attachPointerListener]);
 
   useEffect(() => {
     return () => {

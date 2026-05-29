@@ -5,7 +5,6 @@ import type {
   TelemetryPoint,
   Track,
 } from "../types";
-import { buildLineDefinitions } from "../geometry/line-crossing";
 import {
   extendLineSegment,
   interpolateCrossing,

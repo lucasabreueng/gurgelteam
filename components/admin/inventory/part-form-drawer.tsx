@@ -80,7 +80,7 @@ export function PartFormDrawer({
       setImageRemoved(false);
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [open, partId, existing?.id]);
+  }, [open, partId, existing]);
 
   useEffect(() => {
     if (!open) return;

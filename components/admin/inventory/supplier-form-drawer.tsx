@@ -91,7 +91,7 @@ export function SupplierFormDrawer({
       setAvgLeadDays(emptyForm.avgLeadDays);
       setPartsSupplied(emptyForm.partsSupplied);
     }
-  }, [open, supplierId, existing?.id]);
+  }, [open, supplierId, existing]);
 
   useEffect(() => {
     if (!open) return;
