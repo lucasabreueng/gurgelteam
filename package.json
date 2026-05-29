@@ -2,6 +2,9 @@
   "name": "gurgel-team-site",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "clean": "npx --yes rimraf .next node_modules/.cache",
     "build:gopro-vendor": "node scripts/build-gopro-vendor.mjs",
