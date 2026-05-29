@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 import { RegisterPilotForm } from "./register-pilot-form";
 
@@ -17,12 +18,12 @@ export function RegisterPilotDrawer({ open, onClose, onSuccess }: Props) {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, onClose]);
+  useDrawerBodyLock(open);
+
 
   if (!open) return null;
 
@@ -38,7 +39,7 @@ export function RegisterPilotDrawer({ open, onClose, onSuccess }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="register-pilot-drawer-title"
-        className="relative flex h-full w-full max-w-[min(100vw,520px)] flex-col bg-[#f4f6f8] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,520px)] flex-col bg-[#f4f6f8] shadow-2xl"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <h2

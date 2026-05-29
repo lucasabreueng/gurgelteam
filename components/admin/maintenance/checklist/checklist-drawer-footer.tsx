@@ -2,6 +2,12 @@
 
 import type { OverallInspectionStatus } from "@/lib/contracts/maintenance";
 import { ChecklistSummary } from "./checklist-summary";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+  DrawerFooterExtra,
+} from "@/components/ui/drawer-footer";
 
 type SummaryProps = {
   ok: number;
@@ -54,10 +60,12 @@ export function ChecklistDrawerFooter({
   onFinish,
 }: Props) {
   return (
-    <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white shadow-[0_-8px_32px_rgba(13,31,60,0.08)]">
-      <div className="space-y-2.5 p-3 md:px-4 md:py-3">
-        <ChecklistSummary ok={ok} warn={warn} fail={fail} overall={overall} />
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <footer className={`${DRAWER_FOOTER_SHELL_CLASS} shadow-[0_-8px_32px_rgba(13,31,60,0.08)]`}>
+      <div className={DRAWER_FOOTER_INNER_CLASS}>
+        <DrawerFooterExtra>
+          <ChecklistSummary ok={ok} warn={warn} fail={fail} overall={overall} />
+        </DrawerFooterExtra>
+        <DrawerFooterActions columns={4}>
           <ActionBtn variant="primary" onClick={onRelease}>
             Liberar para pista
           </ActionBtn>
@@ -70,7 +78,7 @@ export function ChecklistDrawerFooter({
           <ActionBtn variant="outline" onClick={onFinish}>
             Finalizar inspeção
           </ActionBtn>
-        </div>
+        </DrawerFooterActions>
       </div>
     </footer>
   );

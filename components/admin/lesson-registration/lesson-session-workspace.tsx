@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   HiCamera,
   HiBolt,
@@ -71,9 +71,17 @@ const METHODS: {
 type Props = {
   session: LessonSessionDTO;
   onFinalized: (message: string) => void;
+  /** Drawer mobile: título fica no shell; ações (Editar) no header externo. */
+  hideTitleHeader?: boolean;
+  onHeaderActionsChange?: (actions: ReactNode) => void;
 };
 
-export function LessonSessionWorkspace({ session, onFinalized }: Props) {
+export function LessonSessionWorkspace({
+  session,
+  onFinalized,
+  hideTitleHeader = false,
+  onHeaderActionsChange,
+}: Props) {
   const saved = LessonServiceMock.getLessonRegistration(session.id);
   const isConcluded = session.status === "concluida";
   const hasSavedRegistration = Boolean(saved);
@@ -358,67 +366,114 @@ export function LessonSessionWorkspace({ session, onFinalized }: Props) {
     Boolean(method) &&
     (method === "manual" || method === "ocr" || method === "telemetry");
 
+  const concludedEditActions = useMemo((): ReactNode => {
+    if (!isConcluded || !hasSavedRegistration) return null;
+
+    const cancelLabel = hideTitleHeader ? "Cancelar" : "Cancelar edição";
+    const saveLabel = hideTitleHeader ? "Salvar" : "Salvar alterações";
+    const saveBtnClass = hideTitleHeader
+      ? "inline-flex items-center justify-center rounded-xl bg-[#0d1f3c] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition hover:brightness-110 disabled:opacity-40"
+      : "inline-flex min-w-[10rem] items-center justify-center rounded-xl bg-[#0d1f3c] px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition hover:brightness-110 disabled:opacity-40";
+
+    if (editingConcluded) {
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setEditingConcluded(false)}
+            className="btn-outline-sm bg-white"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            disabled={
+              saving ||
+              !method ||
+              (method !== "telemetry" && issues.length > 0) ||
+              (method === "telemetry" && !telemetryId)
+            }
+            onClick={handleFinalize}
+            className={saveBtnClass}
+          >
+            {saving ? "Salvando…" : saveLabel}
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => setEditingConcluded(true)}
+        className="btn-outline-sm bg-white"
+      >
+        Editar
+      </button>
+    );
+  }, [
+    isConcluded,
+    hasSavedRegistration,
+    editingConcluded,
+    saving,
+    method,
+    issues.length,
+    telemetryId,
+    handleFinalize,
+    hideTitleHeader,
+  ]);
+
+  useEffect(() => {
+    if (!hideTitleHeader || !onHeaderActionsChange) return;
+    onHeaderActionsChange(concludedEditActions);
+  }, [hideTitleHeader, onHeaderActionsChange, concludedEditActions]);
+
+  useEffect(() => {
+    if (!hideTitleHeader || !onHeaderActionsChange) return;
+    return () => {
+      onHeaderActionsChange(null);
+    };
+  }, [hideTitleHeader, onHeaderActionsChange]);
+
   return (
     <div className="min-w-0 space-y-6">
-      <header className="-mx-4 border-b border-[rgba(17,17,17,0.08)] px-4 pb-4 md:-mx-6 md:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="text-xl font-bold text-[#0d1f3c]">
-                {session.studentName}
-              </h3>
-              {autosaveHint ? (
-                <span
-                  className="text-[11px] font-medium text-emerald-700"
-                  role="status"
-                >
-                  {autosaveHint}
-                </span>
-              ) : null}
+      {!hideTitleHeader ? (
+        <header className="-mx-4 border-b border-[rgba(17,17,17,0.08)] px-4 pb-4 md:-mx-6 md:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="text-xl font-bold text-[#0d1f3c]">
+                  {session.studentName}
+                </h3>
+                {autosaveHint ? (
+                  <span
+                    className="text-[11px] font-medium text-emerald-700"
+                    role="status"
+                  >
+                    {autosaveHint}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm text-neutral-600">
+                {ScheduleServiceMock.formatDateShort(session.date)} ·{" "}
+                {session.start}–{session.end}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-neutral-600">
-              {ScheduleServiceMock.formatDateShort(session.date)} · {session.start}–
-              {session.end}
-            </p>
+            {concludedEditActions ? (
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {concludedEditActions}
+              </div>
+            ) : null}
           </div>
-          {isConcluded && hasSavedRegistration ? (
-            <div className="flex shrink-0 gap-2">
-              {editingConcluded ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setEditingConcluded(false)}
-                    className="btn-outline-sm bg-white"
-                  >
-                    Cancelar edição
-                  </button>
-                  <button
-                    type="button"
-                    disabled={
-                      saving ||
-                      !method ||
-                      (method !== "telemetry" && issues.length > 0) ||
-                      (method === "telemetry" && !telemetryId)
-                    }
-                    onClick={handleFinalize}
-                    className="inline-flex min-w-[10rem] items-center justify-center rounded-xl bg-[#0d1f3c] px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition hover:brightness-110 disabled:opacity-40"
-                  >
-                    {saving ? "Salvando…" : "Salvar alterações"}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEditingConcluded(true)}
-                  className="btn-outline-sm bg-white"
-                >
-                  Editar
-                </button>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </header>
+        </header>
+      ) : autosaveHint ? (
+        <p
+          className="text-[11px] font-medium text-emerald-700"
+          role="status"
+        >
+          {autosaveHint}
+        </p>
+      ) : null}
 
       <div className="min-w-0 space-y-6 overflow-visible p-0.5">
         {locked && !hasSavedRegistration ? (

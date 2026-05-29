@@ -589,9 +589,8 @@ export function ScheduleHoursPanel({
             </div>
             <button
               type="button"
-              disabled={!canConfigure}
               onClick={addException}
-              className={settingsOutlineButtonClass}
+              className={`${settingsOutlineButtonClass} relative z-10`}
             >
               <HiPlus className="h-3.5 w-3.5" aria-hidden />
               Novo bloqueio
@@ -611,8 +610,8 @@ export function ScheduleHoursPanel({
                     key={ex.id}
                     className={`rounded-2xl border transition ${
                       isOpen
-                        ? "overflow-visible border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                        : "overflow-hidden border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
+                        ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
+                        : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
                     }`}
                   >
                     <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
@@ -754,9 +753,8 @@ export function ScheduleHoursPanel({
             </div>
             <button
               type="button"
-              disabled={!canConfigure}
               onClick={addSpecificDate}
-              className={settingsOutlineButtonClass}
+              className={`${settingsOutlineButtonClass} relative z-10`}
             >
               <HiPlus className="h-3.5 w-3.5" aria-hidden />
               Nova data
@@ -776,8 +774,8 @@ export function ScheduleHoursPanel({
                     key={entry.id}
                     className={`rounded-2xl border transition ${
                       isOpen
-                        ? "overflow-visible border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                        : "overflow-hidden border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
+                        ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
+                        : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
                     }`}
                   >
                     <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
@@ -923,8 +921,8 @@ export function ScheduleHoursPanel({
               key={day.dayKey}
               className={`rounded-2xl border transition ${
                 isOpen
-                  ? "overflow-visible border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                  : "overflow-hidden border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
+                  ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
+                  : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
               }`}
             >
               <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
@@ -968,7 +966,7 @@ export function ScheduleHoursPanel({
                     e.stopPropagation();
                     addSlot(day.dayKey);
                   }}
-                  className={settingsOutlineButtonClass}
+                  className={`${settingsOutlineButtonClass} relative z-10`}
                 >
                   <HiPlus className="h-3.5 w-3.5" aria-hidden />
                   Novo horário

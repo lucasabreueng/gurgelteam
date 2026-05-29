@@ -13,7 +13,7 @@ import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import { useDashboardKpis } from "@/lib/query/hooks/use-dashboard";
 import { AdminShell } from "./admin-shell";
 import { DashboardHeader } from "./dashboard-header";
-import { KpiCard } from "./kpi-card";
+import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { OperationalAgenda } from "./operational-agenda";
 import { StudentsOverview } from "./students-overview";
 import { KartStatusGrid } from "./kart-status-grid";
@@ -74,20 +74,13 @@ export function AdminDashboardPage() {
       mobileTitle="Dashboard"
       pageHeader={<DashboardHeader />}
     >
-      <section id="section-dashboard" className="scroll-mt-28">
-        <ul className="admin-page-grid grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {dashboardKpis.map((k) => (
-            <li key={k.id} className="min-w-0">
-              <KpiCard
-                label={k.label}
-                value={k.value}
-                delta={k.delta}
-                deltaPositive={k.deltaPositive}
-                Icon={KPI_ICONS[k.id] ?? HiChartBar}
-              />
-            </li>
-          ))}
-        </ul>
+      <section id="section-dashboard" className="scroll-mt-28 min-w-0">
+        <AdminResponsiveKpis
+          kpis={dashboardKpis}
+          icons={KPI_ICONS}
+          defaultIcon={HiChartBar}
+          desktopClassName="admin-page-grid grid grid-cols-2 lg:grid-cols-4"
+        />
       </section>
 
       <section

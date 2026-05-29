@@ -16,13 +16,15 @@ type Props = {
   kartCategories: KartCategory[];
   skillLevels: SkillLevel[];
   onViewProfile: (id: string) => void;
+  onEdit?: (id: string) => void;
 };
 
 export function ClientCard({
   client,
   kartCategories,
   skillLevels,
-  onViewProfile}: Props) {
+  onViewProfile,
+  onEdit}: Props) {
   const categoryLabels = ClientsServiceMock.resolveCategoryNames(client.categoryIds, kartCategories
   );
   const levelName = ClientsServiceMock.resolveLevelName(client.levelId, skillLevels);
@@ -87,7 +89,7 @@ export function ClientCard({
           label="Ver"
           onClick={() => onViewProfile(client.id)}
         />
-        <ActionBtn icon={HiPencil} label="Editar" />
+        <ActionBtn icon={HiPencil} label="Editar" onClick={() => onEdit?.(client.id)} />
       </div>
     </article>
   );

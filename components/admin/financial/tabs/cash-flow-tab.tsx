@@ -1,90 +1,62 @@
 "use client";
 
-import { useState } from "react";
-import type { CashFlowInnerTabKey } from "@/lib/contracts/cashflow";
+import type { CashFlowPeriodFilter } from "@/lib/contracts/cashflow";
+import { CashFlowServiceMock } from "@/services/cashflow/cashFlowServiceMock";
+
+import { useMemo } from "react";
+
+import { CashFlowAlerts } from "../cash-flow/cash-flow-alerts";
+import { CashFlowCalendar } from "../cash-flow/cash-flow-calendar";
+import { CashFlowEntriesOrigin } from "../cash-flow/cash-flow-entries-origin";
+import { CashFlowEvolutionChart } from "../cash-flow/cash-flow-evolution-chart";
+import { CashFlowExitsCategory } from "../cash-flow/cash-flow-exits-category";
 import { CashFlowKpiCards } from "../cash-flow/cash-flow-kpi-cards";
-import { CashFlowInnerTabs } from "../cash-flow/cash-flow-inner-tabs";
-import { PeriodSummaryCard } from "../cash-flow/period-summary-card";
-import { CashFlowChart } from "../cash-flow/cash-flow-chart";
-import { ExpensesDistributionCard } from "../cash-flow/expenses-distribution-card";
-import { DreTable } from "../cash-flow/dre-table";
-import { DailyCashCard } from "../cash-flow/daily-cash-card";
-import { FinancialIndicatorsCard } from "../cash-flow/financial-indicators-card";
-import { PeriodHighlights } from "../cash-flow/period-highlights";
-import { ProjectionTab } from "../cash-flow/projection-tab";
-import { MovementsTab } from "../cash-flow/movements-tab";
+import { CashFlowProjectionSection } from "../cash-flow/cash-flow-projection-section";
+import { CashFlowStatement } from "../cash-flow/cash-flow-statement";
 
-function OverviewContent() {
-  return (
-    <div className="admin-page-stack">
-      <PeriodSummaryCard />
-      <CashFlowChart />
-      <section className="admin-page-grid grid gap-4 xl:grid-cols-2">
-        <ExpensesDistributionCard />
-        <DailyCashCard />
-      </section>
-      <DreTable compact />
-      <section className="admin-page-grid grid gap-4 lg:grid-cols-2">
-        <FinancialIndicatorsCard />
-        <PeriodHighlights />
-      </section>
-    </div>
+type Props = {
+  filter: CashFlowPeriodFilter;
+  onAction?: (message: string) => void;
+};
+
+export function CashFlowTab({ filter, onAction }: Props) {
+  const dataset = useMemo(
+    () => CashFlowServiceMock.getCashFlowDataset(filter),
+    [filter]
   );
-}
 
-function DetailedContent() {
   return (
     <div className="admin-page-stack">
-      <PeriodSummaryCard />
-      <CashFlowChart tall />
-      <ExpensesDistributionCard />
-      <DreTable />
-      <section className="admin-page-grid grid gap-4 lg:grid-cols-2">
-        <DailyCashCard expanded />
-        <FinancialIndicatorsCard />
+      <CashFlowKpiCards kpis={dataset.summaryKpis} />
+
+      <CashFlowEvolutionChart
+        chartByGranularity={dataset.chartByGranularity}
+        periodLabel={dataset.periodLabel}
+        filter={filter}
+      />
+
+      <CashFlowProjectionSection projection={dataset.projection} />
+
+      <section className="admin-page-grid grid lg:grid-cols-2">
+        <CashFlowEntriesOrigin items={dataset.entriesByOrigin} />
+        <CashFlowExitsCategory items={dataset.exitsByCategory} />
       </section>
-      <PeriodHighlights />
-    </div>
-  );
-}
 
-function InnerPanel({ tab }: { tab: CashFlowInnerTabKey }) {
-  switch (tab) {
-    case "overview":
-      return <OverviewContent />;
-    case "detailed":
-      return <DetailedContent />;
-    case "dre":
-      return (
-        <div className="admin-page-stack">
-          <DreTable />
-        </div>
-      );
-    case "projection":
-      return <ProjectionTab />;
-    case "movements":
-      return <MovementsTab />;
-    default:
-      return null;
-  }
-}
+      <CashFlowStatement
+        movements={dataset.movements}
+        categories={dataset.movementCategories}
+        paymentMethods={dataset.paymentMethods}
+        periodLabel={dataset.periodLabel}
+        onAction={onAction}
+      />
 
-export function CashFlowTab() {
-  const [innerTab, setInnerTab] = useState<CashFlowInnerTabKey>("overview");
-
-  return (
-    <div className="admin-page-stack">
-      <CashFlowKpiCards />
-
-      <CashFlowInnerTabs active={innerTab} onChange={setInnerTab} />
-
-      <div
-        role="tabpanel"
-        id={`cashflow-inner-${innerTab}`}
-        aria-labelledby={`cashflow-inner-tab-${innerTab}`}
-      >
-        <InnerPanel tab={innerTab} />
-      </div>
+      <section className="admin-page-grid grid lg:grid-cols-2">
+        <CashFlowCalendar
+          days={dataset.calendarDays}
+          monthLabel={dataset.calendarMonthLabel}
+        />
+        <CashFlowAlerts alerts={dataset.alerts} />
+      </section>
     </div>
   );
 }

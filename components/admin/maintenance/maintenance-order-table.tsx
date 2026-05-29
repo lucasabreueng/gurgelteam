@@ -5,7 +5,7 @@ import type { MaintenanceOrderListItem } from "@/lib/contracts/maintenance";
 import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
 
 import Image from "next/image";
-import { HiEye } from "react-icons/hi2";
+import { HiChevronRight, HiEye } from "react-icons/hi2";
 
 import { MaintenancePriorityBadge } from "./maintenance-priority-badge";
 import { MaintenanceStatusBadge } from "./maintenance-status-badge";
@@ -34,9 +34,10 @@ export function MaintenanceOrderTable({
   onViewDetails,
 }: Props) {
   return (
-    <div className="overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
-      <div className="overflow-x-auto rounded-t-2xl">
-        <table className="w-full min-w-[1100px] text-left text-sm">
+    <div>
+      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
+        <div className="overflow-x-auto rounded-t-2xl">
+          <table className="w-full min-w-[1100px] text-left text-sm">
           <thead>
             <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               <th className="px-4 py-3.5">OS / Kart</th>
@@ -134,18 +135,94 @@ export function MaintenanceOrderTable({
         </table>
       </div>
 
-      {orders.length === 0 ? (
-        <p className="px-6 py-12 text-center text-sm text-neutral-500">
-          Nenhuma ordem encontrada com os filtros atuais.
-        </p>
-      ) : (
-        <MaintenanceTablePagination
-          page={page}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
+      </div>
+
+      <div className="min-w-0 lg:hidden">
+        {orders.length === 0 ? (
+          <p className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-4 py-10 text-center text-sm text-neutral-500">
+            Nenhuma ordem encontrada com os filtros atuais.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-[var(--admin-gap)]">
+            {orders.map((order) => (
+              <li key={order.id}>
+                <button
+                  type="button"
+                  onClick={() => onViewDetails(order.id)}
+                  className="grid w-full grid-cols-[48px_minmax(0,1fr)_auto] grid-rows-[auto_auto] items-start gap-x-3 gap-y-1.5 rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-3 py-3 text-left shadow-[0_1px_8px_rgba(13,31,60,0.04)] transition active:scale-[0.99] hover:border-accent/20"
+                >
+                  <span className="relative row-span-2 h-12 w-12 overflow-hidden rounded-2xl ring-2 ring-white shadow-sm">
+                    <Image
+                      src={order.kartPhoto}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </span>
+
+                  <div className="col-start-2 row-start-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span
+                        className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md bg-[#fafbfc] px-1.5 py-0.5 text-[#0d1f3c] ring-1 ring-[rgba(17,17,17,0.06)]`}
+                      >
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-neutral-500">
+                          {order.osNumber}
+                        </span>
+                        <span className="shrink-0 text-neutral-400" aria-hidden>
+                          ·
+                        </span>
+                        <span className="shrink-0 text-[11px] font-bold">
+                          Kart {String(order.kartNumber).padStart(2, "0")}
+                        </span>
+                        {order.ownerName ? (
+                          <>
+                            <span className="shrink-0 text-neutral-400" aria-hidden>
+                              ·
+                            </span>
+                            <span className="min-w-0 truncate text-[11px] font-semibold">
+                              {order.ownerName}
+                            </span>
+                          </>
+                        ) : null}
+                      </span>
+                      <MaintenancePriorityBadge priority={order.priority} />
+                      <MaintenanceStatusBadge status={order.status} />
+                    </div>
+                  </div>
+
+                  <div className="col-start-2 row-start-2 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={metaBadge}>{order.categoryName}</span>
+                      <span className={metaBadge}>
+                        {MaintenanceServiceMock.getTypeLabels()[order.type]}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="col-start-3 row-span-2 flex items-center self-center">
+                    <HiChevronRight
+                      className="h-4 w-4 text-neutral-300"
+                      aria-hidden
+                    />
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {orders.length === 0 ? null : (
+        <div className="mt-3">
+          <MaintenanceTablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
       )}
     </div>
   );

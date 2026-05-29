@@ -16,6 +16,7 @@ import { UpcomingDaysStrip } from "./schedule/upcoming-days-strip";
 import { TimelineView } from "./schedule/timeline-view";
 import { WeekView } from "./schedule/week-view";
 import { DayReservationsSummary } from "./schedule/day-reservations-summary";
+import { ScheduleDayAppointmentsSheet } from "./schedule/schedule-day-appointments-sheet";
 import { ScheduleDetailsDrawer } from "./schedule/schedule-details-drawer";
 import { BlockScheduleDrawer } from "./schedule/block-schedule-drawer";
 import { NewClassModal } from "./schedule/new-class/new-class-modal";
@@ -40,11 +41,14 @@ export function SchedulePage() {
   useEffect(() => {
     if (defaultDate && !selectedDate) setSelectedDate(defaultDate);
   }, [defaultDate, selectedDate]);
+
   const [detailEventId, setDetailEventId] = useState<string | null>(null);
   const [newClassOpen, setNewClassOpen] = useState(false);
   const [blockDrawerOpen, setBlockDrawerOpen] = useState(false);
   const [newClassTime, setNewClassTime] = useState<string | undefined>();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [daySheetDate, setDaySheetDate] = useState<string | null>(null);
+  const [detailFromDaySheet, setDetailFromDaySheet] = useState(false);
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -73,7 +77,10 @@ export function SchedulePage() {
     selectedDate,
     dateLabel,
     events: scheduleEvents,
-    onEventClick: setDetailEventId,
+    onEventClick: (id: string) => {
+      setDetailFromDaySheet(false);
+      setDetailEventId(id);
+    },
     onCreateClass,
     onBlockConfirmed: handleSuccess,
     onOpenBlockDrawer: () => setBlockDrawerOpen(true),
@@ -83,18 +90,20 @@ export function SchedulePage() {
 
   const isWeekView = view === "week";
 
+  useEffect(() => {
+    if (!isWeekView) {
+      setDaySheetDate(null);
+      setDetailFromDaySheet(false);
+    }
+  }, [isWeekView]);
+
   return (
     <>
       <AdminShell
         activeNav="agenda"
         onNav={onNav}
         mobileTitle="Agenda"
-        mainClassName={
-          isWeekView
-            ? "!flex !min-h-0 !h-[100dvh] !pb-0 flex-col overflow-hidden"
-            : ""
-        }
-        stackClassName={isWeekView ? "min-h-0 flex-1 overflow-hidden" : ""}
+        mainClassName="w-full min-w-0 max-w-full overflow-x-hidden"
         pageHeader={
           <ScheduleHeader
             onNewClass={() => onCreateClass()}
@@ -102,13 +111,7 @@ export function SchedulePage() {
           />
         }
       >
-        <div
-          className={
-            isWeekView
-              ? "flex min-h-0 flex-1 flex-col gap-[var(--admin-gap)] overflow-hidden pb-[var(--admin-gap)]"
-              : "contents"
-          }
-        >
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-[var(--admin-gap)]">
           {feedback ? (
             <p
               role="status"
@@ -118,27 +121,30 @@ export function SchedulePage() {
             </p>
           ) : null}
 
-          <section className={isWeekView ? "shrink-0" : "w-full"}>
-            <UpcomingDaysStrip
-              days={upcomingDays}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-            />
-          </section>
+          {!isWeekView ? (
+            <section className="w-full min-w-0 max-w-full shrink-0 overflow-hidden">
+              <UpcomingDaysStrip
+                days={upcomingDays}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+              />
+            </section>
+          ) : null}
 
           <div
-            className={`admin-page-grid grid min-h-0 items-stretch ${
+            className={`admin-page-grid grid w-full min-w-0 max-w-full items-stretch overflow-x-clip ${
               isWeekView
-                ? "min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]"
+                ? "grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]"
                 : "grid-cols-1"
             }`}
           >
-            <div className="min-h-0 min-w-0">
+            <div className="min-w-0 w-full max-w-full lg:min-h-0 lg:overflow-hidden">
               {isWeekView ? (
                 <WeekView
                   events={scheduleEvents}
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}
+                  onDayOpen={setDaySheetDate}
                   view={view}
                   onViewChange={setView}
                 />
@@ -148,23 +154,18 @@ export function SchedulePage() {
             </div>
 
             {isWeekView ? (
-              <DayReservationsSummary
-                selectedDate={selectedDate}
-                events={scheduleEvents}
-                onEventClick={setDetailEventId}
-              />
+              <div className="hidden min-h-0 lg:block">
+                <DayReservationsSummary
+                  selectedDate={selectedDate}
+                  events={scheduleEvents}
+                  onEventClick={(id) => {
+                    setDetailFromDaySheet(false);
+                    setDetailEventId(id);
+                  }}
+                />
+              </div>
             ) : null}
           </div>
-
-          {isWeekView ? (
-            <section className="shrink-0 lg:hidden">
-              <DayReservationsSummary
-                selectedDate={selectedDate}
-                events={scheduleEvents}
-                onEventClick={setDetailEventId}
-              />
-            </section>
-          ) : null}
         </div>
       </AdminShell>
 
@@ -186,10 +187,32 @@ export function SchedulePage() {
         onSaved={handleSuccess}
       />
 
+      <ScheduleDayAppointmentsSheet
+        date={detailEventId ? null : daySheetDate}
+        events={scheduleEvents}
+        onClose={() => {
+          setDaySheetDate(null);
+          setDetailFromDaySheet(false);
+        }}
+        onEventClick={(id) => {
+          setDetailFromDaySheet(true);
+          setDetailEventId(id);
+        }}
+      />
+
       <ScheduleDetailsDrawer
         eventId={detailEventId}
         events={scheduleEvents}
-        onClose={() => setDetailEventId(null)}
+        onBack={
+          detailFromDaySheet
+            ? () => setDetailEventId(null)
+            : undefined
+        }
+        onClose={() => {
+          setDetailEventId(null);
+          setDetailFromDaySheet(false);
+          setDaySheetDate(null);
+        }}
         onAction={handleSuccess}
       />
     </>

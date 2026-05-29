@@ -1,12 +1,15 @@
 "use client";
 
 import { HiPlus } from "react-icons/hi2";
+import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
 
 type Props = {
   onClick?: () => void;
 };
 
 export function RegisterSupplierButton({ onClick }: Props) {
+  const { tabletLandscape } = useAdminPanelTabletLayout();
+
   return (
     <button
       type="button"
@@ -14,7 +17,7 @@ export function RegisterSupplierButton({ onClick }: Props) {
       className="btn-outline-sm bg-white"
     >
       <HiPlus className="h-4 w-4" aria-hidden />
-      Cadastrar fornecedor
+      {tabletLandscape ? "Fornecedor" : "Cadastrar fornecedor"}
     </button>
   );
 }

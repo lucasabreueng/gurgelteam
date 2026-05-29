@@ -58,8 +58,8 @@ export function AdminSettingsPage() {
         />
       }
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:gap-4">
-        <aside className="lg:w-[240px] lg:shrink-0">
+      <div className="admin-settings-layout admin-page-stack lg:flex-row lg:items-start">
+        <aside className="min-w-0 lg:w-[240px] lg:shrink-0">
           <SettingsSidebar active={activeTab} onChange={setActiveTab} />
         </aside>
         <div className="min-w-0 flex-1">

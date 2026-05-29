@@ -3,6 +3,7 @@
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { getInventoryParts } from "@/lib/inventory-parts-store";
@@ -14,19 +15,22 @@ import {
 import { PartSearchDropdown } from "./part-search-dropdown";
 import { SearchableSelectDropdown } from "./searchable-select-dropdown";
 import { useInventoryParts } from "./use-inventory-parts";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+} from "@/components/ui/drawer-footer";
 
 function useDrawerLock(open: boolean, onClose: () => void) {
+  useDrawerBodyLock(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 }
 
@@ -64,7 +68,7 @@ function DrawerShell({
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <h2 className="text-lg font-bold text-[#0d1f3c]">{title}</h2>
@@ -78,10 +82,14 @@ function DrawerShell({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
-        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <button type="button" onClick={onSubmit} className="btn-primary-md w-full">
-            {submitLabel}
-          </button>
+        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+          <div className={DRAWER_FOOTER_INNER_CLASS}>
+            <DrawerFooterActions columns={1}>
+              <button type="button" onClick={onSubmit} className="btn-primary-md">
+                {submitLabel}
+              </button>
+            </DrawerFooterActions>
+          </div>
         </footer>
       </aside>
     </div>

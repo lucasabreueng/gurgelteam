@@ -1,4 +1,5 @@
 import type { ImportPreviewData, PipelineProgress } from "../types";
+import { randomUUID } from "@/lib/random-id";
 import { processCsvFile, processCsvText, type ProcessOptions } from "./pipeline";
 
 type QueueJob = {
@@ -19,7 +20,7 @@ class TelemetryProcessingQueue {
   ): Promise<ImportPreviewData> {
     return new Promise((resolve, reject) => {
       this.queue.push({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         run: () => processCsvFile(file, options),
         onProgress: options.onProgress,
         resolve,
@@ -35,7 +36,7 @@ class TelemetryProcessingQueue {
   ): Promise<ImportPreviewData> {
     return new Promise((resolve, reject) => {
       this.queue.push({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         run: () => processCsvText(text, options),
         onProgress: options.onProgress,
         resolve,

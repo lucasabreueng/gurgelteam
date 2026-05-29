@@ -1,29 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TELEMETRY_NO_SESSION } from "@/lib/telemetry-active-session";
 import { useSectorsPageData } from "./telemetry/use-telemetry-session-data";
 import { useTelemetryWorkspace } from "./telemetry/telemetry-workspace-context";
 import { SectorModuleCard } from "./telemetry/sectors/sector-module-card";
 import { SectorsChartsSection } from "./telemetry/sectors/sectors-charts-section";
-import { SectorsEmptyState } from "./telemetry/sectors/sectors-empty-state";
 import { SectorsLapsTable } from "./telemetry/sectors/sectors-laps-table";
 import { SectorsPageSkeleton } from "./telemetry/sectors/sectors-page-skeleton";
 import { SectorsSessionHeader } from "./telemetry/sectors/sectors-session-header";
+import { TelemetryEmptyState } from "./telemetry/telemetry-empty-state";
 import { SECTION_TITLE } from "./telemetry/sectors/sectors-styles";
-
-const LOAD_MS = 480;
 
 /** Página dedicada de setores — `/piloto/telemetria/setores` */
 export function StudentTelemetrySectorsPage() {
-  const { activeSessionId, openSessionsModal } = useTelemetryWorkspace();
-  const [loading, setLoading] = useState(true);
+  const { activeSessionId, openSessionsModal, openLoadModal } =
+    useTelemetryWorkspace();
   const [selectedLaps, setSelectedLaps] = useState<number[]>([]);
-
-  useEffect(() => {
-    setLoading(true);
-    const t = window.setTimeout(() => setLoading(false), LOAD_MS);
-    return () => window.clearTimeout(t);
-  }, [activeSessionId]);
 
   const { data, loading: processedLoading } = useSectorsPageData(activeSessionId);
 
@@ -35,9 +28,22 @@ export function StudentTelemetrySectorsPage() {
     });
   }, []);
 
-  const hasLaps = data.laps.some((l) => !l.invalid);
+  useEffect(() => {
+    setSelectedLaps([]);
+  }, [activeSessionId]);
 
-  if (loading || processedLoading) {
+  if (!activeSessionId || activeSessionId === TELEMETRY_NO_SESSION) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+        <TelemetryEmptyState
+          onOpenSessions={openSessionsModal}
+          onOpenLoad={openLoadModal}
+        />
+      </div>
+    );
+  }
+
+  if (processedLoading) {
     return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
         <SectorsPageSkeleton />
@@ -45,23 +51,26 @@ export function StudentTelemetrySectorsPage() {
     );
   }
 
-  if (!hasLaps) {
+  if (!data || !data.laps.some((l) => !l.invalid)) {
     return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
-        <SectorsEmptyState onChangeSession={openSessionsModal} />
+        <TelemetryEmptyState
+          onOpenSessions={openSessionsModal}
+          onOpenLoad={openLoadModal}
+        />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+    <div className="telemetry-sectors-page flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="admin-page-stack p-4 md:p-6">
+        <div className="telemetry-sectors-stack admin-page-stack p-4 md:p-6">
           <SectorsSessionHeader summary={data.summary} />
 
           <section>
             <h2 className={SECTION_TITLE}>Módulos de setor</h2>
-            <div className="admin-page-grid mt-3 grid lg:grid-cols-3">
+            <div className="telemetry-sectors-modules-grid admin-page-grid mt-3 grid sm:grid-cols-2 lg:grid-cols-3">
               {data.sectors.map((sector) => (
                 <SectorModuleCard key={sector.id} sector={sector} />
               ))}

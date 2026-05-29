@@ -1,17 +1,26 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+/** Splash de carregamento — apenas na landing pública. */
 export function Preloader() {
-  const [visible, setVisible] = useState(true);
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+  const [visible, setVisible] = useState(isLanding);
 
   useEffect(() => {
+    if (!isLanding) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
     const t = window.setTimeout(() => setVisible(false), 500);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [isLanding]);
 
-  if (!visible) return null;
+  if (!isLanding || !visible) return null;
 
   return (
     <div

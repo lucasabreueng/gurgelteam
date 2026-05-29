@@ -14,8 +14,8 @@ export function SettingsSection({
   children,
 }: Props) {
   return (
-    <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-8">
-      <header className="mb-6 flex flex-col gap-4 border-b border-[rgba(17,17,17,0.06)] pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
+      <header className="flex flex-col gap-4 border-b border-[rgba(17,17,17,0.06)] px-6 py-5 sm:flex-row sm:items-start sm:justify-between md:px-8 md:py-6">
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-[#0d1f3c] md:text-xl">{title}</h2>
           {description ? (
@@ -26,7 +26,7 @@ export function SettingsSection({
           <div className="shrink-0 sm:pt-0.5">{headerAction}</div>
         ) : null}
       </header>
-      {children}
+      <div className="p-6 md:p-8">{children}</div>
     </section>
   );
 }

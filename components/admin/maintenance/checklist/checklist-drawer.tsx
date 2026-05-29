@@ -5,6 +5,7 @@ import { ChecklistServiceMock } from "@/services/maintenance/checklistServiceMoc
 import type { InspectionItemStatus, ChecklistTypeKey, ChecklistKartContext } from "@/lib/contracts/maintenance";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 
 import { ChecklistAccordion } from "./checklist-accordion";
 import { ChecklistDrawerFooter } from "./checklist-drawer-footer";
@@ -29,6 +30,8 @@ export function ChecklistDrawer({
   kart = ChecklistServiceMock.getDefaultKart(),
   onSuccess,
 }: Props) {
+  useDrawerBodyLock(open);
+
   const [checklistType, setChecklistType] = useState<ChecklistTypeKey>("pre");
   const [items, setItems] = useState(ChecklistServiceMock.buildInitialItemState);
   const [notes, setNotes] = useState(kart.quickNote);
@@ -42,11 +45,9 @@ export function ChecklistDrawer({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, onClose, kart.quickNote]);
 
   const summary = useMemo(() => ChecklistServiceMock.computeInspectionSummary(items), [items]);
@@ -82,7 +83,7 @@ export function ChecklistDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Checklist de inspeção"
-        className="relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl transition-transform duration-300 ease-out lg:max-w-[min(48vw,720px)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl transition-transform duration-300 ease-out lg:max-w-[min(48vw,720px)]"
       >
         <ChecklistHeader kart={kart} onClose={onClose} />
 

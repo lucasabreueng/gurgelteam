@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { HiXMark } from "react-icons/hi2";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import {
   ClientsFilters,
@@ -29,17 +30,15 @@ export function ClientsFiltersSheet({
   kartCategories,
   skillLevels,
 }: Props) {
+  useDrawerBodyLock(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -56,7 +55,7 @@ export function ClientsFiltersSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="clients-filters-title"
-        className="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-[#f3f5f9] p-4 shadow-2xl"
+        className="app-drawer-panel absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-[#f3f5f9] p-4 shadow-2xl"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2

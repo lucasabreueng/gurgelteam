@@ -7,6 +7,7 @@ import { ptBR } from "date-fns/locale";
 import { HiOutlineCalendar, HiOutlineChevronDown } from "react-icons/hi2";
 import "react-day-picker/style.css";
 import { DayPickerAppDropdown } from "@/components/kart-reserva-day-picker";
+import { usePreferNativeSelect } from "@/lib/hooks/use-prefer-native-select";
 import { settingsFieldClass } from "./settings-section";
 
 type Props = {
@@ -26,6 +27,14 @@ type Props = {
   placeholder?: string;
 };
 
+const nativeDateFieldWrapClass = `flex h-12 min-h-12 w-full min-w-0 items-stretch overflow-hidden ${settingsFieldClass} focus-within:bg-white`;
+
+const nativeDateIconSlotClass =
+  "flex w-11 shrink-0 items-center justify-center text-neutral-500";
+
+const nativeDateInputClass =
+  "app-native-date-input h-full min-h-0 min-w-0 flex-1 cursor-pointer border-0 bg-transparent px-2 pr-3 text-left text-[#111] outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
+
 function isoToDate(iso: string): Date | undefined {
   if (!iso) return undefined;
   const d = parseISO(iso);
@@ -36,7 +45,54 @@ function dateToIso(d: Date): string {
   return format(d, "yyyy-MM-dd");
 }
 
-/** Seletor de data com calendário (layout mês/ano central, nav nas extremidades). */
+type NativeDateInputProps = Pick<
+  Props,
+  | "value"
+  | "onChange"
+  | "disabled"
+  | "aria-label"
+  | "fromYear"
+  | "toYear"
+  | "disableFuture"
+>;
+
+function SettingsNativeDateInput({
+  value,
+  onChange,
+  disabled,
+  "aria-label": ariaLabel,
+  fromYear,
+  toYear,
+  disableFuture = false,
+}: NativeDateInputProps) {
+  const currentYear = new Date().getFullYear();
+  const rangeStartYear = fromYear ?? currentYear - 1;
+  const rangeEndYear = toYear ?? currentYear + 2;
+  const minDate = `${rangeStartYear}-01-01`;
+  const maxDate = disableFuture
+    ? dateToIso(new Date())
+    : `${rangeEndYear}-12-31`;
+
+  return (
+    <div className={nativeDateFieldWrapClass}>
+      <span className={nativeDateIconSlotClass} aria-hidden>
+        <HiOutlineCalendar className="h-5 w-5 shrink-0" />
+      </span>
+      <input
+        type="date"
+        value={value}
+        min={minDate}
+        max={maxDate}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        onChange={(e) => onChange(e.target.value)}
+        className={nativeDateInputClass}
+      />
+    </div>
+  );
+}
+
+/** Seletor de data: calendário no desktop; `<input type="date">` nativo no mobile/tablet. */
 export function SettingsDatePicker({
   value,
   onChange,
@@ -48,6 +104,7 @@ export function SettingsDatePicker({
   lowercaseLabel = false,
   placeholder = "Selecionar data",
 }: Props) {
+  const preferNativeDateInput = usePreferNativeSelect();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const selected = isoToDate(value);
@@ -72,7 +129,7 @@ export function SettingsDatePicker({
   }, [value]);
 
   useEffect(() => {
-    if (!open) return;
+    if (preferNativeDateInput || !open) return;
     const onPointerDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) {
         setOpen(false);
@@ -85,7 +142,21 @@ export function SettingsDatePicker({
       window.clearTimeout(timer);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open]);
+  }, [open, preferNativeDateInput]);
+
+  if (preferNativeDateInput) {
+    return (
+      <SettingsNativeDateInput
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        fromYear={fromYear}
+        toYear={toYear}
+        disableFuture={disableFuture}
+      />
+    );
+  }
 
   const displayLabel = selected
     ? format(selected, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })

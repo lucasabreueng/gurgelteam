@@ -14,7 +14,7 @@ const ACTIONS = [
 
 export function ProfileQuickActionsFooter() {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="drawer-footer-actions grid w-full grid-cols-3 gap-2">
       {ACTIONS.map((action) => (
         <button
           key={action.label}

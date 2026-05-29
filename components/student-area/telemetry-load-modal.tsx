@@ -1,5 +1,7 @@
 "use client";
 
+import "@/lib/random-id";
+
 import { useEffect, useRef, useState } from "react";
 import { HiOutlineChevronDown } from "react-icons/hi2";
 import { AppDropdown } from "@/components/ui/app-dropdown";
@@ -292,37 +294,38 @@ export function TelemetryLoadModal({
             )}
           </div>
 
-          <fieldset disabled={loading || userTracks.length === 0}>
+          <fieldset disabled={loading}>
             <legend className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
               Tipo de telemetria
             </legend>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div
+              className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3"
+              role="radiogroup"
+              aria-label="Tipo de telemetria"
+            >
               {TelemetryServiceMock.getTelemetryDeviceOptions().map((opt) => {
                 const selected = device === opt.id;
                 return (
-                  <label
+                  <button
                     key={opt.id}
-                    className={`cursor-pointer rounded-xl border px-3 py-3 transition ${
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={loading}
+                    onClick={() => handleDeviceChange(opt.id)}
+                    className={`rounded-xl border px-3 py-3 text-left transition ${
                       selected
                         ? "border-accent/40 bg-accent/5 ring-1 ring-accent/30"
                         : "border-[rgba(17,17,17,0.1)] bg-neutral-50/80 hover:border-[rgba(17,17,17,0.18)]"
-                    }`}
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
                   >
-                    <input
-                      type="radio"
-                      name="telemetry-device"
-                      value={opt.id}
-                      checked={selected}
-                      onChange={() => handleDeviceChange(opt.id)}
-                      className="sr-only"
-                    />
                     <span className="block text-[13px] font-bold text-[#0d1f3c]">
                       {opt.label}
                     </span>
                     <span className="mt-1 block text-[11px] leading-snug text-neutral-600">
                       {opt.hint}
                     </span>
-                  </label>
+                  </button>
                 );
               })}
             </div>

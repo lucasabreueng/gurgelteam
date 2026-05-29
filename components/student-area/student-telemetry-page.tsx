@@ -1,14 +1,3 @@
 "use client";
 
-
-
-import { TelemetryComparison } from "./telemetry-comparison";
-
-
-
-export function StudentTelemetryPage() {
-
-  return <TelemetryComparison />;
-
-}
-
+export { TelemetryPage as StudentTelemetryPage } from "@/components/telemetry/telemetry-page";

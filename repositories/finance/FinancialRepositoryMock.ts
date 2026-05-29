@@ -1,4 +1,6 @@
 import * as financialMocks from "@/lib/admin-financial-mocks";
+import * as dreMocks from "@/lib/admin-dre-mocks";
+import type { DrePeriodFilter } from "@/lib/admin-dre-mocks";
 import type {
   AccountPayableDTO,
   AccountReceivableDTO,
@@ -86,4 +88,17 @@ export const FinancialRepositoryMock = {
   getRevenueByService: () => financialMocks.REVENUE_BY_SERVICE,
   getInOutChart: () => financialMocks.IN_OUT_CHART,
   getFinancialEvolution: () => financialMocks.FINANCIAL_EVOLUTION,
+  getOperationalKpis: () => financialMocks.EXECUTIVE_OPERATIONAL_KPIS,
+  getBusinessEvolution: () => financialMocks.BUSINESS_EVOLUTION,
+  getRevenueOrigin: () => financialMocks.REVENUE_ORIGIN,
+  getExecutiveAlerts: () => financialMocks.EXECUTIVE_ALERTS,
+  getUpcomingPayables: () => financialMocks.EXECUTIVE_UPCOMING_PAYABLES,
+  getCommercialRanking: () => financialMocks.EXECUTIVE_COMMERCIAL_RANKING,
+  getDrePeriodOptions: () => dreMocks.DRE_PERIOD_OPTIONS,
+  getDreDataset: (filter: DrePeriodFilter) => dreMocks.getDreDataset(filter),
+  getDreAccountEntries: (accountId: string, filter: DrePeriodFilter) =>
+    dreMocks.getDreAccountEntries(accountId, filter),
+  formatDreBrl: dreMocks.formatDreBrlAbs,
+  formatDrePercent: dreMocks.formatPercent,
+  formatDreVariation: dreMocks.formatVariation,
 };

@@ -20,8 +20,8 @@ export function TimelineSlotCard({ time, events, onEventClick }: Props) {
   const sharedCategory = categories.length === 1 ? categories[0] : null;
 
   return (
-    <div className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm">
-      <p className="text-sm font-black text-[#0d1f3c]">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm">
+      <p className="break-words text-sm font-black text-[#0d1f3c]">
         <span className="tabular-nums">{time}</span>
         {sharedCategory ? (
           <>

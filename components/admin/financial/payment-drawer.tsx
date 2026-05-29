@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
 import { SettingsDropdown } from "../settings/settings-dropdown";
@@ -9,6 +10,11 @@ import {
   settingsInputClass,
   settingsTextareaClass,
 } from "../settings/settings-section";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+} from "@/components/ui/drawer-footer";
 
 type Props = {
   open: boolean;
@@ -22,6 +28,8 @@ export function PaymentDrawer({ open, onClose, onSuccess }: Props) {
   const [methodId, setMethodId] = useState("pix");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
+  useDrawerBodyLock(open);
+
 
   useEffect(() => {
     if (!open) return;
@@ -34,11 +42,9 @@ export function PaymentDrawer({ open, onClose, onSuccess }: Props) {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, onClose]);
 
   const paymentClientOptions = FinancialServiceMock.getPaymentClientOptions();
@@ -71,7 +77,7 @@ export function PaymentDrawer({ open, onClose, onSuccess }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Registrar pagamento"
-        className="relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(480px,92vw)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(480px,92vw)]"
       >
         <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -164,15 +170,19 @@ export function PaymentDrawer({ open, onClose, onSuccess }: Props) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={!canConfirm}
-            className="w-full rounded-xl bg-[#0d1f3c] py-3 text-[10px] font-bold uppercase text-white shadow-md disabled:opacity-50"
-          >
-            Confirmar pagamento
-          </button>
+        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+          <div className={DRAWER_FOOTER_INNER_CLASS}>
+            <DrawerFooterActions columns={1}>
+              <button
+                type="button"
+                onClick={confirm}
+                disabled={!canConfirm}
+                className="rounded-xl bg-[#0d1f3c] py-3 text-[10px] font-bold uppercase text-white shadow-md disabled:opacity-50"
+              >
+                Confirmar pagamento
+              </button>
+            </DrawerFooterActions>
+          </div>
         </footer>
       </aside>
     </div>

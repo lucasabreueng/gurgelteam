@@ -1,36 +1,29 @@
 /** Dados mockados — Configurações administrativas Gurgel Team */
 
+function newSettingsId(prefix: string): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export type SettingsTabKey =
   | "geral"
   | "usuarios"
   | "horarios"
-  | "planos"
+  | "precos"
   | "categorias"
-  | "karts"
-  | "feedbacks"
   | "notificacoes"
-  | "integracoes"
-  | "seguranca"
-  | "aparencia"
-  | "ranking"
-  | "documentos"
-  | "auditoria";
+  | "documentos";
 
 export const SETTINGS_TABS: { key: SettingsTabKey; label: string }[] = [
   { key: "geral", label: "Geral" },
   { key: "usuarios", label: "Usuários e permissões" },
   { key: "horarios", label: "Horários" },
-  { key: "planos", label: "Planos e pacotes" },
+  { key: "precos", label: "Preços" },
   { key: "categorias", label: "Categorias e níveis" },
-  { key: "karts", label: "Karts" },
-  { key: "feedbacks", label: "Feedbacks" },
   { key: "notificacoes", label: "Notificações" },
-  { key: "integracoes", label: "Integrações" },
-  { key: "seguranca", label: "Segurança" },
-  { key: "aparencia", label: "Aparência" },
-  { key: "ranking", label: "Ranking e resultados" },
   { key: "documentos", label: "Documentos" },
-  { key: "auditoria", label: "Auditoria" },
 ];
 
 export type GeneralSettingsForm = {
@@ -41,6 +34,8 @@ export type GeneralSettingsForm = {
   whatsapp: string;
   address: string;
   instagram: string;
+  tiktok: string;
+  facebook: string;
   institutionalText: string;
 };
 
@@ -49,12 +44,237 @@ export const GENERAL_SETTINGS: GeneralSettingsForm = {
   logo: "/images/logo.svg",
   cnpj: "12.345.678/0001-90",
   email: "contato@gurgelteam.com.br",
-  whatsapp: "+55 11 98765-4321",
+  whatsapp: "5511987654321",
   address: "Av. do Kart, 1200 — Interlagos, São Paulo — SP",
   instagram: "@gurgelteam",
+  tiktok: "@gurgelteam",
+  facebook: "gurgelteam",
   institutionalText:
     "Equipe de kart premium com foco em evolução técnica, telemetria e formação de pilotos para competição.",
 };
+
+export type ModuleKey =
+  | "dashboard"
+  | "agenda"
+  | "registroAulas"
+  | "alunos"
+  | "instrutores"
+  | "karts"
+  | "manutencao"
+  | "estoque"
+  | "telemetria"
+  | "campeonatos"
+  | "financeiro"
+  | "relatorios"
+  | "configuracoes"
+  | "pilotoDashboard"
+  | "pilotoAgenda"
+  | "pilotoEvolucao"
+  | "pilotoFeedbacks"
+  | "pilotoPlano"
+  | "pilotoTelemetria"
+  | "pilotoResultados"
+  | "pilotoMateriais"
+  | "pilotoConquistas"
+  | "pilotoRanking";
+
+export const MODULE_LABELS: Record<ModuleKey, string> = {
+  dashboard: "Dashboard",
+  agenda: "Agenda",
+  registroAulas: "Registro de aulas",
+  alunos: "Alunos",
+  instrutores: "Instrutores",
+  karts: "Karts",
+  manutencao: "Manutenção",
+  estoque: "Estoque",
+  telemetria: "Telemetria",
+  campeonatos: "Campeonatos",
+  financeiro: "Financeiro",
+  relatorios: "Relatórios",
+  configuracoes: "Configurações",
+  pilotoDashboard: "Dashboard",
+  pilotoAgenda: "Agenda",
+  pilotoEvolucao: "Evolução",
+  pilotoFeedbacks: "Feedbacks",
+  pilotoPlano: "Plano de treino",
+  pilotoTelemetria: "Telemetria",
+  pilotoResultados: "Resultados",
+  pilotoMateriais: "Materiais",
+  pilotoConquistas: "Conquistas",
+  pilotoRanking: "Ranking interno",
+};
+
+export type ModuleGroupKey = "admin" | "piloto";
+
+export const MODULE_GROUPS: {
+  key: ModuleGroupKey;
+  label: string;
+  moduleKeys: ModuleKey[];
+}[] = [
+  {
+    key: "admin",
+    label: "Admin",
+    moduleKeys: [
+      "dashboard",
+      "agenda",
+      "registroAulas",
+      "alunos",
+      "instrutores",
+      "karts",
+      "manutencao",
+      "estoque",
+      "telemetria",
+      "campeonatos",
+      "financeiro",
+      "relatorios",
+      "configuracoes",
+    ],
+  },
+  {
+    key: "piloto",
+    label: "Piloto",
+    moduleKeys: [
+      "pilotoDashboard",
+      "pilotoAgenda",
+      "pilotoEvolucao",
+      "pilotoFeedbacks",
+      "pilotoPlano",
+      "pilotoTelemetria",
+      "pilotoResultados",
+      "pilotoMateriais",
+      "pilotoConquistas",
+      "pilotoRanking",
+    ],
+  },
+];
+
+export type ModulePermissionSet = {
+  visualizar: boolean;
+  editar: boolean;
+  excluir: boolean;
+};
+
+export type SettingsUserAccount = {
+  id: string;
+  name: string;
+  modules: Record<ModuleKey, ModulePermissionSet>;
+};
+
+const ALL_MODULE_PERMISSIONS: ModulePermissionSet = {
+  visualizar: true,
+  editar: true,
+  excluir: true,
+};
+
+const VIEW_ONLY: ModulePermissionSet = {
+  visualizar: true,
+  editar: false,
+  excluir: false,
+};
+
+const NO_ACCESS: ModulePermissionSet = {
+  visualizar: false,
+  editar: false,
+  excluir: false,
+};
+
+const ALL_MODULE_KEYS = Object.keys(MODULE_LABELS) as ModuleKey[];
+
+function buildUserModules(
+  overrides: Partial<Record<ModuleKey, ModulePermissionSet>>
+): Record<ModuleKey, ModulePermissionSet> {
+  const base = Object.fromEntries(
+    ALL_MODULE_KEYS.map((key) => [key, { ...NO_ACCESS }])
+  ) as Record<ModuleKey, ModulePermissionSet>;
+  for (const key of Object.keys(overrides) as ModuleKey[]) {
+    base[key] = { ...overrides[key]! };
+  }
+  return base;
+}
+
+export const SETTINGS_USERS: SettingsUserAccount[] = [
+  {
+    id: "user-administrador",
+    name: "Administrador",
+    modules: buildUserModules(
+      Object.fromEntries(
+        ALL_MODULE_KEYS.map((key) => [key, ALL_MODULE_PERMISSIONS])
+      ) as Record<ModuleKey, ModulePermissionSet>
+    ),
+  },
+  {
+    id: "user-instrutor",
+    name: "Instrutor",
+    modules: buildUserModules({
+      agenda: { visualizar: true, editar: true, excluir: false },
+      registroAulas: { visualizar: true, editar: true, excluir: false },
+      alunos: { visualizar: true, editar: true, excluir: false },
+      karts: VIEW_ONLY,
+      manutencao: VIEW_ONLY,
+      pilotoFeedbacks: { visualizar: true, editar: true, excluir: false },
+      pilotoPlano: { visualizar: true, editar: true, excluir: false },
+    }),
+  },
+  {
+    id: "user-mecanico",
+    name: "Mecânico",
+    modules: buildUserModules({
+      karts: { visualizar: true, editar: true, excluir: false },
+      manutencao: { visualizar: true, editar: true, excluir: false },
+      estoque: { visualizar: true, editar: true, excluir: false },
+    }),
+  },
+  {
+    id: "user-piloto",
+    name: "Piloto",
+    modules: buildUserModules({
+      pilotoDashboard: VIEW_ONLY,
+      pilotoAgenda: VIEW_ONLY,
+      pilotoEvolucao: VIEW_ONLY,
+      pilotoFeedbacks: VIEW_ONLY,
+      pilotoPlano: VIEW_ONLY,
+      pilotoTelemetria: VIEW_ONLY,
+      pilotoResultados: VIEW_ONLY,
+      pilotoMateriais: VIEW_ONLY,
+      pilotoConquistas: VIEW_ONLY,
+      pilotoRanking: VIEW_ONLY,
+    }),
+  },
+  {
+    id: "user-responsavel",
+    name: "Responsável",
+    modules: buildUserModules({
+      alunos: VIEW_ONLY,
+      agenda: VIEW_ONLY,
+      pilotoDashboard: VIEW_ONLY,
+      pilotoAgenda: VIEW_ONLY,
+      pilotoEvolucao: VIEW_ONLY,
+      pilotoFeedbacks: VIEW_ONLY,
+      pilotoPlano: VIEW_ONLY,
+      pilotoMateriais: VIEW_ONLY,
+    }),
+  },
+  {
+    id: "user-piloto-menor",
+    name: "Piloto menor",
+    modules: buildUserModules({
+      pilotoDashboard: VIEW_ONLY,
+      pilotoAgenda: VIEW_ONLY,
+      pilotoEvolucao: VIEW_ONLY,
+      pilotoFeedbacks: VIEW_ONLY,
+      pilotoMateriais: VIEW_ONLY,
+      pilotoConquistas: VIEW_ONLY,
+    }),
+  },
+];
+
+export function createSettingsUser(name = "Novo usuário"): SettingsUserAccount {
+  return {
+    id: newSettingsId("user"),
+    name,
+    modules: buildUserModules({}),
+  };
+}
 
 export type PermissionKey =
   | "verAlunos"
@@ -333,7 +553,7 @@ export function createTimeSlot(
   levelId: string
 ): ScheduleTimeSlot {
   return {
-    id: `slot-${crypto.randomUUID().slice(0, 8)}`,
+    id: newSettingsId("slot"),
     start: "08:00",
     end: "08:50",
     categoryId,
@@ -357,7 +577,7 @@ export function createSpecificDateSchedule(): SpecificDateSchedule {
   const daysUntilMonday = day === 0 ? 1 : day === 1 ? 7 : (8 - day) % 7;
   next.setDate(next.getDate() + daysUntilMonday);
   return {
-    id: `spd-${crypto.randomUUID().slice(0, 8)}`,
+    id: newSettingsId("spd"),
     date: next.toISOString().slice(0, 10),
     slots: [],
   };
@@ -369,7 +589,7 @@ export function createSpecificDateTimeSlot(
   levelId: string
 ): ScheduleTimeSlot {
   return {
-    id: `spd-${scheduleId.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`,
+    id: newSettingsId("slot"),
     start: "08:00",
     end: "08:50",
     categoryId,
@@ -402,112 +622,51 @@ export function createScheduleException(): ScheduleException {
   const daysUntilMonday = day === 0 ? 1 : day === 1 ? 7 : (8 - day) % 7;
   next.setDate(next.getDate() + daysUntilMonday);
   return {
-    id: `ex-${crypto.randomUUID().slice(0, 8)}`,
+    id: newSettingsId("ex"),
     date: next.toISOString().slice(0, 10),
     slotIds: [],
     reason: "",
   };
 }
 
-export type PlanPackage = {
+export type CategoryPrice = {
   id: string;
   name: string;
-  /** Valor em centavos (ex.: 28000 = R$ 280,00) */
-  priceCents: number;
-  validityDays: number;
+  /** Preço da aula avulsa em centavos (ex.: 28000 = R$ 280,00) */
+  singleLessonPriceCents: number;
   description: string;
   includedItems: string;
-  active: boolean;
-  /** true = pacote · false = avulso */
-  isPacote: boolean;
 };
 
-export type PlanCategory = {
-  id: string;
-  name: string;
-  plans: PlanPackage[];
-};
-
-const PLAN_TEMPLATES: Omit<PlanPackage, "id" | "priceCents">[] = [
-  {
-    name: "Aula avulsa",
-    validityDays: 30,
-    description: "Sessão única com briefing, pista e debriefing com instrutor.",
-    includedItems:
-      "1 aula na pista\nBriefing de segurança\nUso de capacete e luvas",
-    active: true,
-    isPacote: false,
-  },
-  {
-    name: "5 aulas",
-    validityDays: 60,
-    description: "Pacote ideal para evolução consistente com acompanhamento técnico.",
-    includedItems:
-      "5 aulas na pista\nRelatório de evolução\n1 sessão de telemetria resumida",
-    active: true,
-    isPacote: true,
-  },
-  {
-    name: "10 aulas",
-    validityDays: 90,
-    description: "Formação completa com foco em performance e consistência.",
-    includedItems:
-      "10 aulas na pista\nTelemetria em 3 sessões\nFeedback técnico por escrito",
-    active: true,
-    isPacote: true,
-  },
-];
-
-function defaultPlans(
-  catSlug: string,
-  pricesCents: [number, number, number]
-): PlanPackage[] {
-  return PLAN_TEMPLATES.map((tpl, i) => ({
-    ...tpl,
-    id: `${catSlug}-${["avulsa", "5", "10"][i]}`,
-    priceCents: pricesCents[i],
-  }));
-}
-
-export const PLAN_CATEGORIES: PlanCategory[] = [
+export const CATEGORY_PRICES: CategoryPrice[] = [
   {
     id: "mirim-cadete",
     name: "Mirim / Cadete",
-    plans: defaultPlans("mirim-cadete", [28000, 120000, 220000]),
+    singleLessonPriceCents: 28000,
+    description:
+      "Sessão única com briefing, pista e debriefing com instrutor.",
+    includedItems:
+      "1 aula na pista\nBriefing de segurança\nUso de capacete e luvas",
   },
   {
     id: "f400",
     name: "F400",
-    plans: defaultPlans("f400", [35000, 150000, 280000]),
+    singleLessonPriceCents: 35000,
+    description:
+      "Sessão avulsa na categoria F400 com acompanhamento técnico.",
+    includedItems:
+      "1 aula na pista\nBriefing de segurança\nUso de equipamentos homologados",
   },
   {
     id: "125cc",
     name: "125cc",
-    plans: defaultPlans("125cc", [42000, 190000, 360000]),
+    singleLessonPriceCents: 42000,
+    description:
+      "Aula avulsa na categoria 125cc para pilotos com experiência prévia.",
+    includedItems:
+      "1 aula na pista\nDebriefing técnico\nUso de equipamentos homologados",
   },
 ];
-
-/** Planos padrão ao criar categoria ou novo pacote */
-export function createDefaultPlans(): PlanPackage[] {
-  return PLAN_TEMPLATES.map((tpl) => ({
-    ...tpl,
-    id: `plan-${crypto.randomUUID().slice(0, 8)}`,
-    priceCents: 0,
-  }));
-}
-
-export function createEmptyPlan(): PlanPackage {
-  return {
-    id: `plan-${crypto.randomUUID().slice(0, 8)}`,
-    name: "Novo pacote",
-    priceCents: 0,
-    validityDays: 30,
-    description: "",
-    includedItems: "",
-    active: true,
-    isPacote: true,
-  };
-}
 
 /** Categorias de kart cadastradas (compartilhadas com horários, níveis e planos) */
 export type KartCategory = {
@@ -528,20 +687,23 @@ export function createKartCategory(name = "Nova categoria"): KartCategory {
   };
 }
 
-/** Alinha planos às categorias de kart (Categorias e níveis). */
-export function syncPlanCategoriesFromKart(
+/** Alinha preços às categorias de kart (Categorias e níveis). */
+export function syncCategoryPricesFromKart(
   kartCategories: KartCategory[],
-  planCategories: PlanCategory[]
-): PlanCategory[] {
+  prices: CategoryPrice[]
+): CategoryPrice[] {
   return kartCategories.map((kart) => {
-    const existing = planCategories.find((p) => p.id === kart.id);
-    if (existing) {
-      return { ...existing, id: kart.id, name: kart.name };
-    }
+    const existing = prices.find((p) => p.id === kart.id);
     return {
       id: kart.id,
       name: kart.name,
-      plans: createDefaultPlans(),
+      singleLessonPriceCents: existing?.singleLessonPriceCents ?? 0,
+      description:
+        existing?.description ??
+        "Sessão única com briefing, pista e debriefing com instrutor.",
+      includedItems:
+        existing?.includedItems ??
+        "1 aula na pista\nBriefing de segurança\nUso de capacete e luvas",
     };
   });
 }
@@ -858,6 +1020,7 @@ export type DocumentTemplate = {
   id: string;
   title: string;
   description: string;
+  content: string;
   lastUpdated: string;
   status: "publicado" | "rascunho";
 };
@@ -867,6 +1030,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     id: "termo",
     title: "Termo de responsabilidade",
     description: "Assinatura digital antes da primeira sessão.",
+    content:
+      "O piloto (ou responsável legal) declara estar ciente dos riscos inerentes à prática de kart e assume total responsabilidade pelo uso das instalações e equipamentos.",
     lastUpdated: "12 Mar 2025",
     status: "publicado",
   },
@@ -874,6 +1039,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     id: "cancelamento",
     title: "Política de cancelamento",
     description: "Regras de crédito e reagendamento.",
+    content:
+      "Cancelamentos com até 24 horas de antecedência geram crédito para reagendamento. Ausências sem aviso não são reembolsáveis.",
     lastUpdated: "05 Abr 2025",
     status: "publicado",
   },
@@ -881,6 +1048,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     id: "regulamento",
     title: "Regulamento interno",
     description: "Conduta no paddock e uso dos karts.",
+    content:
+      "É obrigatório o uso de equipamentos de proteção homologados. Proibido consumo de álcool antes ou durante as sessões.",
     lastUpdated: "20 Jan 2025",
     status: "publicado",
   },
@@ -888,6 +1057,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     id: "menor",
     title: "Autorização para menor de idade",
     description: "Responsável legal e documentação.",
+    content:
+      "Menores de 18 anos só participam com autorização assinada pelo responsável legal e documento de identidade apresentado no check-in.",
     lastUpdated: "01 Fev 2025",
     status: "rascunho",
   },
@@ -895,6 +1066,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     id: "imagem",
     title: "Uso de imagem",
     description: "Autorização para mídia e redes sociais.",
+    content:
+      "Autorizo a Gurgel Team a utilizar imagens e vídeos das sessões para divulgação institucional e redes sociais.",
     lastUpdated: "18 Mar 2025",
     status: "publicado",
   },

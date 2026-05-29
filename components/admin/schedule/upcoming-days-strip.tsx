@@ -15,8 +15,8 @@ export function UpcomingDaysStrip({
   onSelectDate,
 }: Props) {
   return (
-    <section className="w-full">
-      <ul className="grid w-full grid-cols-7 gap-1.5 sm:gap-3">
+    <section className="w-full min-w-0 max-w-full overflow-x-clip overflow-y-visible">
+      <ul className="schedule-days-strip grid w-full gap-0.5 sm:gap-1.5 lg:gap-3">
         {days.map((day) => (
           <li key={day.date} className="min-w-0">
             <DayOccupancyCard

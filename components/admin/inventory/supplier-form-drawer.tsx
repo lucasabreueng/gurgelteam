@@ -5,6 +5,7 @@ import type { SupplierStatus } from "@/lib/contracts/inventory";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import {
@@ -13,6 +14,11 @@ import {
   getInventorySupplierById,
   updateInventorySupplier,
 } from "@/lib/inventory-suppliers-store";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+} from "@/components/ui/drawer-footer";
 import { SettingsDropdown } from "../settings/settings-dropdown";
 
 const inputClass =
@@ -49,6 +55,8 @@ export function SupplierFormDrawer({
 }: Props) {
   const isEdit = Boolean(supplierId);
   const existing = supplierId ? getInventorySupplierById(supplierId) : null;
+  useDrawerBodyLock(open);
+
 
   const [name, setName] = useState(emptyForm.name);
   const [cnpj, setCnpj] = useState(emptyForm.cnpj);
@@ -91,11 +99,9 @@ export function SupplierFormDrawer({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, onClose]);
 
   const previewCode = useMemo(() => {
@@ -161,7 +167,7 @@ export function SupplierFormDrawer({
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <h2 className="text-lg font-bold text-[#0d1f3c]">
@@ -294,14 +300,18 @@ export function SupplierFormDrawer({
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="btn-primary-md w-full"
-          >
-            {isEdit ? "Salvar alterações" : "Cadastrar fornecedor"}
-          </button>
+        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+          <div className={DRAWER_FOOTER_INNER_CLASS}>
+            <DrawerFooterActions columns={1}>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="btn-primary-md"
+              >
+                {isEdit ? "Salvar alterações" : "Cadastrar fornecedor"}
+              </button>
+            </DrawerFooterActions>
+          </div>
         </footer>
       </aside>
     </div>

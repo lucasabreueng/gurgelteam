@@ -3,6 +3,7 @@
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 
 import { useEffect } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { getInventorySupplierById } from "@/lib/inventory-suppliers-store";
@@ -20,6 +21,8 @@ type Props = {
 
 export function SupplierDetailsDrawer({ supplierId, onClose }: Props) {
   const supplier = supplierId ? getInventorySupplierById(supplierId) : null;
+  useDrawerBodyLock(Boolean(supplierId));
+
 
   useEffect(() => {
     if (!supplierId) return;
@@ -27,11 +30,9 @@ export function SupplierDetailsDrawer({ supplierId, onClose }: Props) {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [supplierId, onClose]);
 
   if (!supplierId || !supplier) return null;
@@ -49,7 +50,7 @@ export function SupplierDetailsDrawer({ supplierId, onClose }: Props) {
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
       >
         <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <div className="flex items-start justify-between gap-4">

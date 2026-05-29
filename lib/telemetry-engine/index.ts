@@ -1,3 +1,5 @@
+import "@/lib/random-id";
+
 export type {
   ColumnMapping,
   GpsLine,
@@ -115,14 +117,22 @@ export type { SessionListEntry } from "./storage/session-store";
 export {
   chartSeriesForProcessedLap,
   processedSessionLapsList,
+  findBestLapListIndex,
   processedSessionStats,
   gpsTrailForSession,
   gpsTrailForLap,
   gpsPositionAtLapDistance,
   maxSectorLengthM,
+  maxChartDistanceM,
   sectorDistanceRange,
   type SectorFilter,
 } from "./bridge/chart-data";
+export {
+  buildHeatMapTrailForLap,
+  heatMapColor,
+  type HeatMapSegment,
+  type HeatMapTrailResult,
+} from "./bridge/heatmap-trail";
 export { processedSessionToSectorsPage } from "./bridge/sectors-data";
 
 export function createSessionId(): string {

@@ -4,13 +4,16 @@ export type {
   PermissionKey,
   RolePermissions,
   RoleKey,
+  ModuleKey,
+  ModuleGroupKey,
+  ModulePermissionSet,
+  SettingsUserAccount,
   ScheduleTimeSlot,
   WeekDayKey,
   WeekDaySchedule,
   SpecificDateSchedule,
   ScheduleException,
-  PlanPackage,
-  PlanCategory,
+  CategoryPrice,
   KartCategory,
   LevelCategoryRequirement,
   SkillLevel,
@@ -22,3 +25,5 @@ export type {
   DocumentTemplate,
   AuditEntry,
 } from "@/lib/admin-settings-mocks";
+
+export { MODULE_LABELS, MODULE_GROUPS } from "@/lib/admin-settings-mocks";

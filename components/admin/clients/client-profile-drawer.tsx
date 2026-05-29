@@ -4,6 +4,7 @@ import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 
 
 import { useEffect } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { ClassesHistoryTable } from "./classes-history-table";
@@ -13,6 +14,10 @@ import { FinancialSummary } from "./financial-summary";
 import { HealthIndicators } from "./health-indicators";
 import { PerformanceOverview } from "./performance-overview";
 import { ProfileQuickActionsFooter } from "./profile-quick-actions-footer";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+} from "@/components/ui/drawer-footer";
 
 type Props = {
   clientId: string | null;
@@ -22,6 +27,8 @@ type Props = {
 export function ClientProfileDrawer({ clientId, onClose }: Props) {
   const client = clientId ? ClientsServiceMock.getListItem(clientId) : null;
   const profile = clientId ? ClientsServiceMock.getProfile(clientId) : null;
+  useDrawerBodyLock(Boolean(clientId));
+
 
   useEffect(() => {
     if (!clientId) return;
@@ -29,11 +36,9 @@ export function ClientProfileDrawer({ clientId, onClose }: Props) {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [clientId, onClose]);
 
   if (!clientId || !client || !profile) return null;
@@ -50,7 +55,7 @@ export function ClientProfileDrawer({ clientId, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="client-profile-title"
-        className="relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-[-12px_0_48px_rgba(13,31,60,0.2)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-[-12px_0_48px_rgba(13,31,60,0.2)]"
       >
         <header className="shrink-0 flex items-center justify-between gap-4 border-b border-[rgba(17,17,17,0.08)] bg-white/95 px-5 py-4 backdrop-blur-md">
           <p
@@ -80,11 +85,13 @@ export function ClientProfileDrawer({ clientId, onClose }: Props) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-            Ações rápidas
-          </p>
-          <ProfileQuickActionsFooter />
+        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+          <div className={DRAWER_FOOTER_INNER_CLASS}>
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Ações rápidas
+            </p>
+            <ProfileQuickActionsFooter />
+          </div>
         </footer>
       </aside>
     </div>

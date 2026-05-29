@@ -24,6 +24,8 @@ export const queryKeys = {
   cashFlow: {
     all: ["cash-flow"] as const,
     kpis: () => [...queryKeys.cashFlow.all, "kpis"] as const,
+    dataset: (filter: { key: string; customStart?: string; customEnd?: string }) =>
+      [...queryKeys.cashFlow.all, "dataset", filter] as const,
   },
   dashboard: {
     all: ["dashboard"] as const,

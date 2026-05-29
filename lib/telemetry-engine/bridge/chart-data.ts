@@ -93,6 +93,25 @@ export function maxSectorLengthM(
   return Math.max(Math.round(max), 50);
 }
 
+export function maxChartDistanceM(
+  session: ProcessedTelemetrySession,
+  lapNumbers: number[],
+  sectorFilter: SectorFilter = null,
+): number {
+  if (sectorFilter != null) {
+    return maxSectorLengthM(session, lapNumbers, sectorFilter);
+  }
+  let max = 0;
+  for (const lapNumber of lapNumbers) {
+    const lap = findLap(session, lapNumber);
+    if (!lap) continue;
+    const pts = lapPoints(session, lap);
+    const dists = normalizedLapDistances(pts);
+    max = Math.max(max, dists.length ? Math.max(...dists) : 0);
+  }
+  return Math.max(Math.round(max), 50);
+}
+
 function buildSeriesFromPoints(
   pts: TelemetryPoint[],
   tab: TelemetryTabKey,
@@ -204,6 +223,37 @@ export function processedSessionLapsList(
       timeLabel: l.lapTime.toFixed(3).replace(".", ","),
       invalid: !l.isValid || l.isIncomplete,
     }));
+}
+
+/** Índice na lista de `processedSessionLapsList` da melhor volta válida. */
+export function findBestLapListIndex(
+  session: ProcessedTelemetrySession,
+  sessionLaps: ReturnType<typeof processedSessionLapsList>,
+): number {
+  if (sessionLaps.length === 0) return 0;
+
+  const bestTime = session.meta.bestLapTime;
+  if (bestTime != null) {
+    for (let i = 0; i < sessionLaps.length; i++) {
+      const lap = session.laps.find(
+        (l) => l.lapNumber === sessionLaps[i].lap && !l.isOutLap && l.isValid,
+      );
+      if (lap && Math.abs(lap.lapTime - bestTime) < 0.0005) return i;
+    }
+  }
+
+  let bestIdx = 0;
+  let minTime = Infinity;
+  for (let i = 0; i < sessionLaps.length; i++) {
+    const lap = session.laps.find(
+      (l) => l.lapNumber === sessionLaps[i].lap && !l.isOutLap && l.isValid,
+    );
+    if (lap && lap.lapTime < minTime) {
+      minTime = lap.lapTime;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
 }
 
 export function processedSessionStats(session: ProcessedTelemetrySession) {

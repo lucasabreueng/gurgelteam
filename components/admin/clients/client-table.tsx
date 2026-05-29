@@ -22,6 +22,7 @@ type Props = {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onViewProfile: (id: string) => void;
+  onEdit?: (id: string) => void;
 };
 
 export function ClientTable({
@@ -33,7 +34,8 @@ export function ClientTable({
   totalItems,
   onPageChange,
   onPageSizeChange,
-  onViewProfile}: Props) {
+  onViewProfile,
+  onEdit}: Props) {
   return (
     <div className="overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
       <div className="overflow-x-auto rounded-t-2xl">
@@ -117,7 +119,11 @@ export function ClientTable({
                         label="Ver perfil"
                         onClick={() => onViewProfile(client.id)}
                       />
-                      <IconAction icon={HiPencil} label="Editar" />
+                      <IconAction
+                        icon={HiPencil}
+                        label="Editar"
+                        onClick={() => onEdit?.(client.id)}
+                      />
                     </div>
                   </td>
                 </tr>

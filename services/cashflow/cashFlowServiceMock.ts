@@ -1,21 +1,14 @@
+import type { CashFlowPeriodFilter, CashFlowStatementRow } from "@/lib/admin-cash-flow-mocks";
 import { CashFlowRepositoryMock } from "@/repositories/cashflow/CashFlowRepositoryMock";
 
 export const CashFlowServiceMock = {
-  getInnerTabs: () => CashFlowRepositoryMock.getInnerTabs(),
-  getKpis: () => CashFlowRepositoryMock.getKpis(),
-  getPeriodSummary: () => CashFlowRepositoryMock.getPeriodSummary(),
-  getExpensesDistribution: () => CashFlowRepositoryMock.getExpensesDistribution(),
-  getDreMonths: () => CashFlowRepositoryMock.getDreMonths(),
-  getDreRows: () => CashFlowRepositoryMock.getDreRows(),
-  getDailyCashPreview: () => CashFlowRepositoryMock.getDailyCashPreview(),
-  getDailyCashFull: () => CashFlowRepositoryMock.getDailyCashFull(),
-  getIndicators: () => CashFlowRepositoryMock.getIndicators(),
-  getPeriodHighlights: () => CashFlowRepositoryMock.getPeriodHighlights(),
-  getProjection: () => CashFlowRepositoryMock.getProjection(),
-  getMovements: () => CashFlowRepositoryMock.getMovements(),
-  getCashFlowByPeriod: () => CashFlowRepositoryMock.getCashFlowByPeriod(),
-  getDreGrossRevenue: () => CashFlowRepositoryMock.getDreGrossRevenue(),
+  getPeriodOptions: () => CashFlowRepositoryMock.getPeriodOptions(),
+  getCashFlowDataset: (filter: CashFlowPeriodFilter) =>
+    CashFlowRepositoryMock.getCashFlowDataset(filter),
+  filterMovements: (
+    movements: CashFlowStatementRow[],
+    filters: Parameters<typeof CashFlowRepositoryMock.filterMovements>[1]
+  ) => CashFlowRepositoryMock.filterMovements(movements, filters),
   formatBrl: CashFlowRepositoryMock.formatBrl,
-  formatPercent: CashFlowRepositoryMock.formatPercent,
   formatVariation: CashFlowRepositoryMock.formatVariation,
 };

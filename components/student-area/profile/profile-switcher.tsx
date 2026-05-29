@@ -24,7 +24,7 @@ export function ProfileSwitcher({ options, activeId, onSelect }: Props) {
         Perfil ativo
       </p>
       <div
-        className="mt-4 flex gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="app-scrollbar-hidden mt-4 flex gap-4 overflow-x-auto pb-1"
         role="tablist"
         aria-label="Selecionar perfil"
       >

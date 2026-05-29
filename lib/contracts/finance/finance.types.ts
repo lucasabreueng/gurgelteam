@@ -4,7 +4,8 @@ export type FinancialTabKey =
   | "overview"
   | "receivables"
   | "payables"
-  | "cashflow";
+  | "cashflow"
+  | "dre";
 
 export type FinancialTabMetaDTO = {
   title: string;
@@ -18,6 +19,8 @@ export type FinancialKpiDTO = {
   delta: string;
   deltaPositive: boolean;
   sparkline?: number[];
+  sub?: string;
+  tooltip?: string;
 };
 
 export const RECEIVABLE_STATUS_LABELS: Record<ReceivableStatus, string> = {

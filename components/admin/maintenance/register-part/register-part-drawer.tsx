@@ -5,6 +5,7 @@ import type { PartCatalogItem, PartUnit, PartUsageType, ClientBillingMode, Regis
 import { PartsServiceMock } from "@/services/parts/partsServiceMock";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 
 import { PartCostSummary } from "./part-cost-summary";
 import { PartSearchInput } from "./part-search-input";
@@ -43,6 +44,8 @@ export function RegisterPartDrawer({
   context = PartsServiceMock.getDefaultRegisterPartOs(),
   onSuccess,
 }: Props) {
+  useDrawerBodyLock(open);
+
   const [selected, setSelected] = useState<PartCatalogItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState<PartUnit>("unidade");
@@ -68,11 +71,9 @@ export function RegisterPartDrawer({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, onClose, resetForm]);
 
   const stockAlert = useMemo(() => {
@@ -125,7 +126,7 @@ export function RegisterPartDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Registrar peça"
-        className="relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(42vw,640px)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(42vw,640px)]"
       >
         <RegisterPartHeader
           context={context}

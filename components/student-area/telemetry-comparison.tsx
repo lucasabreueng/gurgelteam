@@ -4,15 +4,19 @@ import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock"
 import type { TelemetryTabKey } from "@/lib/contracts/student-area";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { ECharts } from "echarts";
 
 import {
+  buildHeatMapTrailForLap,
+  heatMapColor,
   chartSeriesForProcessedLap,
   formatSessionDateTime,
   gpsPositionAtLapDistance,
   gpsTrailForLap,
   isValidGps,
-  maxSectorLengthM,
+  maxChartDistanceM,
+  findBestLapListIndex,
   processedSessionLapsList,
   processedSessionStats,
   type SectorFilter,
@@ -24,40 +28,106 @@ import {
 } from "./telemetry/telemetry-google-map";
 import {
   TelemetryEChart,
-  connectTelemetryCharts,
-  disconnectTelemetryCharts,
+  hideTelemetryChartTips,
 } from "./telemetry-chart";
 import { useTelemetryWorkspace } from "./telemetry/telemetry-workspace-context";
+import { useTelemetryTabletLayout } from "@/lib/hooks/use-telemetry-tablet-layout";
 import { useProcessedTelemetrySession } from "./telemetry/use-telemetry-session-data";
-
-const EXPECTED_CHART_COUNT = TelemetryServiceMock.getTelemetryChartMetrics().length;
+import { TelemetryEmptyState } from "./telemetry/telemetry-empty-state";
+import { TELEMETRY_NO_SESSION } from "@/lib/telemetry-active-session";
+import { isProcessedSessionId } from "@/lib/telemetry-engine";
 
 type SectorTab = "full" | 1 | 2 | 3;
 
 export function TelemetryComparison() {
-  const { activeSessionId } = useTelemetryWorkspace();
-  const { session: processedSession } =
+  const pathname = usePathname();
+  const { activeSessionId, openSessionsModal, openLoadModal } =
+    useTelemetryWorkspace();
+  const { tabletLandscape } = useTelemetryTabletLayout();
+  const { session: processedSession, loading: sessionLoading } =
     useProcessedTelemetrySession(activeSessionId);
 
-  const sessionLaps = useMemo(() => {
-    if (processedSession) return processedSessionLapsList(processedSession);
-    return TelemetryServiceMock.getTelemetrySessionLaps().map((l) => ({
-      lap: l.lap,
-      timeLabel: l.timeLabel,
-      invalid: false,
-    }));
-  }, [processedSession]);
+  if (!activeSessionId || activeSessionId === TELEMETRY_NO_SESSION) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+        <TelemetryEmptyState
+          onOpenSessions={openSessionsModal}
+          onOpenLoad={openLoadModal}
+        />
+      </div>
+    );
+  }
 
-  const stats = useMemo(() => {
-    if (processedSession) return processedSessionStats(processedSession);
-    return TelemetryServiceMock.getTelemetryStats();
-  }, [processedSession]);
+  if (isProcessedSessionId(activeSessionId) && sessionLoading) {
+    return (
+      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-[#f3f5f9]">
+        <p className="text-sm font-medium text-neutral-600">Carregando sessão…</p>
+      </div>
+    );
+  }
 
-  const [selectedLapIndices, setSelectedLapIndices] = useState<number[]>([0, 1]);
+  if (!processedSession) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+        <TelemetryEmptyState
+          onOpenSessions={openSessionsModal}
+          onOpenLoad={openLoadModal}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <TelemetryComparisonContent
+      pathname={pathname}
+      tabletLandscape={tabletLandscape}
+      processedSession={processedSession}
+    />
+  );
+}
+
+function TelemetryComparisonContent({
+  pathname,
+  tabletLandscape,
+  processedSession,
+}: {
+  pathname: string;
+  tabletLandscape: boolean;
+  processedSession: NonNullable<
+    ReturnType<typeof useProcessedTelemetrySession>["session"]
+  >;
+}) {
+  const { heatMapEnabled, setHeatMapEnabled } = useTelemetryWorkspace();
+  const [hoveredHeatMapMetric, setHoveredHeatMapMetric] =
+    useState<TelemetryTabKey>("velocidade");
+
+  const sessionLaps = useMemo(
+    () => processedSessionLapsList(processedSession),
+    [processedSession],
+  );
+
+  const bestLapIndex = useMemo(
+    () => findBestLapListIndex(processedSession, sessionLaps),
+    [processedSession, sessionLaps],
+  );
+
+  const stats = useMemo(
+    () => processedSessionStats(processedSession),
+    [processedSession],
+  );
+
+  const [selectedLapIndices, setSelectedLapIndices] = useState<number[]>(() => [
+    findBestLapListIndex(processedSession, sessionLaps),
+  ]);
   const [sectorTab, setSectorTab] = useState<SectorTab>("full");
   const mapRef = useRef<TelemetryGoogleMapHandle>(null);
   const hoverRafRef = useRef<number | null>(null);
   const pendingDistanceRef = useRef<number | null>(null);
+
+  const activeHeatMapMetric =
+    heatMapEnabled && selectedLapIndices.length === 1
+      ? hoveredHeatMapMetric
+      : null;
 
   const sectorFilter: SectorFilter =
     sectorTab === "full" ? null : sectorTab;
@@ -70,19 +140,38 @@ export function TelemetryComparison() {
     [selectedLapIndices, sessionLaps],
   );
 
-  const chartDistanceLengthM = useMemo(() => {
-    if (!processedSession || sectorFilter == null) {
-      return TelemetryServiceMock.getTelemetryTrackLengthM();
-    }
-    return maxSectorLengthM(processedSession, selectedLapNumbers, sectorFilter);
-  }, [processedSession, sectorFilter, selectedLapNumbers]);
+  const chartDistanceLengthM = useMemo(
+    () => maxChartDistanceM(processedSession, selectedLapNumbers, sectorFilter),
+    [processedSession, sectorFilter, selectedLapNumbers],
+  );
 
   const mapTrails = useMemo((): MapTrail[] => {
     if (!processedSession) return [];
     const out: MapTrail[] = [];
+    const heatActive = activeHeatMapMetric != null;
+
     for (const [colorIdx, lapIdx] of selectedLapIndices.entries()) {
       const lapRow = sessionLaps[lapIdx];
       if (!lapRow) continue;
+
+      if (heatActive && lapIdx === selectedLapIndices[0] && activeHeatMapMetric) {
+        const heat = buildHeatMapTrailForLap(
+          processedSession,
+          lapRow.lap,
+          activeHeatMapMetric,
+        );
+        if (heat) {
+          out.push({
+            id: `lap-${lapRow.lap}`,
+            path: heat.segments.flatMap((s) => s.path),
+            color: heatMapColor(0.5),
+            heatSegments: heat.segments,
+            strokeWeight: 6,
+          });
+          continue;
+        }
+      }
+
       const path = gpsTrailForLap(processedSession, lapRow.lap).map((p) => ({
         lat: p.latitude,
         lng: p.longitude,
@@ -95,7 +184,7 @@ export function TelemetryComparison() {
       });
     }
     return out;
-  }, [processedSession, selectedLapIndices, sessionLaps]);
+  }, [processedSession, selectedLapIndices, sessionLaps, activeHeatMapMetric]);
 
   const updateMapHoverMarkers = useCallback(
     (distanceM: number) => {
@@ -158,6 +247,32 @@ export function TelemetryComparison() {
   };
 
   useEffect(() => {
+    setSelectedLapIndices([bestLapIndex]);
+  }, [processedSession.id, bestLapIndex]);
+
+  useEffect(() => {
+    if (heatMapEnabled && selectedLapIndices.length !== 1) {
+      setHeatMapEnabled(false);
+    }
+  }, [heatMapEnabled, selectedLapIndices, setHeatMapEnabled]);
+
+  const heatMapLegend = useMemo(() => {
+    if (!activeHeatMapMetric || selectedLapIndices.length !== 1) return null;
+    const lapRow = sessionLaps[selectedLapIndices[0]];
+    if (!lapRow) return null;
+    const heat = buildHeatMapTrailForLap(
+      processedSession,
+      lapRow.lap,
+      activeHeatMapMetric,
+    );
+    if (!heat) return null;
+    const metricLabel = TelemetryServiceMock.getTelemetryChartMetrics().find(
+      (m) => m.key === activeHeatMapMetric,
+    )?.label;
+    return { ...heat, label: metricLabel ?? activeHeatMapMetric };
+  }, [activeHeatMapMetric, selectedLapIndices, sessionLaps, processedSession]);
+
+  useEffect(() => {
     return () => {
       if (hoverRafRef.current != null) cancelAnimationFrame(hoverRafRef.current);
     };
@@ -187,70 +302,78 @@ export function TelemetryComparison() {
       const first = trail.path[0];
       if (first && isValidGps(first.lat, first.lng)) return first;
     }
-    if (processedSession) {
-      const pt = processedSession.points.find((p) =>
-        isValidGps(p.latitude, p.longitude),
-      );
-      if (pt) return { lat: pt.latitude, lng: pt.longitude };
-    }
-    return {
-      lat: TelemetryServiceMock.getTelemetryTrackMap().latitude,
-      lng: TelemetryServiceMock.getTelemetryTrackMap().longitude,
-    };
+    const pt = processedSession.points.find((p) =>
+      isValidGps(p.latitude, p.longitude),
+    );
+    if (pt) return { lat: pt.latitude, lng: pt.longitude };
+    return { lat: 0, lng: 0 };
   }, [mapTrails, processedSession]);
 
   const chartInstancesRef = useRef<ECharts[]>([]);
-  const connectScheduledRef = useRef(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  const scheduleConnect = useCallback(() => {
-    if (connectScheduledRef.current) return;
-    if (chartInstancesRef.current.length < EXPECTED_CHART_COUNT) return;
-    connectScheduledRef.current = true;
-    requestAnimationFrame(() => {
-      connectTelemetryCharts(TelemetryServiceMock.getTelemetryChartGroup());
-    });
+  const hideAllChartTips = useCallback(() => {
+    hideTelemetryChartTips();
   }, []);
 
-  const registerChart = useCallback(
-    (chart: ECharts) => {
-      if (!chartInstancesRef.current.includes(chart)) {
-        chartInstancesRef.current.push(chart);
-      }
-      scheduleConnect();
-    },
-    [scheduleConnect]
-  );
-
-  useEffect(() => {
-    disconnectTelemetryCharts(TelemetryServiceMock.getTelemetryChartGroup());
-    connectScheduledRef.current = false;
-    if (chartInstancesRef.current.length >= EXPECTED_CHART_COUNT) {
-      requestAnimationFrame(() => {
-        connectTelemetryCharts(TelemetryServiceMock.getTelemetryChartGroup());
-      });
+  const resizeAllCharts = useCallback(() => {
+    for (const chart of chartInstancesRef.current) {
+      if (!chart.isDisposed()) chart.resize();
     }
-  }, [selectedLapIndices, sectorTab]);
+  }, []);
+
+  const registerChart = useCallback((chart: ECharts) => {
+    chartInstancesRef.current = chartInstancesRef.current.filter(
+      (c) => !c.isDisposed(),
+    );
+    if (!chartInstancesRef.current.includes(chart)) {
+      chartInstancesRef.current.push(chart);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
-      disconnectTelemetryCharts(TelemetryServiceMock.getTelemetryChartGroup());
+      chartInstancesRef.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(resizeAllCharts);
+    });
+    ro.observe(el);
+    requestAnimationFrame(resizeAllCharts);
+
+    return () => ro.disconnect();
+  }, [resizeAllCharts, tabletLandscape, pathname]);
+
+  useEffect(() => {
+    const t1 = requestAnimationFrame(resizeAllCharts);
+    const t2 = window.setTimeout(resizeAllCharts, 120);
+    const t3 = window.setTimeout(resizeAllCharts, 400);
+    return () => {
+      cancelAnimationFrame(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [pathname, tabletLandscape, resizeAllCharts]);
 
   const lapLinesByMetric = useMemo(() => {
     return TelemetryServiceMock.getTelemetryChartMetrics().map((metric) => {
       const lines = selectedLapIndices.map((lapIdx, colorIdx) => {
         const lapRow = sessionLaps[lapIdx];
-        const data =
-          processedSession && lapRow
-            ? chartSeriesForProcessedLap(
-                processedSession,
-                lapRow.lap,
-                metric.key,
-                chartDistanceLengthM,
-                sectorFilter,
-              )
-            : TelemetryServiceMock.telemetryLapSeries(metric.key, lapIdx);
+        const data = lapRow
+          ? chartSeriesForProcessedLap(
+              processedSession,
+              lapRow.lap,
+              metric.key,
+              chartDistanceLengthM,
+              sectorFilter,
+            )
+          : [];
         return {
           name: `V${lapRow?.lap ?? lapIdx + 1}`,
           color:
@@ -264,7 +387,14 @@ export function TelemetryComparison() {
   }, [selectedLapIndices, processedSession, sessionLaps, chartDistanceLengthM, sectorFilter]);
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,560px)]">
+    <div
+      ref={gridRef}
+      className={`telemetry-comparison-grid grid h-full min-h-0 ${
+        tabletLandscape
+          ? "grid-cols-[minmax(0,152px)_minmax(0,1fr)_minmax(240px,300px)]"
+          : "grid-cols-1 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,560px)]"
+      }`}
+    >
         {/* Coluna esquerda — voltas */}
         <aside className="flex min-h-0 flex-col border-r border-[rgba(17,17,17,0.08)] bg-white">
           <div className="shrink-0 border-b border-[rgba(17,17,17,0.08)] px-3 py-2">
@@ -301,6 +431,7 @@ export function TelemetryComparison() {
           >
             {sessionLaps.map((row, index) => {
               const selected = selectedLapIndices.includes(index);
+              const isBestLap = index === bestLapIndex;
               const colorIdx = selectedLapIndices.indexOf(index);
               const color =
                 selected && colorIdx >= 0
@@ -315,14 +446,22 @@ export function TelemetryComparison() {
                     onClick={() => toggleLap(index)}
                     className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${
                       selected
-                        ? "border-[rgba(17,17,17,0.12)] bg-neutral-50"
-                        : "border-transparent bg-transparent hover:bg-neutral-50"
+                        ? isBestLap
+                          ? "border-amber-400/60 bg-amber-50/80"
+                          : "border-[rgba(17,17,17,0.12)] bg-neutral-50"
+                        : isBestLap
+                          ? "border-amber-300/50 bg-amber-50/40 hover:bg-amber-50/70"
+                          : "border-transparent bg-transparent hover:bg-neutral-50"
                     }`}
                   >
                     <span
                       className="flex h-4 w-4 shrink-0 items-center justify-center rounded border"
                       style={{
-                        borderColor: selected ? color : "rgba(17,17,17,0.2)",
+                        borderColor: selected
+                          ? color
+                          : isBestLap
+                            ? "#f59e0b"
+                            : "rgba(17,17,17,0.2)",
                         backgroundColor: selected ? color : "transparent",
                       }}
                       aria-hidden
@@ -338,13 +477,30 @@ export function TelemetryComparison() {
                       ) : null}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-semibold text-neutral-800">
-                        Volta {row.lap}
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[12px] font-semibold ${
+                            isBestLap ? "text-amber-900" : "text-neutral-800"
+                          }`}
+                        >
+                          V{row.lap}
+                        </span>
+                        {isBestLap ? (
+                          <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
+                            Melhor
+                          </span>
+                        ) : null}
                       </span>
                     </span>
                     <span
                       className="font-mono text-[12px] font-bold tabular-nums"
-                      style={{ color: selected ? color : "rgb(82,82,82)" }}
+                      style={{
+                        color: selected
+                          ? color
+                          : isBestLap
+                            ? "#b45309"
+                            : "rgb(82,82,82)",
+                      }}
                     >
                       {row.timeLabel}s
                     </span>
@@ -376,11 +532,19 @@ export function TelemetryComparison() {
               );
             })}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-1 p-1.5 pb-0">
-            {lapLinesByMetric.map(({ metric, lines, yExtent }, chartIdx) => (
+          <div
+            className="flex min-h-0 flex-1 flex-col gap-1 p-1.5 pb-0"
+            onMouseLeave={hideAllChartTips}
+          >
+            {lapLinesByMetric.map(({ metric, lines, yExtent }) => (
               <div
                 key={metric.key}
-                className="flex min-h-0 flex-1 flex-col rounded-md border border-[rgba(17,17,17,0.06)] bg-white px-2 py-1"
+                className={`flex min-h-0 flex-1 flex-col rounded-md border bg-white px-2 py-1 transition ${
+                  heatMapEnabled && hoveredHeatMapMetric === metric.key
+                    ? "border-accent/35 ring-1 ring-accent/20"
+                    : "border-[rgba(17,17,17,0.06)]"
+                }`}
+                onMouseEnter={() => setHoveredHeatMapMetric(metric.key)}
               >
                 <p className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                   {metric.label}
@@ -393,7 +557,6 @@ export function TelemetryComparison() {
                     chartHeight="100%"
                     compact
                     distanceLengthM={chartDistanceLengthM}
-                    syncPointer={chartIdx === 0}
                     onChartReady={registerChart}
                     onAxisPointerDistance={handleAxisPointerDistance}
                   />
@@ -438,15 +601,31 @@ export function TelemetryComparison() {
         <aside className="flex min-h-0 flex-col border-l border-[rgba(17,17,17,0.08)] bg-white">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[rgba(17,17,17,0.08)] px-3 py-2">
             <p className="min-w-0 truncate text-[12px] font-semibold text-[#0d1f3c]">
-              {processedSession?.trackName ?? TelemetryServiceMock.getTelemetryTrackMap().title}
+              {processedSession.trackName}
             </p>
-            {processedSession ? (
-              <p className="shrink-0 font-mono text-[11px] tabular-nums text-neutral-500">
-                {formatSessionDateTime(processedSession.createdAt)}
-              </p>
-            ) : null}
+            <p className="shrink-0 font-mono text-[11px] tabular-nums text-neutral-500">
+              {formatSessionDateTime(processedSession.createdAt)}
+            </p>
           </div>
           <div className="relative min-h-0 flex-1 p-2">
+            {heatMapLegend ? (
+              <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-10 rounded-xl border border-[rgba(17,17,17,0.1)] bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                  {heatMapLegend.label}
+                </p>
+                <div
+                  className="mt-1.5 h-2 w-full rounded-full"
+                  style={{
+                    background:
+                      "linear-gradient(to right, hsl(240, 88%, 46%), hsl(120, 88%, 46%), hsl(0, 88%, 46%))",
+                  }}
+                />
+                <div className="mt-1 flex justify-between font-mono text-[10px] tabular-nums text-neutral-600">
+                  <span>{formatHeatMapValue(heatMapLegend.min, activeHeatMapMetric!)}</span>
+                  <span>{formatHeatMapValue(heatMapLegend.max, activeHeatMapMetric!)}</span>
+                </div>
+              </div>
+            ) : null}
             <TelemetryGoogleMap
               ref={mapRef}
               trails={mapTrails}
@@ -460,6 +639,13 @@ export function TelemetryComparison() {
         </aside>
     </div>
   );
+}
+
+function formatHeatMapValue(value: number, metric: TelemetryTabKey): string {
+  if (metric === "rpm") return `${Math.round(value)}`;
+  if (metric === "velocidade") return `${value.toFixed(1)} km/h`;
+  if (metric === "giro") return `${value.toFixed(1)}°/s`;
+  return `${value.toFixed(2)} m/s²`;
 }
 
 function computeYExtent(

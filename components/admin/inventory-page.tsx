@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IconType } from "react-icons/lib";
 import {
-  HiArchiveBox,
   HiClock,
   HiCube,
   HiCurrencyDollar,
@@ -24,7 +23,7 @@ import {
   deleteInventorySupplier,
   getInventorySupplierById,
 } from "@/lib/inventory-suppliers-store";
-import { KpiCard } from "@/components/ui/kpi-card";
+import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { AppModal } from "@/components/ui/app-modal";
 import { AdminShell } from "./admin-shell";
 import {
@@ -62,7 +61,6 @@ const KPI_ICONS: Record<string, IconType> = {
   "used-today": HiTruck,
   "pending-purchases": HiShoppingCart,
   "total-value": HiCurrencyDollar,
-  "most-used": HiArchiveBox,
   "last-movement": HiClock,
 };
 
@@ -229,18 +227,11 @@ export function InventoryPage() {
         ) : null}
 
         {activeTab === "overview" ? (
-          <section className="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
-            {inventoryKpis.map((kpi) => (
-              <KpiCard
-                key={kpi.id}
-                label={kpi.label}
-                value={kpi.value}
-                delta={kpi.delta}
-                deltaPositive={kpi.deltaPositive}
-                Icon={KPI_ICONS[kpi.id]}
-              />
-            ))}
-          </section>
+          <AdminResponsiveKpis
+            kpis={inventoryKpis}
+            icons={KPI_ICONS}
+            desktopClassName="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6"
+          />
         ) : null}
 
         <div

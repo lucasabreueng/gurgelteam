@@ -30,6 +30,9 @@ export type MapTrail = {
   id: string;
   path: MapLatLng[];
   color: string;
+  /** Segmentos coloridos para mapa de calor. */
+  heatSegments?: { path: MapLatLng[]; color: string }[];
+  strokeWeight?: number;
 };
 
 export type TelemetryGoogleMapHandle = {
@@ -257,13 +260,33 @@ export const TelemetryGoogleMap = forwardRef<TelemetryGoogleMapHandle, Props>(
       const bounds = new maps.LatLngBounds();
 
       for (const t of resolvedTrails) {
+        const weight = t.strokeWeight ?? (t.heatSegments?.length ? 5 : 3);
+
+        if (t.heatSegments?.length) {
+          for (const seg of t.heatSegments) {
+            const path = downsample(seg.path.filter((p) => isValidGps(p.lat, p.lng)));
+            if (path.length < 2) continue;
+            const polyline = new maps.Polyline({
+              path,
+              strokeColor: seg.color,
+              strokeOpacity: 0.96,
+              strokeWeight: weight,
+              geodesic: true,
+              map,
+            });
+            staticOverlaysRef.current.push(polyline);
+            path.forEach((p) => bounds.extend(p));
+          }
+          continue;
+        }
+
         const path = downsample(t.path.filter((p) => isValidGps(p.lat, p.lng)));
         if (path.length === 0) continue;
         const polyline = new maps.Polyline({
           path,
           strokeColor: t.color,
           strokeOpacity: 0.92,
-          strokeWeight: 3,
+          strokeWeight: weight,
           geodesic: true,
           map,
         });

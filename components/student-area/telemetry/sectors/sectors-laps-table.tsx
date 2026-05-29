@@ -81,7 +81,7 @@ export function SectorsLapsTable({
       </div>
 
       <div className={`${INNER_TABLE} mx-5 mb-5 mt-4 md:mx-6`}>
-        <table className="w-full min-w-[640px] border-collapse text-[13px]">
+        <table className="hidden w-full min-w-[640px] border-collapse text-[13px] lg:table">
           <thead>
             <tr className={TABLE_HEAD}>
               <th className="w-10 px-4 py-3" aria-label="Selecionar" />
@@ -179,6 +179,89 @@ export function SectorsLapsTable({
             })}
           </tbody>
         </table>
+
+        <ul className="flex flex-col gap-2 lg:hidden">
+            {rows.map((lap) => {
+              const selected = selectedLaps.includes(lap.lap);
+              const delta = lap.total - bestTotal;
+              const consistency = lapConsistency(lap, bestTotal);
+
+              return (
+                <li key={lap.lap}>
+                  <article
+                    className={`rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm ${
+                      lap.invalid
+                        ? "bg-red-50/80 text-red-700/90"
+                        : selected
+                          ? "border-accent/30 bg-accent/5"
+                          : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={lap.invalid}
+                        onChange={() => onToggleLap(lap.lap)}
+                        className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-accent"
+                        aria-label={`Selecionar volta ${lap.lap}`}
+                      />
+                      <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+                        <p className="text-[12px] font-bold text-[#0d1f3c]">
+                          V{lap.lap}
+                          {lap.invalid ? (
+                            <span className="ml-1 text-[9px] uppercase text-red-600">
+                              inv.
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="font-mono text-[13px] font-black tabular-nums text-[#0d1f3c]">
+                          {TelemetryServiceMock.formatSectorTime(lap.total)}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 font-mono text-[11px] tabular-nums ${
+                          delta <= 0 ? "font-semibold text-accent" : "text-red-600"
+                        }`}
+                      >
+                        {TelemetryServiceMock.formatDelta(delta)}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[26px]">
+                      {(["S1", "S2", "S3"] as SectorId[]).map((sector) => {
+                        const field = sector.toLowerCase() as "s1" | "s2" | "s3";
+                        const hl = TelemetryServiceMock.getLapCellHighlight(
+                          laps,
+                          lap,
+                          sector,
+                        );
+                        return (
+                          <span
+                            key={sector}
+                            className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums ring-1 ${
+                              hl === "session_best"
+                                ? "bg-emerald-50 font-semibold text-emerald-700 ring-emerald-200"
+                                : hl === "personal_best"
+                                  ? "bg-violet-50 font-semibold text-violet-700 ring-violet-200"
+                                  : "bg-[#fafbfc] text-neutral-700 ring-[rgba(17,17,17,0.06)]"
+                            }`}
+                          >
+                            {sector}{" "}
+                            {TelemetryServiceMock.formatSectorTime(lap[field])}
+                          </span>
+                        );
+                      })}
+                      {!lap.invalid ? (
+                        <span className="rounded-md bg-[#fafbfc] px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 ring-1 ring-[rgba(17,17,17,0.06)]">
+                          {consistency}%
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
       </div>
 
       <div className="flex flex-wrap gap-4 border-t border-[rgba(17,17,17,0.08)] px-5 py-3 text-[11px] text-neutral-600 md:px-6">

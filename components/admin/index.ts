@@ -3,6 +3,7 @@ export { Sidebar } from "./sidebar";
 export { Header } from "./header";
 export { DashboardHeader } from "./dashboard-header";
 export { KpiCard } from "./kpi-card";
+export { AdminResponsiveKpis, type AdminKpiItem } from "./admin-responsive-kpis";
 export { OperationalAgenda } from "./operational-agenda";
 export { StudentsOverview } from "./students-overview";
 export { TelemetryOverview } from "./telemetry-overview";

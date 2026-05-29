@@ -5,6 +5,7 @@ import type {
   PayableQueryDTO,
   ReceivableQueryDTO,
 } from "@/lib/contracts/finance/finance.types";
+import type { DrePeriodFilter } from "@/lib/admin-dre-mocks";
 import { FinancialRepositoryMock } from "@/repositories/finance/FinancialRepositoryMock";
 
 export const FinancialServiceMock = {
@@ -100,4 +101,18 @@ export const FinancialServiceMock = {
   getRevenueByService: () => FinancialRepositoryMock.getRevenueByService(),
   getInOutChart: () => FinancialRepositoryMock.getInOutChart(),
   getFinancialEvolution: () => FinancialRepositoryMock.getFinancialEvolution(),
+  getOperationalKpis: () => FinancialRepositoryMock.getOperationalKpis(),
+  getBusinessEvolution: () => FinancialRepositoryMock.getBusinessEvolution(),
+  getRevenueOrigin: () => FinancialRepositoryMock.getRevenueOrigin(),
+  getExecutiveAlerts: () => FinancialRepositoryMock.getExecutiveAlerts(),
+  getUpcomingPayables: () => FinancialRepositoryMock.getUpcomingPayables(),
+  getCommercialRanking: () => FinancialRepositoryMock.getCommercialRanking(),
+  getDrePeriodOptions: () => FinancialRepositoryMock.getDrePeriodOptions(),
+  getDreDataset: (filter: DrePeriodFilter) =>
+    FinancialRepositoryMock.getDreDataset(filter),
+  getDreAccountEntries: (accountId: string, filter: DrePeriodFilter) =>
+    FinancialRepositoryMock.getDreAccountEntries(accountId, filter),
+  formatDreBrl: FinancialRepositoryMock.formatDreBrl,
+  formatDrePercent: FinancialRepositoryMock.formatDrePercent,
+  formatDreVariation: FinancialRepositoryMock.formatDreVariation,
 };

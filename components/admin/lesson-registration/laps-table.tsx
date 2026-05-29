@@ -72,48 +72,74 @@ export function LapsTable({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[520px] text-left text-sm">
-        <thead>
-          <tr className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-            <th className="px-2 py-2">Volta</th>
-            <th className="px-2 py-2">S1</th>
-            <th className="px-2 py-2">S2</th>
-            <th className="px-2 py-2">S3</th>
-            <th className="px-2 py-2">Tempo</th>
-            {!readOnly ? <th className="w-10 px-2 py-2" /> : null}
-          </tr>
-        </thead>
-        <tbody>
+    <div>
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full min-w-[520px] text-left text-sm">
+          <thead>
+            <tr className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <th className="px-2 py-2">Volta</th>
+              <th className="px-2 py-2">S1</th>
+              <th className="px-2 py-2">S2</th>
+              <th className="px-2 py-2">S3</th>
+              <th className="px-2 py-2">Tempo</th>
+              {!readOnly ? <th className="w-10 px-2 py-2" /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td className="px-2 py-1.5 font-bold text-[#0d1f3c]">{row.lap}</td>
+                {(["s1", "s2", "s3", "total"] as const).map((field) => (
+                  <td key={field} className="px-2 py-1.5">
+                    {readOnly ? (
+                      <span className="font-mono tabular-nums">{row[field] || "—"}</span>
+                    ) : (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={row[field]}
+                        onChange={(e) => updateRow(row.id, { [field]: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const next = e.currentTarget.closest("tr")?.nextElementSibling;
+                            const input = next?.querySelector("input");
+                            input?.focus();
+                          }
+                        }}
+                        className={cellClass(row.id, field)}
+                        aria-label={`Volta ${row.lap} ${field}`}
+                      />
+                    )}
+                  </td>
+                ))}
+                {!readOnly ? (
+                  <td className="px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => removeRow(row.id)}
+                      className="rounded-lg p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="Remover volta"
+                    >
+                      <HiTrash className="h-4 w-4" />
+                    </button>
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="lg:hidden">
+        <ul className="space-y-2">
           {rows.map((row) => (
-            <tr key={row.id}>
-              <td className="px-2 py-1.5 font-bold text-[#0d1f3c]">{row.lap}</td>
-              {(["s1", "s2", "s3", "total"] as const).map((field) => (
-                <td key={field} className="px-2 py-1.5">
-                  {readOnly ? (
-                    <span className="font-mono tabular-nums">{row[field] || "—"}</span>
-                  ) : (
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={row[field]}
-                      onChange={(e) => updateRow(row.id, { [field]: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const next = e.currentTarget.closest("tr")?.nextElementSibling;
-                          const input = next?.querySelector("input");
-                          input?.focus();
-                        }
-                      }}
-                      className={cellClass(row.id, field)}
-                      aria-label={`Volta ${row.lap} ${field}`}
-                    />
-                  )}
-                </td>
-              ))}
-              {!readOnly ? (
-                <td className="px-2 py-1.5">
+            <li key={row.id} className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+                  Volta {row.lap}
+                </p>
+                {!readOnly ? (
                   <button
                     type="button"
                     onClick={() => removeRow(row.id)}
@@ -122,12 +148,37 @@ export function LapsTable({
                   >
                     <HiTrash className="h-4 w-4" />
                   </button>
-                </td>
-              ) : null}
-            </tr>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {(["s1", "s2", "s3", "total"] as const).map((field) => (
+                  <div key={field}>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                      {field === "total" ? "Tempo" : field.toUpperCase()}
+                    </label>
+                    {readOnly ? (
+                      <p className="mt-1 font-mono text-sm tabular-nums text-[#111]">
+                        {row[field] || "—"}
+                      </p>
+                    ) : (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={row[field]}
+                        onChange={(e) => updateRow(row.id, { [field]: e.target.value })}
+                        className={cellClass(row.id, field)}
+                        aria-label={`Volta ${row.lap} ${field}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </li>
           ))}
-        </tbody>
-      </table>
+        </ul>
+      </div>
+
       {!readOnly && !hideAddButton ? (
         <button
           type="button"

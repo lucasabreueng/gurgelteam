@@ -27,7 +27,7 @@ export function SettingsHeader({ onSave, onDiscard, dirty }: Props) {
       actions={
         <>
           <button type="button" onClick={onDiscard} className="btn-outline-md">
-            Descartar
+            Restaurar
           </button>
           <button type="button" onClick={onSave} className="btn-primary-md">
             Salvar alterações

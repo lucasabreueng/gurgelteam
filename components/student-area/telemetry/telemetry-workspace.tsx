@@ -1,6 +1,6 @@
 "use client";
 
-import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock";
+import { TELEMETRY_NO_SESSION } from "@/lib/telemetry-active-session";
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -9,7 +9,8 @@ import { TelemetryLoadModal } from "../telemetry-load-modal";
 import { TelemetrySessionsModal } from "../telemetry-sessions-modal";
 import { TelemetryToolbar } from "../telemetry-toolbar";
 import { TracksModal } from "./tracks/tracks-modal";
-import { TelemetryWorkspaceProvider, useTelemetryWorkspace } from "./telemetry-workspace-context";
+import { isTelemetryLightPage } from "@/lib/telemetry-routes";
+import { useTelemetryWorkspace } from "./telemetry-workspace-context";
 
 function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
   const {
@@ -30,10 +31,7 @@ function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
   } = useTelemetryWorkspace();
 
   const pathname = usePathname();
-  const isLightPage =
-    pathname === "/piloto/telemetria" ||
-    pathname === "/piloto/telemetria/" ||
-    pathname.startsWith("/piloto/telemetria/setores");
+  const isLightPage = isTelemetryLightPage(pathname);
 
   return (
     <div
@@ -71,7 +69,7 @@ function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
         onSelectProcessed={setActiveSessionId}
         onSessionRemoved={(removedId) => {
           if (activeSessionId === removedId) {
-            setActiveSessionId(TelemetryServiceMock.getTelemetryDefaultSessionId());
+            setActiveSessionId(TELEMETRY_NO_SESSION);
             setLoadedFileLabel(null);
           }
         }}
@@ -87,9 +85,5 @@ function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
 }
 
 export function TelemetryWorkspace({ children }: { children: ReactNode }) {
-  return (
-    <TelemetryWorkspaceProvider>
-      <TelemetryWorkspaceChrome>{children}</TelemetryWorkspaceChrome>
-    </TelemetryWorkspaceProvider>
-  );
+  return <TelemetryWorkspaceChrome>{children}</TelemetryWorkspaceChrome>;
 }

@@ -7,6 +7,10 @@ export type FinancialKpi = {
   delta: string;
   deltaPositive: boolean;
   sparkline: number[];
+  /** Texto auxiliar abaixo do valor (ex.: vs mês anterior) */
+  sub?: string;
+  /** Tooltip explicativo do indicador */
+  tooltip?: string;
 };
 
 export const FINANCIAL_KPIS: FinancialKpi[] = [
@@ -14,8 +18,9 @@ export const FINANCIAL_KPIS: FinancialKpi[] = [
     id: "revenue-month",
     label: "Receita do mês",
     value: "R$ 48.500",
-    delta: "+8,2%",
+    delta: "↑ 12%",
     deltaPositive: true,
+    sub: "vs mês anterior",
     sparkline: [38, 40, 42, 44, 45, 47, 48.5],
   },
   {
@@ -38,8 +43,9 @@ export const FINANCIAL_KPIS: FinancialKpi[] = [
     id: "delinquency",
     label: "Inadimplência",
     value: "R$ 2.180",
-    delta: "-4,1%",
+    delta: "↓ 4%",
     deltaPositive: true,
+    sub: "vs mês anterior",
     sparkline: [3.2, 2.9, 2.7, 2.5, 2.4, 2.2, 2.18],
   },
   {
@@ -57,6 +63,33 @@ export const FINANCIAL_KPIS: FinancialKpi[] = [
     delta: "+11%",
     deltaPositive: true,
     sparkline: [14, 16, 17, 18, 19, 20, 21.3],
+  },
+  {
+    id: "profit-month",
+    label: "Lucro do mês",
+    value: "R$ 21.300",
+    delta: "↑ 11%",
+    deltaPositive: true,
+    sub: "vs mês anterior",
+    sparkline: [14, 16, 17, 18, 19, 20, 21.3],
+  },
+  {
+    id: "cash-balance",
+    label: "Saldo em caixa",
+    value: "R$ 34.800",
+    delta: "↑ 5%",
+    deltaPositive: true,
+    sub: "vs mês anterior",
+    sparkline: [28, 29, 30, 31, 32, 33, 34.8],
+  },
+  {
+    id: "monthly-goal",
+    label: "Meta mensal",
+    value: "97%",
+    delta: "R$ 50.000",
+    deltaPositive: true,
+    sub: "da meta de receita",
+    sparkline: [82, 85, 88, 91, 93, 95, 97],
   },
   {
     id: "growth",
@@ -549,22 +582,274 @@ export const FINANCIAL_TABLE_PAGE_SIZES = [10, 25, 50] as const;
 
 export const OVERVIEW_FINANCIAL_KPI_IDS = [
   "revenue-month",
-  "receivable",
+  "profit-month",
+  "cash-balance",
   "delinquency",
-  "growth",
+  "monthly-goal",
 ] as const;
+
+export type OperationalKpi = {
+  id: string;
+  label: string;
+  value: string;
+  sub?: string;
+  tooltip?: string;
+};
+
+export const EXECUTIVE_OPERATIONAL_KPIS: OperationalKpi[] = [
+  {
+    id: "active-students",
+    label: "Alunos ativos",
+    value: "87",
+    sub: "+4 vs mês anterior",
+    tooltip: "Pilotos com plano ou créditos ativos na escola.",
+  },
+  {
+    id: "lessons-month",
+    label: "Aulas realizadas no mês",
+    value: "142",
+    sub: "92% da capacidade",
+    tooltip: "Sessões concluídas no mês corrente.",
+  },
+  {
+    id: "lessons-week",
+    label: "Aulas agendadas (7 dias)",
+    value: "38",
+    sub: "Próximos 7 dias",
+    tooltip: "Aulas confirmadas na agenda para a próxima semana.",
+  },
+  {
+    id: "karts-available",
+    label: "Karts disponíveis",
+    value: "14",
+    sub: "de 18 na frota",
+    tooltip: "Karts operacionais e liberados para pista.",
+  },
+  {
+    id: "karts-maintenance",
+    label: "Karts em manutenção",
+    value: "4",
+    sub: "2 aguardando peças",
+    tooltip: "Karts indisponíveis por ordem de serviço aberta.",
+  },
+];
+
+export type BusinessEvolutionPeriod = "3m" | "6m" | "12m";
+
+export const BUSINESS_EVOLUTION: Record<
+  BusinessEvolutionPeriod,
+  { labels: string[]; revenue: number[]; profit: number[]; goal: number[] }
+> = {
+  "3m": {
+    labels: ["Mar", "Abr", "Mai"],
+    revenue: [41, 44, 48.5],
+    profit: [17, 19, 21.3],
+    goal: [42, 45, 50],
+  },
+  "6m": {
+    labels: ["Dez", "Jan", "Fev", "Mar", "Abr", "Mai"],
+    revenue: [36, 32, 38, 41, 44, 48.5],
+    profit: [14, 12, 16, 17, 19, 21.3],
+    goal: [38, 40, 42, 42, 45, 50],
+  },
+  "12m": {
+    labels: [
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dez",
+      "Jan",
+      "Fev",
+      "Mar",
+      "Abr",
+      "Mai",
+    ],
+    revenue: [28, 30, 31, 33, 34, 35, 36, 32, 38, 41, 44, 48.5],
+    profit: [10, 11, 12, 13, 13.5, 14, 14, 12, 16, 17, 19, 21.3],
+    goal: [32, 33, 34, 35, 36, 37, 38, 40, 42, 42, 45, 50],
+  },
+};
+
+export type RevenueOriginItem = {
+  name: string;
+  value: number;
+  amount: string;
+  percent: number;
+};
+
+export const REVENUE_ORIGIN: RevenueOriginItem[] = [
+  { name: "Aulas", value: 18.4, amount: "R$ 17.800", percent: 36.7 },
+  { name: "Pacotes", value: 14.2, amount: "R$ 13.740", percent: 28.3 },
+  { name: "Aluguel de kart", value: 8.6, amount: "R$ 8.320", percent: 17.2 },
+  { name: "Produtos", value: 4.8, amount: "R$ 4.640", percent: 9.6 },
+  { name: "Outros", value: 4.1, amount: "R$ 4.000", percent: 8.2 },
+];
+
+export type ExecutiveAlertAction =
+  | "receivables"
+  | "agenda"
+  | "renew-package"
+  | "maintenance";
+
+export type ExecutiveAlertPriority = "critical" | "warning" | "info" | "maintenance";
+
+export type ExecutiveAlert = {
+  id: string;
+  priority: ExecutiveAlertPriority;
+  icon: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+  action: ExecutiveAlertAction;
+};
+
+export const EXECUTIVE_ALERTS: ExecutiveAlert[] = [
+  {
+    id: "alert-delinq",
+    priority: "critical",
+    icon: "🔴",
+    title: "Clientes inadimplentes",
+    description: "3 clientes com R$ 2.180 em atraso · maior atraso: 12 dias",
+    actionLabel: "Cobrar cliente",
+    action: "receivables",
+  },
+  {
+    id: "alert-packages",
+    priority: "warning",
+    icon: "🟠",
+    title: "Pacotes próximos do término",
+    description: "5 pacotes com 2 aulas ou menos · risco de churn",
+    actionLabel: "Renovar pacote",
+    action: "renew-package",
+  },
+  {
+    id: "alert-goal",
+    priority: "warning",
+    icon: "🟡",
+    title: "Receita abaixo da meta",
+    description: "Faltam R$ 1.500 para atingir 100% da meta de maio",
+    actionLabel: "Ver agenda",
+    action: "agenda",
+  },
+  {
+    id: "alert-karts",
+    priority: "maintenance",
+    icon: "🔧",
+    title: "Karts aguardando manutenção",
+    description: "4 karts parados · 2 aguardando peças de freio",
+    actionLabel: "Abrir manutenção",
+    action: "maintenance",
+  },
+];
+
+export type UpcomingPayable = {
+  id: string;
+  description: string;
+  category: string;
+  amount: string;
+  dueDate: string;
+};
+
+export const EXECUTIVE_UPCOMING_PAYABLES: UpcomingPayable[] = [
+  {
+    id: "ap2",
+    description: "MG Tires — pneus slick",
+    category: "Pneus",
+    amount: "R$ 5.800",
+    dueDate: "20 mai 2026",
+  },
+  {
+    id: "ap1",
+    description: "Racing Parts BR — pastilhas e discos",
+    category: "Peças",
+    amount: "R$ 3.420",
+    dueDate: "24 mai 2026",
+  },
+  {
+    id: "ap3",
+    description: "Motul BR — óleo 2T",
+    category: "Lubrificantes",
+    amount: "R$ 1.280",
+    dueDate: "26 mai 2026",
+  },
+  {
+    id: "ap6",
+    description: "Track Rental — locação pista",
+    category: "Estrutura",
+    amount: "R$ 8.400",
+    dueDate: "28 mai 2026",
+  },
+  {
+    id: "ap7",
+    description: "Seguro frota — parcela mensal",
+    category: "Administrativo",
+    amount: "R$ 2.650",
+    dueDate: "30 mai 2026",
+  },
+];
+
+export type CommercialRankingEntry = {
+  rank: number;
+  clientName: string;
+  revenue: string;
+  lessonsCount: number;
+  ticketAvg: string;
+};
+
+export const EXECUTIVE_COMMERCIAL_RANKING: CommercialRankingEntry[] = [
+  {
+    rank: 1,
+    clientName: "Lucas Mendes",
+    revenue: "R$ 18.400",
+    lessonsCount: 24,
+    ticketAvg: "R$ 767",
+  },
+  {
+    rank: 2,
+    clientName: "Marina Costa",
+    revenue: "R$ 14.200",
+    lessonsCount: 18,
+    ticketAvg: "R$ 789",
+  },
+  {
+    rank: 3,
+    clientName: "Rafael Duarte",
+    revenue: "R$ 11.600",
+    lessonsCount: 15,
+    ticketAvg: "R$ 773",
+  },
+  {
+    rank: 4,
+    clientName: "Ana Ribeiro",
+    revenue: "R$ 9.800",
+    lessonsCount: 12,
+    ticketAvg: "R$ 817",
+  },
+  {
+    rank: 5,
+    clientName: "João Silva",
+    revenue: "R$ 8.200",
+    lessonsCount: 10,
+    ticketAvg: "R$ 820",
+  },
+];
 
 export type FinancialTabKey =
   | "overview"
   | "receivables"
   | "payables"
-  | "cashflow";
+  | "cashflow"
+  | "dre";
 
 export const FINANCIAL_TABS: { key: FinancialTabKey; label: string }[] = [
   { key: "overview", label: "Visão Geral" },
   { key: "receivables", label: "Contas a receber" },
   { key: "payables", label: "Contas a pagar" },
   { key: "cashflow", label: "Fluxo de Caixa" },
+  { key: "dre", label: "DRE" },
 ];
 
 export const FINANCIAL_TAB_META: Record<
@@ -573,7 +858,7 @@ export const FINANCIAL_TAB_META: Record<
 > = {
   overview: {
     title: "Visão Geral",
-    subtitle: "Resumo financeiro do mês e indicadores do kartódromo",
+    subtitle: "Dashboard executivo — indicadores, alertas e decisões do Gurgel Team",
   },
   receivables: {
     title: "Contas a receber",
@@ -585,7 +870,11 @@ export const FINANCIAL_TAB_META: Record<
   },
   cashflow: {
     title: "Fluxo de Caixa",
-    subtitle: "Entradas, saídas, DRE, projeções e movimentações",
+    subtitle: "Controle de entradas, saídas e saldo projetado",
+  },
+  dre: {
+    title: "DRE",
+    subtitle: "Demonstração do Resultado do Exercício",
   },
 };
 

@@ -18,46 +18,82 @@ function ResultsTable({
   onSelect: (row: ResultRow) => void;
 }) {
   return (
-    <table className="w-full min-w-[540px] border-collapse text-left text-[13px]">
-      <thead>
-        <tr className="border-b border-[rgba(17,17,17,0.08)] bg-neutral-100/80 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
-          <th className="px-4 py-3">Data</th>
-          <th className="px-4 py-3 text-right">Melhor tempo</th>
-          <th className="px-4 py-3 text-right">Tempo médio</th>
-          <th className="px-4 py-3 text-right">Tempo total de pista</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr
-            key={row.id}
-            className="cursor-pointer border-b border-dashed border-neutral-200 transition last:border-0 hover:bg-white/90"
-            onClick={() => onSelect(row)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelect(row);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <td className="px-4 py-3 font-medium text-neutral-800">
-              {row.dateLabel}
-            </td>
-            <td className="px-4 py-3 text-right font-bold tabular-nums text-accent">
-              {row.bestLap}s
-            </td>
-            <td className="px-4 py-3 text-right tabular-nums text-neutral-800">
-              {row.avgLap}s
-            </td>
-            <td className="px-4 py-3 text-right font-medium tabular-nums text-neutral-700">
-              {row.totalTrackTime}
-            </td>
+    <div>
+      <table className="hidden w-full min-w-[540px] border-collapse text-left text-[13px] lg:table">
+        <thead>
+          <tr className="border-b border-[rgba(17,17,17,0.08)] bg-neutral-100/80 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
+            <th className="px-4 py-3">Data</th>
+            <th className="px-4 py-3 text-right">Melhor tempo</th>
+            <th className="px-4 py-3 text-right">Tempo médio</th>
+            <th className="px-4 py-3 text-right">Tempo total de pista</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={row.id}
+              className="cursor-pointer border-b border-dashed border-neutral-200 transition last:border-0 hover:bg-white/90"
+              onClick={() => onSelect(row)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(row);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <td className="px-4 py-3 font-medium text-neutral-800">
+                {row.dateLabel}
+              </td>
+              <td className="px-4 py-3 text-right font-bold tabular-nums text-accent">
+                {row.bestLap}s
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums text-neutral-800">
+                {row.avgLap}s
+              </td>
+              <td className="px-4 py-3 text-right font-medium tabular-nums text-neutral-700">
+                {row.totalTrackTime}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="lg:hidden">
+        <ul className="space-y-2">
+          {rows.map((row) => (
+            <li key={row.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(row)}
+                className="w-full rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 text-left shadow-[0_1px_8px_rgba(13,31,60,0.04)]"
+              >
+                <p className="text-[12px] font-bold text-[#0d1f3c]">{row.dateLabel}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <dt className="text-neutral-500">Melhor</dt>
+                    <dd className="font-bold tabular-nums text-accent">{row.bestLap}s</dd>
+                  </div>
+                  <div>
+                    <dt className="text-neutral-500">Média</dt>
+                    <dd className="font-mono font-semibold tabular-nums text-neutral-800">
+                      {row.avgLap}s
+                    </dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-neutral-500">Total em pista</dt>
+                    <dd className="font-semibold tabular-nums text-neutral-700">
+                      {row.totalTrackTime}
+                    </dd>
+                  </div>
+                </dl>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 

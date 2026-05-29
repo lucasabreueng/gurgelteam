@@ -1,23 +1,24 @@
 "use client";
 
+import type { CashFlowKpi, CashFlowKpiTone } from "@/lib/contracts/cashflow";
+
 import type { IconType } from "react-icons/lib";
 import {
   HiArrowDownCircle,
+  HiArrowTrendingUp,
   HiArrowUpCircle,
-  HiBanknotes,
-  HiScale,
+  HiCalendarDays,
   HiWallet,
 } from "react-icons/hi2";
-import { KpiCard } from "@/components/ui/kpi-card";
-import type { CashFlowKpiTone } from "@/lib/contracts/cashflow";
-import { useCashFlowKpis } from "@/lib/query/hooks/use-cash-flow";
+
+import { AdminResponsiveKpis, type AdminKpiItem } from "@/components/admin/admin-responsive-kpis";
 
 const KPI_ICONS: Record<string, IconType> = {
-  opening: HiWallet,
+  balance: HiWallet,
   entries: HiArrowUpCircle,
   exits: HiArrowDownCircle,
-  closing: HiScale,
-  result: HiBanknotes,
+  result: HiArrowTrendingUp,
+  projected: HiCalendarDays,
 };
 
 const TONE_STYLES: Record<CashFlowKpiTone, { icon: string; value: string }> = {
@@ -27,28 +28,32 @@ const TONE_STYLES: Record<CashFlowKpiTone, { icon: string; value: string }> = {
   accent: { icon: "bg-[#0d1f3c] text-white", value: "" },
 };
 
-export function CashFlowKpiCards() {
-  const { data: kpis = [] } = useCashFlowKpis();
+type Props = {
+  kpis: CashFlowKpi[];
+};
 
+function toAdminKpiItems(kpis: CashFlowKpi[]): AdminKpiItem[] {
+  return kpis.map((kpi) => {
+    const tone = TONE_STYLES[kpi.tone];
+    return {
+      id: kpi.id,
+      label: kpi.label,
+      value: kpi.value,
+      delta: kpi.delta,
+      deltaPositive: kpi.deltaPositive,
+      iconClassName: tone.icon,
+      valueClassName: tone.value,
+    };
+  });
+}
+
+export function CashFlowKpiCards({ kpis }: Props) {
   return (
-    <section className="admin-page-grid grid grid-cols-2 gap-3 xl:grid-cols-5">
-      {kpis.map((kpi) => {
-        const Icon = KPI_ICONS[kpi.id] ?? HiWallet;
-        const tone = TONE_STYLES[kpi.tone];
-
-        return (
-          <KpiCard
-            key={kpi.id}
-            label={kpi.label}
-            value={kpi.value}
-            delta={kpi.delta}
-            deltaPositive={kpi.deltaPositive}
-            Icon={Icon}
-            iconClassName={tone.icon}
-            valueClassName={tone.value}
-          />
-        );
-      })}
-    </section>
+    <AdminResponsiveKpis
+      kpis={toAdminKpiItems(kpis)}
+      icons={KPI_ICONS}
+      defaultIcon={HiWallet}
+      desktopClassName="admin-page-grid grid grid-cols-2 xl:grid-cols-5"
+    />
   );
 }

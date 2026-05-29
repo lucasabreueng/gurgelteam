@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { HiOutlineCog6Tooth, HiTrash } from "react-icons/hi2";
 import { AppModal } from "@/components/ui/app-modal";
 import type { GpsLine } from "@/lib/telemetry-engine";
 import {
@@ -34,8 +35,15 @@ const btnSecondary =
 const btnPrimary =
   "rounded-xl bg-accent px-4 py-2.5 text-[12px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50";
 
-const btnDanger =
-  "rounded-xl border border-red-200 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-red-700 transition hover:bg-red-50 disabled:opacity-50";
+const btnPrimaryFull =
+  "w-full rounded-xl bg-accent py-3 text-[12px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50";
+
+const iconBtnBase =
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition disabled:opacity-50";
+
+const iconBtnNeutral = `${iconBtnBase} border border-[rgba(17,17,17,0.12)] text-neutral-600 hover:bg-neutral-50`;
+
+const iconBtnDanger = `${iconBtnBase} border border-red-200 text-red-600 hover:bg-red-50`;
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 py-2 text-[13px] text-[#0d1f3c]";
@@ -213,10 +221,10 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
 
   const description =
     step === "list"
-      ? "Cadastre pistas e configure as linhas GPS de setor para reconstrução de voltas."
+      ? "Cadastre pistas e configure o GPS."
       : step === "info"
         ? "Informe nome, cidade e coordenadas de referência da pista."
-        : "S1 = largada/chegada (início e fim de volta). S2 e S3 definem os setores. Cada linha usa dois pontos GPS (A e B).";
+        : "S1 = largada/chegada. S2 e S3 definem os setores.";
 
   return (
     <AppModal
@@ -226,13 +234,24 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
       description={description}
       maxWidth="2xl"
       preventClose={loading}
+      footer={
+        step === "list" ? (
+          <button
+            type="button"
+            onClick={startCreate}
+            disabled={loading}
+            className={btnPrimaryFull}
+          >
+            Nova pista
+          </button>
+        ) : undefined
+      }
     >
       {step === "list" && (
         <div className="space-y-4">
           <ListContent
             tracks={tracks}
             loading={loading}
-            onCreate={startCreate}
             onEdit={startEdit}
             onDelete={handleDelete}
           />
@@ -324,13 +343,11 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
 function ListContent({
   tracks,
   loading,
-  onCreate,
   onEdit,
   onDelete,
 }: {
   tracks: UserTrackRecord[];
   loading: boolean;
-  onCreate: () => void;
   onEdit: (t: UserTrackRecord) => void;
   onDelete: (id: string) => void;
 }) {
@@ -345,44 +362,46 @@ function ListContent({
         <p className="mt-2 text-[12px] text-neutral-600">
           Cadastre a pista com nome, cidade e coordenadas. Depois configure as linhas S1, S2 e S3.
         </p>
-        <button type="button" onClick={onCreate} className={`${btnPrimary} mt-5`}>
-          Cadastrar pista
-        </button>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="flex justify-end">
-        <button type="button" onClick={onCreate} className={btnPrimary}>
-          Nova pista
-        </button>
-      </div>
-      <ul className="space-y-2">
-        {tracks.map((t) => (
-          <li
-            key={t.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(17,17,17,0.08)] bg-neutral-50/80 px-4 py-3"
-          >
-            <div>
-              <p className="text-[14px] font-semibold text-[#0d1f3c]">{t.name}</p>
-              <p className="text-[12px] text-neutral-600">
-                {t.city} · {t.center.latitude.toFixed(5)}, {t.center.longitude.toFixed(5)}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" className={btnSecondary} onClick={() => onEdit(t)}>
-                Configurar
-              </button>
-              <button type="button" className={btnDanger} onClick={() => void onDelete(t.id)}>
-                Excluir
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </>
+    <ul className="space-y-2">
+      {tracks.map((t) => (
+        <li
+          key={t.id}
+          className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(17,17,17,0.08)] bg-neutral-50/80 px-4 py-3"
+        >
+          <div className="min-w-0">
+            <p className="truncate text-[14px] font-semibold text-[#0d1f3c]">{t.name}</p>
+            <p className="truncate text-[12px] text-neutral-600">
+              {t.city} · {t.center.latitude.toFixed(5)}, {t.center.longitude.toFixed(5)}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              type="button"
+              aria-label={`Configurar ${t.name}`}
+              title="Configurar"
+              onClick={() => onEdit(t)}
+              className={iconBtnNeutral}
+            >
+              <HiOutlineCog6Tooth className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              aria-label={`Excluir ${t.name}`}
+              title="Excluir"
+              onClick={() => void onDelete(t.id)}
+              className={iconBtnDanger}
+            >
+              <HiTrash className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 import { ConfirmDialog } from "@/components/admin/settings/confirm-dialog";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+} from "@/components/ui/drawer-footer";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
 import {
   formatBrazilDateInput,
@@ -111,6 +117,8 @@ export function NewClientDrawer({
     email: string;
   } | null>(null);
   const wasOpenRef = useRef(false);
+  useDrawerBodyLock(open);
+
 
   const suggestedUsername = useMemo(
     () => AuthServiceMock.generateAvailableUsername(form.firstName, form.lastName),
@@ -126,10 +134,8 @@ export function NewClientDrawer({
     if (!open) {
       setSuccessOpen(false);
       setSavedSummary(null);
-      document.body.style.overflow = "";
-    } else {
-      document.body.style.overflow = "hidden";
-    }
+      } else {
+      }
     wasOpenRef.current = open;
   }, [open]);
 
@@ -253,7 +259,7 @@ export function NewClientDrawer({
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-client-drawer-title"
-          className="relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)]"
+          className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)]"
         >
           <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
             <div className="flex items-start justify-between gap-3">
@@ -433,23 +439,25 @@ export function NewClientDrawer({
             </div>
           </div>
 
-          <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center justify-center rounded-xl border border-[rgba(13,31,60,0.2)] px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/40"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="inline-flex items-center justify-center rounded-xl bg-[#0d1f3c] px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-md disabled:opacity-50"
-              >
-                Salvar cliente
-              </button>
+          <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+            <div className={DRAWER_FOOTER_INNER_CLASS}>
+              <DrawerFooterActions columns={2}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn-outline-md bg-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className="btn-primary-md disabled:opacity-50"
+                >
+                  Salvar cliente
+                </button>
+              </DrawerFooterActions>
             </div>
           </footer>
         </aside>

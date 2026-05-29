@@ -16,7 +16,7 @@ import {
   HiFlag,
   HiSparkles,
 } from "react-icons/hi2";
-import { KpiCard } from "@/components/ui/kpi-card";
+import { AdminResponsiveKpis } from "@/components/admin/admin-responsive-kpis";
 import { TimelineCard } from "./timeline-card";
 import { InstructorFeedback } from "./instructor-feedback";
 import { DevelopmentPlan } from "./development-plan";
@@ -124,20 +124,11 @@ export function StudentDashboardPage() {
         </h2>
 
         <div className="admin-page-stack mt-4">
-          <ul className="admin-page-grid grid sm:grid-cols-2 xl:grid-cols-4">
-            {viewData.kpiMetrics.map((k) => (
-              <li key={k.id} className="min-w-0">
-                <KpiCard
-                  label={k.label}
-                  value={k.value}
-                  sub={k.sub}
-                  delta={k.delta}
-                  deltaPositive={k.deltaPositive}
-                  Icon={KPI_ICONS[k.id as keyof typeof KPI_ICONS]}
-                />
-              </li>
-            ))}
-          </ul>
+          <AdminResponsiveKpis
+            kpis={viewData.kpiMetrics}
+            icons={KPI_ICONS}
+            desktopClassName="admin-page-grid grid grid-cols-2 xl:grid-cols-4"
+          />
 
           <div className="admin-page-grid grid lg:grid-cols-2">
             <div className="min-h-0 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-5 md:p-6">

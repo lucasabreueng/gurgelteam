@@ -50,7 +50,6 @@ export function MovementChart() {
     () => ({
       grid: { left: 40, right: 16, top: 24, bottom: 28 },
       tooltip: { trigger: "axis" },
-      legend: { bottom: 0, textStyle: { fontSize: 11 } },
       xAxis: {
         type: "category",
         data: monthlyMovements.map((d) => d.month),

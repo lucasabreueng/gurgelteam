@@ -16,6 +16,7 @@ import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 import { exportClientsToExcel } from "@/lib/export-clients-excel";
 import { AdminShell } from "./admin-shell";
 import { ClientProfileDrawer } from "./clients/client-profile-drawer";
+import { ClientEditDrawer } from "./clients/client-edit-drawer";
 import { NewClientDrawer } from "./clients/new-client-drawer";
 import { ClientTable } from "./clients/client-table";
 import { ClientMobileList } from "./clients/client-mobile-card";
@@ -25,7 +26,7 @@ import {
 } from "./clients/clients-filters";
 import { ClientsFiltersSheet } from "./clients/clients-filters-sheet";
 import { ClientsHeader } from "./clients/clients-header";
-import { KpiCard } from "@/components/ui/kpi-card";
+import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { EvolutionRanking } from "./clients/evolution-ranking";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
@@ -96,11 +97,18 @@ export function ClientsPage() {
   const router = useRouter();
   const [filters, setFilters] = useState<ClientsFilterState>(DEFAULT_FILTERS);
   const [profileClientId, setProfileClientId] = useState<string | null>(null);
+  const [editClientId, setEditClientId] = useState<string | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [clientOverrides, setClientOverrides] = useState<
+    Record<
+      string,
+      Partial<Pick<ClientListItem, "categoryIds" | "levelId" | "status">>
+    >
+  >({});
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -110,9 +118,16 @@ export function ClientsPage() {
     [router]
   );
 
+  const resolvedClients = useMemo(() => {
+    return clientsList.map((c) => {
+      const patch = clientOverrides[c.id];
+      return patch ? { ...c, ...patch } : c;
+    });
+  }, [clientsList, clientOverrides]);
+
   const filteredClients = useMemo(
-    () => clientsList.filter((c) => matchesFilters(c, filters)),
-    [filters, clientsList]
+    () => resolvedClients.filter((c) => matchesFilters(c, filters)),
+    [filters, resolvedClients]
   );
 
   useEffect(() => {
@@ -173,21 +188,12 @@ export function ClientsPage() {
           </p>
         ) : null}
 
-        <section className="hidden lg:block">
-          <ul className="admin-page-grid grid grid-cols-2 min-[900px]:grid-cols-5">
-            {clientsKpis.map((kpi) => (
-              <li key={kpi.id} className="min-w-0">
-                <KpiCard
-                  label={kpi.label}
-                  value={kpi.value}
-                  delta={kpi.delta}
-                  deltaPositive={kpi.deltaPositive}
-                  Icon={KPI_ICONS[kpi.id] ?? HiUsers}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <AdminResponsiveKpis
+          kpis={clientsKpis}
+          icons={KPI_ICONS}
+          defaultIcon={HiUsers}
+          desktopClassName="admin-page-grid grid grid-cols-2 min-[900px]:grid-cols-5"
+        />
 
         <section className="hidden lg:block">
           <ClientsFilters
@@ -212,6 +218,7 @@ export function ClientsPage() {
             onPageChange={setPage}
             onPageSizeChange={handlePageSizeChange}
             onViewProfile={setProfileClientId}
+            onEdit={setEditClientId}
           />
         </section>
 
@@ -237,6 +244,20 @@ export function ClientsPage() {
       <ClientProfileDrawer
         clientId={profileClientId}
         onClose={() => setProfileClientId(null)}
+      />
+
+      <ClientEditDrawer
+        clientId={editClientId}
+        categories={kartCategories}
+        skillLevels={skillLevels}
+        getClient={(id) => resolvedClients.find((c) => c.id === id) ?? null}
+        onClose={() => setEditClientId(null)}
+        onSave={(id, patch) => {
+          setClientOverrides((prev) => ({ ...prev, [id]: patch }));
+          setFeedback("Cliente atualizado (mock).");
+          window.setTimeout(() => setFeedback(null), 5000);
+          setEditClientId(null);
+        }}
       />
 
       <ClientsFiltersSheet

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import Image from "next/image";
 import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
@@ -17,6 +18,8 @@ type Props = {
 export function PartDetailsDrawer({ partId, onClose }: Props) {
   const part = partId ? getInventoryPartById(partId) : null;
   const detail = partId ? InventoryServiceMock.getPartDetail(partId, part) : null;
+  useDrawerBodyLock(Boolean(partId));
+
 
   useEffect(() => {
     if (!partId) return;
@@ -24,11 +27,9 @@ export function PartDetailsDrawer({ partId, onClose }: Props) {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [partId, onClose]);
 
   const costChart: EChartsOption = useMemo(() => {
@@ -77,7 +78,7 @@ export function PartDetailsDrawer({ partId, onClose }: Props) {
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
       >
         <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <div className="flex items-start justify-between gap-4">

@@ -1,1 +1,1 @@
-export { CashFlowChart } from "./cash-flow/cash-flow-chart";
+export { CashFlowEvolutionChart as CashFlowChart } from "./cash-flow/cash-flow-evolution-chart";

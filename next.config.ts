@@ -4,8 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  // Swiper 11 é ESM puro; sem transpile o Webpack pode quebrar em runtime
-  // (__webpack_modules__[moduleId] is not a function).
+  // Swiper 11 é ESM puro; sem transpile o bundler pode quebrar em runtime.
   transpilePackages: ["swiper"],
 };
 

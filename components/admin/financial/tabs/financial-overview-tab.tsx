@@ -1,51 +1,68 @@
-import type { IconType } from "react-icons/lib";
-import { useQuery } from "@tanstack/react-query";
+"use client";
+
+import type { FinancialTabKey } from "@/lib/contracts/finance/finance.types";
 import { queryKeys } from "@/lib/query/keys";
 import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+
+import { useQuery } from "@tanstack/react-query";
+import type { IconType } from "react-icons/lib";
 import {
   HiArrowTrendingUp,
-  HiClock,
+  HiChartBarSquare,
   HiCurrencyDollar,
   HiExclamationTriangle,
+  HiFlag,
   HiWallet,
 } from "react-icons/hi2";
-import { KpiCard } from "@/components/ui/kpi-card";
-import { RevenueChart } from "../revenue-chart";
-import { SmartFinancialInsights } from "../smart-financial-insights";
 
-const KPI_ICONS: Record<string, IconType> = {
+import { AdminResponsiveKpis } from "@/components/admin/admin-responsive-kpis";
+
+import { BusinessEvolutionChart } from "../overview/business-evolution-chart";
+import { RevenueOriginChart } from "../overview/revenue-origin-chart";
+import { UpcomingPayables } from "../overview/upcoming-payables";
+
+const FINANCIAL_KPI_ICONS: Record<string, IconType> = {
   "revenue-month": HiCurrencyDollar,
-  receivable: HiWallet,
+  "profit-month": HiChartBarSquare,
+  "cash-balance": HiWallet,
   delinquency: HiExclamationTriangle,
-  growth: HiArrowTrendingUp,
+  "monthly-goal": HiFlag,
 };
 
-export function FinancialOverviewTab() {
-  const { data: overviewKpis = [] } = useQuery({
+type Props = {
+  onTabChange: (tab: FinancialTabKey) => void;
+};
+
+export function FinancialOverviewTab({ onTabChange }: Props) {
+  const { data: financialKpis = [] } = useQuery({
     queryKey: queryKeys.finance.overviewKpis(),
     queryFn: () => FinancialServiceMock.getOverviewKpis(),
   });
 
   return (
     <div className="admin-page-stack">
-      <section className="admin-page-grid grid grid-cols-2 lg:grid-cols-4">
-        {overviewKpis.map((kpi) => (
-          <KpiCard
-            key={kpi.id}
-            label={kpi.label}
-            value={kpi.value}
-            delta={kpi.delta}
-            deltaPositive={kpi.deltaPositive}
-            Icon={KPI_ICONS[kpi.id] ?? HiClock}
-          />
-        ))}
+      {/* 1. KPIs Financeiros */}
+      <section aria-labelledby="executive-financial-kpis" className="min-w-0">
+        <h2 id="executive-financial-kpis" className="sr-only">
+          KPIs financeiros
+        </h2>
+        <AdminResponsiveKpis
+          kpis={financialKpis}
+          icons={FINANCIAL_KPI_ICONS}
+          defaultIcon={HiArrowTrendingUp}
+          desktopClassName="admin-page-grid grid grid-cols-2 xl:grid-cols-5"
+        />
       </section>
 
-      <section className="admin-page-grid grid lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <RevenueChart />
-        </div>
-        <SmartFinancialInsights />
+      {/* 2. Evolução do Negócio */}
+      <section aria-labelledby="business-evolution">
+        <BusinessEvolutionChart />
+      </section>
+
+      {/* 3. Origem das Receitas + Próximos Vencimentos */}
+      <section className="admin-page-grid grid lg:grid-cols-2">
+        <RevenueOriginChart />
+        <UpcomingPayables onTabChange={onTabChange} />
       </section>
     </div>
   );

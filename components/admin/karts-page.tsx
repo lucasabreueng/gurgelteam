@@ -17,13 +17,15 @@ import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
 import { AdminShell } from "./admin-shell";
 import { KartDetailDrawer } from "./karts/kart-detail-drawer";
 import { KartsFleetTable } from "./karts/karts-fleet-table";
+import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import {
   KartsFilters,
   type KartsFilterState,
 } from "./karts/karts-filters";
+import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
+import { countActiveFilters } from "@/components/ui/filter-box";
 import { KartsHeader } from "./karts/karts-header";
 import { NewKartDrawer } from "./karts/new-kart-drawer";
-import { KpiCard } from "@/components/ui/kpi-card";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -95,6 +97,8 @@ export function KartsPage() {
   const [filters, setFilters] = useState<KartsFilterState>(DEFAULT_FILTERS);
   const [detailState, setDetailState] = useState<DetailState | null>(null);
   const [newKartOpen, setNewKartOpen] = useState(false);
+  const [editKartId, setEditKartId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -132,13 +136,25 @@ export function KartsPage() {
     setPage(1);
   };
 
-  const handleNewKartSuccess = useCallback((data: NewKartFormData) => {
-    const motorName =
-      registeredMotors.find((motor) => motor.id === data.motor)?.name ??
-      data.motor;
-    setFeedback(`Kart ${data.number} (${motorName}) cadastrado com sucesso (mock).`);
-    window.setTimeout(() => setFeedback(null), 4000);
-  }, [registeredMotors]);
+  const handleKartFormSuccess = useCallback(
+    (data: NewKartFormData, mode: "create" | "edit") => {
+      const motorName =
+        registeredMotors.find((motor) => motor.id === data.motor)?.name ??
+        data.motor;
+      setFeedback(
+        mode === "edit"
+          ? `Kart ${data.number} (${motorName}) atualizado com sucesso (mock).`
+          : `Kart ${data.number} (${motorName}) cadastrado com sucesso (mock).`,
+      );
+      window.setTimeout(() => setFeedback(null), 4000);
+    },
+    [registeredMotors],
+  );
+
+  const handleEditKart = useCallback((kartId: string) => {
+    setDetailState(null);
+    setEditKartId(kartId);
+  }, []);
 
   return (
     <>
@@ -146,7 +162,22 @@ export function KartsPage() {
         activeNav="karts"
         onNav={onNav}
         mobileTitle="Karts"
-        pageHeader={<KartsHeader onNewKart={() => setNewKartOpen(true)} />}
+        pageHeader={
+          <KartsHeader
+            onNewKart={() => {
+              setEditKartId(null);
+              setNewKartOpen(true);
+            }}
+            onOpenFilters={() => setFiltersOpen(true)}
+            activeFilterCount={countActiveFilters([
+              filters.search,
+              filters.ownership,
+              filters.categoryId,
+              filters.status,
+              filters.maintenance,
+            ])}
+          />
+        }
       >
         {feedback ? (
           <p
@@ -157,32 +188,35 @@ export function KartsPage() {
           </p>
         ) : null}
 
-        <section>
-          <ul className="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-            {kartsKpis.map((kpi) => (
-              <li key={kpi.id} className="min-w-0">
-                <KpiCard
-                  {...kpi}
-                  Icon={KPI_ICONS[kpi.id] ?? HiClock}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <AdminResponsiveKpis
+          kpis={kartsKpis}
+          icons={KPI_ICONS}
+          defaultIcon={HiClock}
+          desktopClassName="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+        />
 
-        <section>
-          <KartsFilters
-            filters={filters}
-            onChange={(patch: Partial<KartsFilterState>) =>
-              setFilters((p) => ({ ...p, ...patch }))
-            }
-            onClear={() => setFilters(DEFAULT_FILTERS)}
-          />
-        </section>
+        <ResponsiveTableFilters
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          onClear={() => setFilters(DEFAULT_FILTERS)}
+          resultCount={filteredKarts.length}
+          resultUnit="kart"
+          renderFilters={(layout) => (
+            <KartsFilters
+              layout={layout}
+              filters={filters}
+              onChange={(patch: Partial<KartsFilterState>) =>
+                setFilters((p) => ({ ...p, ...patch }))
+              }
+              onClear={() => setFilters(DEFAULT_FILTERS)}
+            />
+          )}
+        />
 
         <section>
           <KartsFleetTable
             karts={paginatedKarts}
+            mobileKarts={filteredKarts}
             page={page}
             pageSize={pageSize}
             totalItems={filteredKarts.length}
@@ -191,24 +225,29 @@ export function KartsPage() {
             onViewDetails={(id) =>
               setDetailState({ kartId: id, focusHistory: false })
             }
-            onViewHistory={(id) =>
-              setDetailState({ kartId: id, focusHistory: true })
-            }
+            onEdit={handleEditKart}
           />
         </section>
 
       </AdminShell>
 
       <NewKartDrawer
-        open={newKartOpen}
-        onClose={() => setNewKartOpen(false)}
-        onSuccess={handleNewKartSuccess}
+        open={newKartOpen || Boolean(editKartId)}
+        kartId={editKartId}
+        onClose={() => {
+          setNewKartOpen(false);
+          setEditKartId(null);
+        }}
+        onSuccess={(data) =>
+          handleKartFormSuccess(data, editKartId ? "edit" : "create")
+        }
       />
 
       <KartDetailDrawer
         kartId={detailState?.kartId ?? null}
         focusHistory={detailState?.focusHistory}
         onClose={() => setDetailState(null)}
+        onEdit={handleEditKart}
       />
     </>
   );

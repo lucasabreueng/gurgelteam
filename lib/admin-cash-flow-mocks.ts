@@ -1,22 +1,32 @@
-/** Fluxo de Caixa — mocks (sem backend) */
+/** Fluxo de Caixa operacional — mocks Gurgel Team */
 
-export type CashFlowInnerTabKey =
-  | "overview"
-  | "detailed"
-  | "dre"
-  | "projection"
-  | "movements";
+/** Data de referência (mês atual = maio/2026) */
+export const CASH_FLOW_REFERENCE_DATE = new Date(2026, 4, 28);
 
-export const CASH_FLOW_INNER_TABS: {
-  key: CashFlowInnerTabKey;
+export type CashFlowPeriodKey =
+  | "today"
+  | "week"
+  | "current-month"
+  | "last-3-months"
+  | "custom";
+
+export type CashFlowPeriodFilter = {
+  key: CashFlowPeriodKey;
+  customStart?: string;
+  customEnd?: string;
+};
+
+export const CASH_FLOW_PERIOD_OPTIONS: {
+  key: Exclude<CashFlowPeriodKey, "custom">;
   label: string;
 }[] = [
-  { key: "overview", label: "Visão geral" },
-  { key: "detailed", label: "Detalhado" },
-  { key: "dre", label: "DRE" },
-  { key: "projection", label: "Projeção" },
-  { key: "movements", label: "Movimentações" },
+  { key: "today", label: "Hoje" },
+  { key: "week", label: "Semana" },
+  { key: "current-month", label: "Mês" },
+  { key: "last-3-months", label: "3 meses" },
 ];
+
+export type CashFlowChartGranularity = "daily" | "weekly" | "monthly";
 
 export type CashFlowKpiTone = "neutral" | "positive" | "negative" | "accent";
 
@@ -27,490 +37,115 @@ export type CashFlowKpi = {
   delta: string;
   deltaPositive: boolean;
   tone: CashFlowKpiTone;
-  sparkline: number[];
 };
 
-export const CASH_FLOW_KPIS: CashFlowKpi[] = [
-  {
-    id: "opening",
-    label: "Saldo inicial",
-    value: "R$ 18.750,00",
-    delta: "+2,4%",
-    deltaPositive: true,
-    tone: "neutral",
-    sparkline: [16, 16.5, 17, 17.5, 18, 18.2, 18.75],
-  },
-  {
-    id: "entries",
-    label: "Entradas",
-    value: "R$ 56.800,00",
-    delta: "+9,1%",
-    deltaPositive: true,
-    tone: "positive",
-    sparkline: [42, 45, 48, 50, 52, 54, 56.8],
-  },
-  {
-    id: "exits",
-    label: "Saídas",
-    value: "R$ 34.250,00",
-    delta: "+5,8%",
-    deltaPositive: false,
-    tone: "negative",
-    sparkline: [28, 29, 30, 31, 32, 33, 34.25],
-  },
-  {
-    id: "closing",
-    label: "Saldo final",
-    value: "R$ 41.300,00",
-    delta: "+12,3%",
-    deltaPositive: true,
-    tone: "accent",
-    sparkline: [30, 32, 34, 36, 38, 40, 41.3],
-  },
-  {
-    id: "result",
-    label: "Resultado do período",
-    value: "R$ 22.550,00",
-    delta: "+18,6%",
-    deltaPositive: true,
-    tone: "positive",
-    sparkline: [12, 14, 15, 17, 18, 20, 22.55],
-  },
-];
-
-export const PERIOD_SUMMARY = {
-  entries: {
-    operational: "R$ 52.400,00",
-    other: "R$ 4.400,00",
-    total: "R$ 56.800,00",
-  },
-  exits: {
-    variable: "R$ 12.850,00",
-    fixed: "R$ 9.600,00",
-    operational: "R$ 11.800,00",
-    total: "R$ 34.250,00",
-  },
-  result: "R$ 22.550,00",
+export type CashFlowChartData = {
+  labels: string[];
+  entries: number[];
+  exits: number[];
+  balance: number[];
 };
 
-export type ExpenseCategory = {
+export type CashFlowProjection = {
+  expectedEntries: string;
+  expectedExits: string;
+  projectedBalance: string;
+  projectedBalanceRaw: number;
+  riskDays: { date: string; label: string; balance: string; balanceRaw: number }[];
+  negativeAlert: boolean;
+  alertMessage?: string;
+};
+
+export type CashFlowOriginItem = {
   id: string;
   label: string;
-  value: number;
   amount: string;
+  amountRaw: number;
   percent: number;
-  impact: "Alto" | "Médio" | "Baixo";
 };
 
-export const EXPENSES_DISTRIBUTION: ExpenseCategory[] = [
-  {
-    id: "maintenance",
-    label: "Manutenção",
-    value: 8200,
-    amount: "R$ 8.200",
-    percent: 23.9,
-    impact: "Alto",
-  },
-  {
-    id: "parts",
-    label: "Peças",
-    value: 6450,
-    amount: "R$ 6.450",
-    percent: 18.8,
-    impact: "Alto",
-  },
-  {
-    id: "tires",
-    label: "Pneus",
-    value: 4200,
-    amount: "R$ 4.200",
-    percent: 12.3,
-    impact: "Médio",
-  },
-  {
-    id: "fuel",
-    label: "Combustível",
-    value: 3850,
-    amount: "R$ 3.850",
-    percent: 11.2,
-    impact: "Médio",
-  },
-  {
-    id: "external",
-    label: "Serviços externos",
-    value: 5100,
-    amount: "R$ 5.100",
-    percent: 14.9,
-    impact: "Médio",
-  },
-  {
-    id: "fees",
-    label: "Taxas",
-    value: 2450,
-    amount: "R$ 2.450",
-    percent: 7.2,
-    impact: "Baixo",
-  },
-  {
-    id: "structure",
-    label: "Estrutura",
-    value: 4000,
-    amount: "R$ 4.000",
-    percent: 11.7,
-    impact: "Médio",
-  },
-];
-
-export type DreRowKind = "section" | "subtotal" | "total" | "line";
-
-export type DreRow = {
+export type CashFlowCategoryItem = {
   id: string;
   label: string;
-  kind: DreRowKind;
-  currentValue: number;
-  previousValue: number;
-  indent?: number;
-};
-
-export const DRE_MONTHS = {
-  current: "Jun/2025",
-  previous: "Mai/2025",
-};
-
-/** Valores em reais (positivos = receita/lucro, negativos = deduções/despesas) */
-export const DRE_ROWS: DreRow[] = [
-  {
-    id: "gross",
-    label: "RECEITA BRUTA",
-    kind: "section",
-    currentValue: 56800,
-    previousValue: 52100,
-  },
-  {
-    id: "deductions",
-    label: "(-) Deduções da receita",
-    kind: "line",
-    currentValue: -2840,
-    previousValue: -2605,
-    indent: 1,
-  },
-  {
-    id: "net-revenue",
-    label: "RECEITA LÍQUIDA",
-    kind: "subtotal",
-    currentValue: 53960,
-    previousValue: 49495,
-  },
-  {
-    id: "cogs",
-    label: "(-) Custo dos serviços",
-    kind: "line",
-    currentValue: -20235,
-    previousValue: -19280,
-    indent: 1,
-  },
-  {
-    id: "gross-profit",
-    label: "LUCRO BRUTO",
-    kind: "subtotal",
-    currentValue: 33725,
-    previousValue: 30215,
-  },
-  {
-    id: "op-expenses",
-    label: "(-) Despesas operacionais",
-    kind: "line",
-    currentValue: -11800,
-    previousValue: -10950,
-    indent: 1,
-  },
-  {
-    id: "admin-expenses",
-    label: "(-) Despesas administrativas",
-    kind: "line",
-    currentValue: -4650,
-    previousValue: -4200,
-    indent: 1,
-  },
-  {
-    id: "operating-profit",
-    label: "LUCRO OPERACIONAL",
-    kind: "subtotal",
-    currentValue: 17275,
-    previousValue: 15065,
-  },
-  {
-    id: "financial-expenses",
-    label: "(-) Despesas financeiras",
-    kind: "line",
-    currentValue: -890,
-    previousValue: -780,
-    indent: 1,
-  },
-  {
-    id: "other",
-    label: "OUTRAS RECEITAS/DESPESAS",
-    kind: "line",
-    currentValue: 1165,
-    previousValue: 920,
-  },
-  {
-    id: "net-profit",
-    label: "LUCRO LÍQUIDO",
-    kind: "total",
-    currentValue: 17550,
-    previousValue: 15205,
-  },
-];
-
-export type DailyCashEntry = {
-  date: string;
-  dateIso: string;
-  balance: number;
-  balanceLabel: string;
-};
-
-export const DAILY_CASH_PREVIEW: DailyCashEntry[] = [
-  { date: "01/06", dateIso: "2025-06-01", balance: 18750, balanceLabel: "R$ 18.750" },
-  { date: "02/06", dateIso: "2025-06-02", balance: 20900, balanceLabel: "R$ 20.900" },
-  { date: "03/06", dateIso: "2025-06-03", balance: 19050, balanceLabel: "R$ 19.050" },
-  { date: "04/06", dateIso: "2025-06-04", balance: 22150, balanceLabel: "R$ 22.150" },
-  { date: "05/06", dateIso: "2025-06-05", balance: 26400, balanceLabel: "R$ 26.400" },
-  { date: "06/06", dateIso: "2025-06-06", balance: 28850, balanceLabel: "R$ 28.850" },
-];
-
-export const DAILY_CASH_FULL: DailyCashEntry[] = [
-  ...DAILY_CASH_PREVIEW.slice(0, 5),
-  { date: "06/06", dateIso: "2025-06-06", balance: 28850, balanceLabel: "R$ 28.850" },
-  { date: "07/06", dateIso: "2025-06-07", balance: 31200, balanceLabel: "R$ 31.200" },
-  { date: "08/06", dateIso: "2025-06-08", balance: 29800, balanceLabel: "R$ 29.800" },
-  { date: "09/06", dateIso: "2025-06-09", balance: 33450, balanceLabel: "R$ 33.450" },
-  { date: "10/06", dateIso: "2025-06-10", balance: 35100, balanceLabel: "R$ 35.100" },
-  { date: "11/06", dateIso: "2025-06-11", balance: 36800, balanceLabel: "R$ 36.800" },
-  { date: "12/06", dateIso: "2025-06-12", balance: 38250, balanceLabel: "R$ 38.250" },
-  { date: "13/06", dateIso: "2025-06-13", balance: 39500, balanceLabel: "R$ 39.500" },
-  { date: "14/06", dateIso: "2025-06-14", balance: 40100, balanceLabel: "R$ 40.100" },
-  { date: "15/06", dateIso: "2025-06-15", balance: 41300, balanceLabel: "R$ 41.300" },
-];
-
-export type FinancialIndicator = {
-  id: string;
-  label: string;
-  value: string;
-  tooltip: string;
-};
-
-export const CASH_FLOW_INDICATORS: FinancialIndicator[] = [
-  {
-    id: "gross-margin",
-    label: "Margem bruta",
-    value: "62,4%",
-    tooltip: "Lucro bruto ÷ receita líquida no período",
-  },
-  {
-    id: "operating-margin",
-    label: "Margem operacional",
-    value: "32,0%",
-    tooltip: "Lucro operacional ÷ receita líquida",
-  },
-  {
-    id: "net-margin",
-    label: "Margem líquida",
-    value: "32,5%",
-    tooltip: "Lucro líquido ÷ receita líquida",
-  },
-  {
-    id: "break-even",
-    label: "Ponto de equilíbrio mensal",
-    value: "R$ 28.400",
-    tooltip: "Receita mínima para cobrir custos fixos e variáveis",
-  },
-  {
-    id: "cash-turnover",
-    label: "Giro de caixa",
-    value: "1,8x",
-    tooltip: "Entradas totais ÷ saldo médio do período",
-  },
-];
-
-export const PERIOD_HIGHLIGHTS = {
-  topEntry: { label: "Pacote Competidor", value: "R$ 8.400" },
-  topExit: { label: "Manutenção Kart 12", value: "R$ 2.450" },
-  bestDay: { label: "05/06", value: "R$ 4.250" },
-  worstDay: { label: "03/06", value: "-R$ 1.850" },
-  positiveDays: 22,
-  negativeDays: 8,
-};
-
-export const CASH_FLOW_PROJECTION = {
-  projectedBalance: "R$ 48.600",
-  projectedEntries: "R$ 62.400",
-  projectedExits: "R$ 38.200",
-  receivables: "R$ 8.420",
-  expectedCosts: "R$ 31.500",
-  projectedResult: "R$ 24.200",
-  months: ["Jul", "Ago", "Set"],
-  balanceSeries: [41.3, 44.8, 48.6],
-  entriesSeries: [56.8, 59.2, 62.4],
-  exitsSeries: [34.2, 36.1, 38.2],
+  amount: string;
+  amountRaw: number;
+  percent: number;
 };
 
 export type MovementType = "entrada" | "saída";
-export type MovementStatus = "confirmado" | "pendente" | "previsto";
 
-export type CashFlowMovement = {
+export type CashFlowStatementRow = {
   id: string;
   date: string;
+  dateIso: string;
   description: string;
   category: string;
   type: MovementType;
-  amount: string;
-  amountRaw: number;
   paymentMethod: string;
-  status: MovementStatus;
+  entry: string;
+  entryRaw: number;
+  exit: string;
+  exitRaw: number;
+  balance: string;
+  balanceRaw: number;
 };
 
-export const CASH_FLOW_MOVEMENTS: CashFlowMovement[] = [
-  {
-    id: "m1",
-    date: "15/06",
-    description: "Pacote Competidor — Marina Souza",
-    category: "Pacotes",
-    type: "entrada",
-    amount: "R$ 8.400,00",
-    amountRaw: 8400,
-    paymentMethod: "Pix",
-    status: "confirmado",
-  },
-  {
-    id: "m2",
-    date: "14/06",
-    description: "Manutenção Kart 12 — motor",
-    category: "Manutenção",
-    type: "saída",
-    amount: "R$ 2.450,00",
-    amountRaw: -2450,
-    paymentMethod: "Transferência",
-    status: "confirmado",
-  },
-  {
-    id: "m3",
-    date: "14/06",
-    description: "Aulas avulsas — lote sábado",
-    category: "Aulas",
-    type: "entrada",
-    amount: "R$ 3.280,00",
-    amountRaw: 3280,
-    paymentMethod: "Cartão",
-    status: "confirmado",
-  },
-  {
-    id: "m4",
-    date: "13/06",
-    description: "Pneus slick — lote 4 un.",
-    category: "Pneus",
-    type: "saída",
-    amount: "R$ 1.890,00",
-    amountRaw: -1890,
-    paymentMethod: "Boleto",
-    status: "pendente",
-  },
-  {
-    id: "m5",
-    date: "12/06",
-    description: "Aluguel kart — evento corporativo",
-    category: "Aluguel",
-    type: "entrada",
-    amount: "R$ 5.600,00",
-    amountRaw: 5600,
-    paymentMethod: "Pix",
-    status: "confirmado",
-  },
-  {
-    id: "m6",
-    date: "11/06",
-    description: "Combustível e lubrificantes",
-    category: "Combustível",
-    type: "saída",
-    amount: "R$ 980,00",
-    amountRaw: -980,
-    paymentMethod: "Dinheiro",
-    status: "confirmado",
-  },
-  {
-    id: "m7",
-    date: "10/06",
-    description: "Mensalidade ilimitada — Lucas M.",
-    category: "Pacotes",
-    type: "entrada",
-    amount: "R$ 1.850,00",
-    amountRaw: 1850,
-    paymentMethod: "Cartão",
-    status: "confirmado",
-  },
-  {
-    id: "m8",
-    date: "09/06",
-    description: "Taxas gateway pagamento",
-    category: "Taxas",
-    type: "saída",
-    amount: "R$ 420,00",
-    amountRaw: -420,
-    paymentMethod: "Débito automático",
-    status: "confirmado",
-  },
-  {
-    id: "m9",
-    date: "08/06",
-    description: "Coaching avançado — turma junho",
-    category: "Coaching",
-    type: "entrada",
-    amount: "R$ 2.400,00",
-    amountRaw: 2400,
-    paymentMethod: "Pix",
-    status: "previsto",
-  },
-  {
-    id: "m10",
-    date: "07/06",
-    description: "Energia e utilities paddock",
-    category: "Estrutura",
-    type: "saída",
-    amount: "R$ 1.650,00",
-    amountRaw: -1650,
-    paymentMethod: "Boleto",
-    status: "pendente",
-  },
-];
-
-export type CashFlowPeriod = "daily" | "weekly" | "monthly";
-
-export const CASH_FLOW_BY_PERIOD: Record<
-  CashFlowPeriod,
-  { labels: string[]; entries: number[]; exits: number[]; balance: number[] }
-> = {
-  daily: {
-    labels: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"],
-    entries: [4.2, 5.1, 2.8, 6.2, 7.4, 5.9, 4.1, 6.8, 5.5, 4.6],
-    exits: [1.8, 2.1, 3.6, 2.4, 2.2, 3.1, 2.5, 2.8, 2.0, 2.4],
-    balance: [18.75, 20.9, 19.05, 22.15, 26.4, 28.85, 30.2, 33.45, 35.1, 36.8],
-  },
-  weekly: {
-    labels: ["S1", "S2", "S3", "S4"],
-    entries: [12.4, 14.8, 15.2, 14.4],
-    exits: [7.2, 8.1, 9.4, 9.55],
-    balance: [24.0, 28.5, 32.1, 41.3],
-  },
-  monthly: {
-    labels: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
-    entries: [42, 45, 48, 50, 52, 56.8],
-    exits: [28, 29, 30, 31, 32.4, 34.25],
-    balance: [22, 26, 30, 33, 36, 41.3],
-  },
+export type CashFlowCalendarDay = {
+  day: number;
+  dateIso: string;
+  entries: string;
+  entriesRaw: number;
+  exits: string;
+  exitsRaw: number;
+  balance: string;
+  balanceRaw: number;
+  isToday?: boolean;
+  isWeekend?: boolean;
 };
 
-/** Re-export gross revenue for DRE % calculations */
-export const DRE_GROSS_REVENUE = 56800;
+export type CashFlowAlertPriority = "critical" | "warning" | "info";
+
+export type CashFlowAlert = {
+  id: string;
+  priority: CashFlowAlertPriority;
+  title: string;
+  description: string;
+  icon: string;
+};
+
+export type CashFlowDataset = {
+  periodLabel: string;
+  summaryKpis: CashFlowKpi[];
+  chartByGranularity: Record<CashFlowChartGranularity, CashFlowChartData>;
+  projection: CashFlowProjection;
+  entriesByOrigin: CashFlowOriginItem[];
+  exitsByCategory: CashFlowCategoryItem[];
+  movements: CashFlowStatementRow[];
+  calendarDays: CashFlowCalendarDay[];
+  calendarMonthLabel: string;
+  alerts: CashFlowAlert[];
+  movementCategories: string[];
+  paymentMethods: string[];
+};
+
+const PERIOD_SCALE: Record<Exclude<CashFlowPeriodKey, "custom">, number> = {
+  today: 0.04,
+  week: 0.22,
+  "current-month": 1,
+  "last-3-months": 2.85,
+};
+
+const BASE = {
+  balance: 41300,
+  entries: 56800,
+  exits: 34250,
+  result: 22550,
+  projected30: 48600,
+};
+
+function scale(value: number, factor: number): number {
+  return Math.round(value * factor);
+}
 
 export function formatBrl(value: number): string {
   const abs = Math.abs(value);
@@ -518,13 +153,7 @@ export function formatBrl(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const prefix = value < 0 ? "-R$ " : "R$ ";
-  return `${prefix}${formatted}`;
-}
-
-export function formatPercent(value: number, base: number): string {
-  if (base === 0) return "—";
-  return `${((value / base) * 100).toFixed(1)}%`;
+  return `R$ ${formatted}`;
 }
 
 export function formatVariation(current: number, previous: number): string {
@@ -533,3 +162,467 @@ export function formatVariation(current: number, previous: number): string {
   const sign = pct >= 0 ? "+" : "";
   return `${sign}${pct.toFixed(1)}%`;
 }
+
+export function formatPercent(value: number, base: number): string {
+  if (base === 0) return "—";
+  return `${((value / base) * 100).toFixed(1)}%`;
+}
+
+function buildSummaryKpis(factor: number): CashFlowKpi[] {
+  const balance = scale(BASE.balance, 1);
+  const entries = scale(BASE.entries, factor);
+  const exits = scale(BASE.exits, factor);
+  const result = entries - exits;
+  const projected = scale(BASE.projected30, 1);
+
+  return [
+    {
+      id: "balance",
+      label: "Saldo atual",
+      value: formatBrl(balance),
+      delta: "+12,3%",
+      deltaPositive: true,
+      tone: "accent",
+    },
+    {
+      id: "entries",
+      label: "Entradas do período",
+      value: formatBrl(entries),
+      delta: "+9,1%",
+      deltaPositive: true,
+      tone: "positive",
+    },
+    {
+      id: "exits",
+      label: "Saídas do período",
+      value: formatBrl(exits),
+      delta: "+5,8%",
+      deltaPositive: false,
+      tone: "negative",
+    },
+    {
+      id: "result",
+      label: "Resultado do período",
+      value: formatBrl(result),
+      delta: "+18,6%",
+      deltaPositive: result >= 0,
+      tone: "positive",
+    },
+    {
+      id: "projected",
+      label: "Saldo projetado (30 dias)",
+      value: formatBrl(projected),
+      delta: "+17,7%",
+      deltaPositive: true,
+      tone: "neutral",
+    },
+  ];
+}
+
+function buildChartData(factor: number): Record<CashFlowChartGranularity, CashFlowChartData> {
+  const f = Math.max(factor, 0.15);
+  return {
+    daily: {
+      labels: ["24", "25", "26", "27", "28", "29", "30"],
+      entries: [2.1, 3.4, 1.8, 4.2, 5.6, 3.1, 2.8].map((v) => Number((v * f).toFixed(1))),
+      exits: [1.2, 0.9, 2.1, 1.4, 1.8, 2.4, 1.1].map((v) => Number((v * f).toFixed(1))),
+      balance: [38.2, 40.7, 40.4, 43.2, 47.0, 47.7, 41.3],
+    },
+    weekly: {
+      labels: ["S1", "S2", "S3", "S4"],
+      entries: [12.4, 14.8, 15.2, 14.4].map((v) => Number((v * f).toFixed(1))),
+      exits: [7.2, 8.1, 9.4, 9.5].map((v) => Number((v * f).toFixed(1))),
+      balance: [24.0, 28.5, 32.1, 41.3],
+    },
+    monthly: {
+      labels: ["MAR", "ABR", "MAI"],
+      entries: [48, 52, 56.8].map((v) => Number((v * f).toFixed(1))),
+      exits: [30, 32.4, 34.25].map((v) => Number((v * f).toFixed(1))),
+      balance: [30, 36, 41.3],
+    },
+  };
+}
+
+function buildProjection(): CashFlowProjection {
+  const projectedBalanceRaw = 48600;
+  const riskDays = [
+    { date: "2026-06-08", label: "08/06", balance: "R$ 3.200,00", balanceRaw: 3200 },
+    { date: "2026-06-15", label: "15/06", balance: "R$ 1.850,00", balanceRaw: 1850 },
+    { date: "2026-06-22", label: "22/06", balance: "-R$ 420,00", balanceRaw: -420 },
+  ];
+  const negativeAlert = riskDays.some((d) => d.balanceRaw < 0);
+
+  return {
+    expectedEntries: formatBrl(62400),
+    expectedExits: formatBrl(38200),
+    projectedBalance: formatBrl(projectedBalanceRaw),
+    projectedBalanceRaw,
+    riskDays,
+    negativeAlert,
+    alertMessage: negativeAlert
+      ? "Atenção: saldo projetado negativo em 22/06. Revise saídas previstas."
+      : undefined,
+  };
+}
+
+function buildEntriesByOrigin(factor: number): CashFlowOriginItem[] {
+  const items = [
+    { id: "lessons", label: "Aulas", raw: 20400 },
+    { id: "rental", label: "Aluguel de kart", raw: 9600 },
+    { id: "packages", label: "Pacotes", raw: 15800 },
+    { id: "products", label: "Produtos", raw: 5340 },
+    { id: "other", label: "Outros", raw: 4660 },
+  ];
+  const total = items.reduce((acc, i) => acc + i.raw, 0);
+  return items.map((item) => {
+    const amountRaw = scale(item.raw, factor);
+    return {
+      id: item.id,
+      label: item.label,
+      amount: formatBrl(amountRaw),
+      amountRaw,
+      percent: Number(((amountRaw / scale(total, factor)) * 100).toFixed(1)),
+    };
+  });
+}
+
+function buildExitsByCategory(factor: number): CashFlowCategoryItem[] {
+  const items = [
+    { id: "fuel", label: "Combustível", raw: 5680 },
+    { id: "tires", label: "Pneus", raw: 4850 },
+    { id: "maintenance", label: "Manutenção", raw: 4200 },
+    { id: "parts", label: "Peças", raw: 3650 },
+    { id: "equipment", label: "Equipamentos", raw: 1855 },
+    { id: "marketing", label: "Marketing", raw: 2800 },
+    { id: "admin", label: "Administrativo", raw: 4650 },
+    { id: "fees", label: "Taxas", raw: 2465 },
+  ];
+  const total = items.reduce((acc, i) => acc + i.raw, 0);
+  return items.map((item) => {
+    const amountRaw = scale(item.raw, factor);
+    return {
+      id: item.id,
+      label: item.label,
+      amount: formatBrl(amountRaw),
+      amountRaw,
+      percent: Number(((amountRaw / scale(total, factor)) * 100).toFixed(1)),
+    };
+  });
+}
+
+const STATEMENT_TEMPLATE: Omit<
+  CashFlowStatementRow,
+  "entry" | "entryRaw" | "exit" | "exitRaw" | "balance" | "balanceRaw"
+>[] = [
+  {
+    id: "s1",
+    date: "28/05",
+    dateIso: "2026-05-28",
+    description: "Pacote Competidor — Marina Souza",
+    category: "Pacotes",
+    type: "entrada",
+    paymentMethod: "Pix",
+  },
+  {
+    id: "s2",
+    date: "28/05",
+    dateIso: "2026-05-28",
+    description: "Aula avulsa F400 — Lucas Mendes",
+    category: "Aulas",
+    type: "entrada",
+    paymentMethod: "Cartão",
+  },
+  {
+    id: "s3",
+    date: "27/05",
+    dateIso: "2026-05-27",
+    description: "Manutenção Kart 12 — motor",
+    category: "Manutenção",
+    type: "saída",
+    paymentMethod: "Transferência",
+  },
+  {
+    id: "s4",
+    date: "27/05",
+    dateIso: "2026-05-27",
+    description: "Aluguel kart F400 — evento corporativo",
+    category: "Aluguel de kart",
+    type: "entrada",
+    paymentMethod: "Pix",
+  },
+  {
+    id: "s5",
+    date: "26/05",
+    dateIso: "2026-05-26",
+    description: "Pneus slick — lote 4 un.",
+    category: "Pneus",
+    type: "saída",
+    paymentMethod: "Boleto",
+  },
+  {
+    id: "s6",
+    date: "26/05",
+    dateIso: "2026-05-26",
+    description: "Luvas homologadas — venda balcão",
+    category: "Produtos",
+    type: "entrada",
+    paymentMethod: "Dinheiro",
+  },
+  {
+    id: "s7",
+    date: "25/05",
+    dateIso: "2026-05-25",
+    description: "Combustível 2T — abastecimento pista",
+    category: "Combustível",
+    type: "saída",
+    paymentMethod: "Dinheiro",
+  },
+  {
+    id: "s8",
+    date: "24/05",
+    dateIso: "2026-05-24",
+    description: "Aulas avulsas — lote sábado",
+    category: "Aulas",
+    type: "entrada",
+    paymentMethod: "Cartão",
+  },
+  {
+    id: "s9",
+    date: "23/05",
+    dateIso: "2026-05-23",
+    description: "Campanha Instagram — impulsionamento",
+    category: "Marketing",
+    type: "saída",
+    paymentMethod: "Cartão",
+  },
+  {
+    id: "s10",
+    date: "22/05",
+    dateIso: "2026-05-22",
+    description: "Taxas gateway pagamento",
+    category: "Taxas",
+    type: "saída",
+    paymentMethod: "Débito automático",
+  },
+  {
+    id: "s11",
+    date: "21/05",
+    dateIso: "2026-05-21",
+    description: "Coaching avançado — turma maio",
+    category: "Outros",
+    type: "entrada",
+    paymentMethod: "Pix",
+  },
+  {
+    id: "s12",
+    date: "20/05",
+    dateIso: "2026-05-20",
+    description: "Pastilhas Brembo — kart 07",
+    category: "Peças",
+    type: "saída",
+    paymentMethod: "Transferência",
+  },
+];
+
+const AMOUNT_BY_ID: Record<string, number> = {
+  s1: 8400,
+  s2: 280,
+  s3: 2450,
+  s4: 5600,
+  s5: 1890,
+  s6: 540,
+  s7: 980,
+  s8: 3280,
+  s9: 680,
+  s10: 420,
+  s11: 2400,
+  s12: 640,
+};
+
+function buildMovements(factor: number): CashFlowStatementRow[] {
+  let running = scale(38750, 1);
+  const rows = STATEMENT_TEMPLATE.map((row) => {
+    const amount = scale(AMOUNT_BY_ID[row.id] ?? 0, Math.max(factor, 0.5));
+    if (row.type === "entrada") running += amount;
+    else running -= amount;
+
+    return {
+      ...row,
+      entry: row.type === "entrada" ? formatBrl(amount) : "—",
+      entryRaw: row.type === "entrada" ? amount : 0,
+      exit: row.type === "saída" ? formatBrl(amount) : "—",
+      exitRaw: row.type === "saída" ? amount : 0,
+      balance: formatBrl(running),
+      balanceRaw: running,
+    };
+  });
+
+  return rows.reverse();
+}
+
+function buildCalendar(): { days: CashFlowCalendarDay[]; label: string } {
+  const ref = CASH_FLOW_REFERENCE_DATE;
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const label = `MAI/${String(year).slice(-2)}`;
+
+  const profile = [
+    1200, 800, 2100, 3400, 4250, 5100, 2800, 1900, 3600, 2200,
+    1800, 4100, 2900, 5200, 3800, 2400, 1600, 3300, 2700, 4500,
+    3100, 2200, 3900, 2600, 4800, 3500, 2100, 8400,
+  ];
+
+  let balance = 35200;
+  const days: CashFlowCalendarDay[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dow = date.getDay();
+    const entriesRaw = profile[day - 1] ?? 1500;
+    const exitsRaw = Math.round(entriesRaw * 0.55);
+    balance += entriesRaw - exitsRaw;
+
+    days.push({
+      day,
+      dateIso: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      entries: formatBrl(entriesRaw),
+      entriesRaw,
+      exits: formatBrl(exitsRaw),
+      exitsRaw,
+      balance: formatBrl(balance),
+      balanceRaw: balance,
+      isToday: day === ref.getDate(),
+      isWeekend: dow === 0 || dow === 6,
+    });
+  }
+
+  return { days, label };
+}
+
+function buildAlerts(factor: number): CashFlowAlert[] {
+  return [
+    {
+      id: "a1",
+      priority: "critical",
+      title: "Saldo projetado negativo",
+      description: "Em 22/06 o saldo projetado cai para -R$ 420,00 com pagamentos de manutenção e pneus.",
+      icon: "⚠️",
+    },
+    {
+      id: "a2",
+      priority: "warning",
+      title: "Saídas acima da média",
+      description: `Saídas da semana (${formatBrl(scale(9200, factor))}) estão 18% acima da média das últimas 4 semanas.`,
+      icon: "📉",
+    },
+    {
+      id: "a3",
+      priority: "info",
+      title: "Entradas abaixo do esperado",
+      description: "Entradas de pacotes estão 12% abaixo da meta semanal. Considere ações comerciais.",
+      icon: "📊",
+    },
+    {
+      id: "a4",
+      priority: "warning",
+      title: "Alto gasto com manutenção",
+      description: `Manutenção de karts representou ${formatBrl(scale(4200, factor))} no período (+24% vs. mês anterior).`,
+      icon: "🔧",
+    },
+  ];
+}
+
+function periodLabelFor(key: CashFlowPeriodKey): string {
+  const ref = CASH_FLOW_REFERENCE_DATE;
+  switch (key) {
+    case "today":
+      return `${String(ref.getDate()).padStart(2, "0")}/MAI/${String(ref.getFullYear()).slice(-2)}`;
+    case "week":
+      return "Semana atual";
+    case "current-month":
+      return "MAI/26";
+    case "last-3-months":
+      return "MAR–MAI/26";
+    case "custom":
+      return "Período personalizado";
+    default:
+      return "MAI/26";
+  }
+}
+
+export function getCashFlowDataset(filter: CashFlowPeriodFilter): CashFlowDataset {
+  const factor =
+    filter.key === "custom"
+      ? 1.2
+      : PERIOD_SCALE[filter.key as Exclude<CashFlowPeriodKey, "custom">] ?? 1;
+
+  const calendar = buildCalendar();
+
+  return {
+    periodLabel: periodLabelFor(filter.key),
+    summaryKpis: buildSummaryKpis(factor),
+    chartByGranularity: buildChartData(factor),
+    projection: buildProjection(),
+    entriesByOrigin: buildEntriesByOrigin(factor),
+    exitsByCategory: buildExitsByCategory(factor),
+    movements: buildMovements(factor),
+    calendarDays: calendar.days,
+    calendarMonthLabel: calendar.label,
+    alerts: buildAlerts(factor),
+    movementCategories: [
+      "Aulas",
+      "Aluguel de kart",
+      "Pacotes",
+      "Produtos",
+      "Combustível",
+      "Pneus",
+      "Manutenção",
+      "Peças",
+      "Equipamentos",
+      "Marketing",
+      "Administrativo",
+      "Taxas",
+      "Outros",
+    ],
+    paymentMethods: ["Pix", "Cartão", "Transferência", "Boleto", "Dinheiro", "Débito automático"],
+  };
+}
+
+export function filterCashFlowMovements(
+  movements: CashFlowStatementRow[],
+  filters: {
+    type?: MovementType | "";
+    category?: string;
+    paymentMethod?: string;
+    search?: string;
+  }
+): CashFlowStatementRow[] {
+  return movements.filter((row) => {
+    if (filters.type && row.type !== filters.type) return false;
+    if (filters.category && row.category !== filters.category) return false;
+    if (filters.paymentMethod && row.paymentMethod !== filters.paymentMethod) return false;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      if (
+        !row.description.toLowerCase().includes(q) &&
+        !row.category.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+/** @deprecated DRE removido do fluxo de caixa — use admin-dre-mocks */
+export type DreRowKind = "section" | "subtotal" | "total" | "line";
+/** @deprecated */
+export type DreRow = {
+  id: string;
+  label: string;
+  kind: DreRowKind;
+  currentValue: number;
+  previousValue: number;
+  indent?: number;
+};

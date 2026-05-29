@@ -74,7 +74,7 @@ export function MaterialsCard() {
 
           <div
             ref={scrollerRef}
-            className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-11 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-14 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-x-visible lg:px-0 [&::-webkit-scrollbar]:hidden"
+            className="app-scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-11 pb-1 sm:px-14 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-x-visible lg:px-0"
           >
             {StudentAreaServiceMock.getVideoMaterials().map((it) => (
               <div

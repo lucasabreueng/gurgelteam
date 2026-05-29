@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { SectorsPageData } from "@/lib/contracts/telemetry/sectors";
 import type { ProcessedTelemetrySession } from "@/lib/telemetry-engine";
 import {
   getProcessedSession,
   isProcessedSessionId,
   processedSessionToSectorsPage,
 } from "@/lib/telemetry-engine";
-import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock";
 
 export function useProcessedTelemetrySession(sessionId: string) {
   const [session, setSession] = useState<ProcessedTelemetrySession | null>(null);
@@ -43,17 +41,13 @@ export function useProcessedTelemetrySession(sessionId: string) {
 
 export function useSectorsPageData(sessionId: string) {
   const { session, loading, isProcessed } = useProcessedTelemetrySession(sessionId);
-  const [mockData, setMockData] = useState<SectorsPageData | null>(null);
 
-  useEffect(() => {
-    if (isProcessedSessionId(sessionId)) return;
-    setMockData(TelemetryServiceMock.getSectorsPageData(sessionId));
-  }, [sessionId, isProcessed]);
+  if (!sessionId) {
+    return { data: null, loading: false, isProcessed: false, session: null };
+  }
 
   const data =
-    isProcessed && session
-      ? processedSessionToSectorsPage(session)
-      : mockData ?? TelemetryServiceMock.getSectorsPageData(sessionId);
+    isProcessed && session ? processedSessionToSectorsPage(session) : null;
 
   return { data, loading: isProcessed && loading, isProcessed, session };
 }

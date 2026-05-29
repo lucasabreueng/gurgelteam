@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { SettingsDatePicker } from "@/components/admin/settings/settings-date-picker";
 import { SettingsCheckbox } from "@/components/admin/settings/settings-checkbox";
 import { ScheduleDrawerShell } from "./schedule-drawer-shell";
+import { DrawerFooterActions } from "@/components/ui/drawer-footer";
 import {
   ScheduleBlocksServiceMock,
   type ScheduleBlockEntry,
@@ -47,6 +49,8 @@ export function BlockScheduleDrawer({
   );
   const [reason, setReason] = useState("");
   const [existingBlocks, setExistingBlocks] = useState<ScheduleBlockEntry[]>([]);
+  useDrawerBodyLock(open);
+
 
   const slots = useMemo(
     () => ScheduleBlocksServiceMock.getAllScheduleSlotsForDate(date),
@@ -69,11 +73,9 @@ export function BlockScheduleDrawer({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [open, initialDate, onClose, defaultDate]);
 
   useEffect(() => {
@@ -127,11 +129,11 @@ export function BlockScheduleDrawer({
       titleId="block-schedule-drawer-title"
       description="Indisponibilize um dia inteiro ou horários específicos."
       footer={
-        <div className="flex gap-2 px-4 py-4 md:px-5">
+        <DrawerFooterActions columns={2}>
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-[rgba(13,31,60,0.2)] py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-neutral-50"
+            className="rounded-xl border border-[rgba(13,31,60,0.2)] py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-neutral-50"
           >
             Cancelar
           </button>
@@ -139,11 +141,11 @@ export function BlockScheduleDrawer({
             type="button"
             disabled={!canSave}
             onClick={handleSave}
-            className="flex-1 rounded-xl bg-[#0d1f3c] py-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl bg-[#0d1f3c] py-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Salvar bloqueio
           </button>
-        </div>
+        </DrawerFooterActions>
       }
     >
       <div className="space-y-5 p-4 md:p-5">

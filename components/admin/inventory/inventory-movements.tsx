@@ -1,15 +1,10 @@
 "use client";
 
 import type { MovementType } from "@/lib/contracts/inventory";
-
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
-
 import { useMemo, useState } from "react";
-import { HiMagnifyingGlass } from "react-icons/hi2";
-
-import { FilterBox, filterFieldHeightClass, filtersActive } from "@/components/ui/filter-box";
-import { SettingsDropdown } from "../settings/settings-dropdown";
-import { settingsInputClass } from "../settings/settings-section";
+import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
+import { TableFiltersToolbar } from "@/components/ui/table-filters-toolbar";
 import { InventoryTablePagination } from "./inventory-table-pagination";
 import {
   InventoryTableShell,
@@ -19,6 +14,11 @@ import {
   inventoryThClass,
   inventoryThFirstClass,
 } from "./inventory-table-shared";
+import {
+  MovementsFilters,
+  countMovementsFilters,
+  type MovementsFilterState,
+} from "./movements-filters";
 import { useInventoryTableState } from "./use-inventory-table-state";
 
 const TYPE_STYLE: Record<MovementType, string> = {
@@ -29,21 +29,19 @@ const TYPE_STYLE: Record<MovementType, string> = {
   devolucao: "bg-violet-50 text-violet-900 ring-violet-200/60",
 };
 
-const TYPE_OPTIONS: { value: MovementType | ""; label: string }[] = [
-  { value: "", label: "Todos tipos" },
-  ...(
-    Object.entries(InventoryServiceMock.getMovementTypeLabels()) as [MovementType, string][]
-  ).map(([value, label]) => ({ value, label })),
-];
+const DEFAULT_FILTERS: MovementsFilterState = {
+  query: "",
+  typeFilter: "",
+};
 
 export function InventoryMovements() {
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<MovementType | "">("");
+  const [filters, setFilters] = useState<MovementsFilterState>(DEFAULT_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const rows = useMemo(() => {
     let list = [...InventoryServiceMock.getMovements()];
-    if (typeFilter) list = list.filter((m) => m.type === typeFilter);
-    const q = query.trim().toLowerCase();
+    if (filters.typeFilter) list = list.filter((m) => m.type === filters.typeFilter);
+    const q = filters.query.trim().toLowerCase();
     if (q) {
       list = list.filter((m) =>
         [m.partName, m.partCode, m.responsible, m.osNumber ?? ""]
@@ -53,7 +51,7 @@ export function InventoryMovements() {
       );
     }
     return list;
-  }, [query, typeFilter]);
+  }, [filters]);
 
   const {
     page,
@@ -62,44 +60,31 @@ export function InventoryMovements() {
     handlePageSizeChange,
     paginatedItems,
     totalItems,
-  } = useInventoryTableState(rows, [query, typeFilter]);
+  } = useInventoryTableState(rows, [filters.query, filters.typeFilter]);
 
-  const filtersAreActive = filtersActive([query, typeFilter]);
+  const clearFilters = () => setFilters(DEFAULT_FILTERS);
 
   return (
     <div className="admin-page-stack">
-      <FilterBox
-        active={filtersAreActive}
-        onClear={() => {
-          setQuery("");
-          setTypeFilter("");
-        }}
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-stretch">
-          <div className="relative min-w-[200px] flex-[2] lg:min-w-[240px]">
-            <HiMagnifyingGlass
-              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400"
-              aria-hidden
-            />
-            <input
-              type="search"
-              placeholder="Buscar peça, OS, responsável…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className={`${settingsInputClass} ${filterFieldHeightClass} w-full pl-10`}
-              aria-label="Buscar movimentação"
-            />
-          </div>
-          <div className="w-full min-w-[11rem] lg:max-w-[12rem] lg:flex-1">
-            <SettingsDropdown
-              aria-label="Tipo de movimentação"
-              options={TYPE_OPTIONS}
-              value={typeFilter}
-              onSelect={(v) => setTypeFilter(v as MovementType | "")}
-            />
-          </div>
-        </div>
-      </FilterBox>
+      <TableFiltersToolbar
+        onOpen={() => setFiltersOpen(true)}
+        activeFilterCount={countMovementsFilters(filters)}
+      />
+      <ResponsiveTableFilters
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        onClear={clearFilters}
+        resultCount={rows.length}
+        resultUnit="movimentação"
+        renderFilters={(layout) => (
+          <MovementsFilters
+            layout={layout}
+            filters={filters}
+            onChange={(patch) => setFilters((p) => ({ ...p, ...patch }))}
+            onClear={clearFilters}
+          />
+        )}
+      />
 
       <InventoryTableShell
         isEmpty={totalItems === 0}

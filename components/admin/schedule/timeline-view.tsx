@@ -16,5 +16,9 @@ type Props = {
 };
 
 export function TimelineView(props: Props) {
-  return <OperationalTimeline {...props} />;
+  return (
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
+      <OperationalTimeline {...props} />
+    </div>
+  );
 }

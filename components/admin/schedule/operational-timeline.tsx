@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ScheduleEvent, ScheduleViewKey } from "@/lib/contracts/schedule";
 import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { HiLockClosed, HiPlus } from "react-icons/hi2";
 import { ConfirmDialog } from "@/components/admin/settings/confirm-dialog";
 import { TimelineSlotCard } from "./timeline-slot-card";
 import { FreeSlotCard } from "./free-slot-card";
@@ -110,21 +111,19 @@ export function OperationalTimeline({
 
   return (
     <>
-      <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[rgba(17,17,17,0.06)] px-4 py-4 md:px-6">
+      <section className="schedule-day-operation w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-sm">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[rgba(17,17,17,0.06)] px-4 py-4 md:px-6">
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-bold text-[#0d1f3c]">
               Operação do dia
             </h2>
             <p className="mt-1 text-xs lowercase text-neutral-500">{dateLabel}</p>
-            {summary && !isEmpty ? (
-              <p className="mt-2 text-xs font-semibold text-[#0d1f3c]">
-                {summary.bookingCount} agendamentos · {summary.occupancyPercent}
-                % ocupação · {summary.freeSlots} janelas livres
-              </p>
-            ) : null}
           </div>
-          <ScheduleViewToggle active={view} onChange={onViewChange} />
+          <ScheduleViewToggle
+            active={view}
+            onChange={onViewChange}
+            className="min-w-0 max-w-full"
+          />
         </div>
 
         {isEmpty ? (
@@ -139,83 +138,59 @@ export function OperationalTimeline({
               <button
                 type="button"
                 onClick={() => onCreateClass?.()}
-                className="rounded-xl bg-[#0d1f3c] px-5 py-3 text-[10px] font-bold uppercase text-white"
+                aria-label="Criar aula"
+                className="schedule-slot-action-btn inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#0d1f3c] px-5 py-3 text-[10px] font-bold uppercase text-white"
               >
-                Criar aula
+                <HiPlus className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="schedule-slot-action-label">Criar aula</span>
               </button>
               <button
                 type="button"
                 onClick={onOpenBlockDrawer}
-                className="rounded-xl border border-[rgba(13,31,60,0.2)] px-5 py-3 text-[10px] font-bold uppercase text-[#0d1f3c]"
+                aria-label="Bloquear horário"
+                className="schedule-slot-action-btn inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(13,31,60,0.2)] px-5 py-3 text-[10px] font-bold uppercase text-[#0d1f3c]"
               >
-                Bloquear horário
+                <HiLockClosed className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="schedule-slot-action-label">Bloquear horário</span>
               </button>
             </div>
           </div>
         ) : (
-          <div className="px-4 py-5 md:px-6">
-            <ul className="space-y-0">
-              {rows.map((row, index) => {
-                const isLast = index === rows.length - 1;
-
-                return (
-                  <li
-                    key={`${row.kind}-${row.time}-${index}`}
-                    className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 md:grid-cols-[3.5rem_minmax(0,1fr)] md:gap-x-4"
-                  >
-                    <time
-                      className="pt-3 text-right text-xs font-bold tabular-nums text-neutral-500"
-                      dateTime={row.time}
-                    >
-                      {row.time}
-                    </time>
-
-                    <div
-                      className={`relative min-w-0 ${isLast ? "pb-0" : "pb-5"}`}
-                    >
-                      <span
-                        className="absolute left-0 top-[0.85rem] z-10 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-neutral-300 bg-white"
-                        aria-hidden
-                      />
-                      {!isLast ? (
-                        <span
-                          className="absolute bottom-[-1.25rem] left-0 top-[1.15rem] w-px -translate-x-1/2 bg-neutral-200"
-                          aria-hidden
-                        />
-                      ) : null}
-
-                      <div className="min-w-0 pl-4 md:pl-5">
-                        {row.kind === "free" ? (
-                          <FreeSlotCard
-                            time={row.time}
-                            category={row.category}
-                            blocked={isBlocked(row.time)}
-                            onCreateClass={onCreateClass}
-                            onRequestBlock={() =>
-                              setBlockConfirm({
-                                time: row.time,
-                                category: row.category,
-                              })
-                            }
-                            onRequestUnblock={() =>
-                              setUnblockConfirm({
-                                time: row.time,
-                                category: row.category,
-                              })
-                            }
-                          />
-                        ) : (
-                          <TimelineSlotCard
-                            time={row.time}
-                            events={row.events}
-                            onEventClick={onEventClick}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
+          <div className="min-w-0 max-w-full overflow-hidden px-4 py-5 md:px-6">
+            <ul className="schedule-day-operation__list min-w-0 max-w-full space-y-3">
+              {rows.map((row, index) => (
+                <li
+                  key={`${row.kind}-${row.time}-${index}`}
+                  className="min-w-0 max-w-full"
+                >
+                  {row.kind === "free" ? (
+                    <FreeSlotCard
+                      time={row.time}
+                      category={row.category}
+                      blocked={isBlocked(row.time)}
+                      onCreateClass={onCreateClass}
+                      onRequestBlock={() =>
+                        setBlockConfirm({
+                          time: row.time,
+                          category: row.category,
+                        })
+                      }
+                      onRequestUnblock={() =>
+                        setUnblockConfirm({
+                          time: row.time,
+                          category: row.category,
+                        })
+                      }
+                    />
+                  ) : (
+                    <TimelineSlotCard
+                      time={row.time}
+                      events={row.events}
+                      onEventClick={onEventClick}
+                    />
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         )}

@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
-import { HiArrowTopRightOnSquare, HiXMark } from "react-icons/hi2";
+import { HiArrowTopRightOnSquare } from "react-icons/hi2";
 import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
+import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { KartTechnicalTimeline } from "./kart-technical-timeline";
+import {
+  ScheduleDrawerShell,
+} from "@/components/admin/schedule/schedule-drawer-shell";
 import { KartStatusBadge } from "./kart-status-badge";
+
+const KART_DETAIL_PANEL_CLASS =
+  "app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:w-[min(100%,800px)] lg:max-w-[800px] lg:shrink-0";
 
 const metaBadge =
   "inline-flex rounded-md border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-2 py-0.5 text-[11px] font-semibold text-[#0d1f3c]";
@@ -54,6 +62,7 @@ type Props = {
   kartId: string | null;
   focusHistory?: boolean;
   onClose: () => void;
+  onEdit?: (kartId: string) => void;
 };
 
 function Section({
@@ -74,31 +83,35 @@ function Section({
   );
 }
 
-export function KartDetailDrawer({ kartId, focusHistory = false, onClose }: Props) {
+const DETAIL_TAB_CLASS =
+  "relative shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-[13px] font-semibold transition-colors";
+
+export function KartDetailDrawer({
+  kartId,
+  focusHistory = false,
+  onClose,
+  onEdit,
+}: Props) {
+  const [detailTab, setDetailTab] = useState<"overview" | "technical">("overview");
   const detail = kartId ? KartsServiceMock.getDetail(kartId) : null;
+  const technicalTimeline = kartId
+    ? MaintenanceServiceMock.getKartTechnicalTimeline(kartId)
+    : [];
 
   useEffect(() => {
     if (!kartId) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [kartId, onClose]);
+    setDetailTab(focusHistory ? "technical" : "overview");
+  }, [kartId, focusHistory]);
 
   useEffect(() => {
     if (!kartId || !focusHistory) return;
     const timer = window.setTimeout(() => {
       document
-        .getElementById("kart-usage-history")
+        .getElementById("kart-technical-timeline")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [kartId, focusHistory]);
+  }, [kartId, focusHistory, detailTab]);
 
   const chartOption: EChartsOption = useMemo(() => {
     if (!detail) return {};
@@ -145,10 +158,10 @@ export function KartDetailDrawer({ kartId, focusHistory = false, onClose }: Prop
     };
   }, [detail]);
 
-  if (!kartId || !detail) return null;
+  const k = detail?.list;
+  const isClient = k?.ownership === "client";
 
-  const k = detail.list;
-  const isClient = k.ownership === "client";
+  if (!kartId || !detail || !k) return null;
 
   const checkClass = (s: string) =>
     s === "ok"
@@ -168,30 +181,73 @@ export function KartDetailDrawer({ kartId, focusHistory = false, onClose }: Prop
   }));
 
   return (
-    <div className="fixed inset-0 z-[200] flex justify-end">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        aria-label="Fechar"
-        onClick={onClose}
-      />
-      <aside className="relative flex h-full w-full max-w-[min(100vw,800px)] flex-col bg-[#f3f5f9] shadow-[-12px_0_48px_rgba(13,31,60,0.2)]">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white/95 px-5 py-4 backdrop-blur-md">
-          <p className="text-sm font-bold uppercase tracking-wider text-neutral-500">
-            Kart {String(k.number).padStart(2, "0")}
-          </p>
+    <ScheduleDrawerShell
+      open={Boolean(kartId)}
+      onClose={onClose}
+      title={`Kart ${String(k.number).padStart(2, "0")}`}
+      titleId="kart-detail-drawer-title"
+      description={
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span>{k.categoryName}</span>
+          <span aria-hidden>·</span>
+          <span>{isClient ? "Cliente" : "Próprio"}</span>
+          <KartStatusBadge status={k.status} />
+        </span>
+      }
+      headerActions={
+        onEdit ? (
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.1)]"
-            aria-label="Fechar"
+            onClick={() => onEdit(kartId)}
+            className="btn-outline-sm bg-white"
           >
-            <HiXMark className="h-5 w-5" />
+            Editar
           </button>
-        </header>
+        ) : null
+      }
+      panelClassName={KART_DETAIL_PANEL_CLASS}
+      zIndexClass="z-[200]"
+    >
+      <div className="px-4 py-5 md:px-6">
+        <nav
+          aria-label="Abas do kart"
+          className="-mx-1 mb-4 flex gap-0 border-b border-[rgba(17,17,17,0.08)]"
+        >
+          <button
+            type="button"
+            onClick={() => setDetailTab("overview")}
+            className={`${DETAIL_TAB_CLASS} ${
+              detailTab === "overview"
+                ? "border-[#0d1f3c] text-[#0d1f3c]"
+                : "border-transparent text-neutral-500"
+            }`}
+          >
+            Visão geral
+          </button>
+          <button
+            type="button"
+            onClick={() => setDetailTab("technical")}
+            className={`${DETAIL_TAB_CLASS} ${
+              detailTab === "technical"
+                ? "border-[#0d1f3c] text-[#0d1f3c]"
+                : "border-transparent text-neutral-500"
+            }`}
+          >
+            Histórico técnico
+          </button>
+        </nav>
 
-        <div className="flex-1 overflow-y-auto px-5 py-6">
-          <div className="space-y-6">
+        {detailTab === "technical" ? (
+          <Section
+            title="Histórico técnico"
+            desc="Inspeções, manutenções e checklists completos em ordem cronológica."
+          >
+            <div id="kart-technical-timeline">
+              <KartTechnicalTimeline entries={technicalTimeline} />
+            </div>
+          </Section>
+        ) : (
+        <div className="space-y-6">
             <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -447,9 +503,9 @@ export function KartDetailDrawer({ kartId, focusHistory = false, onClose }: Prop
                 opts={{ renderer: "svg" }}
               />
             </Section>
-          </div>
         </div>
-      </aside>
-    </div>
+        )}
+      </div>
+    </ScheduleDrawerShell>
   );
 }

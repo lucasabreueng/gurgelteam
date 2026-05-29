@@ -134,7 +134,7 @@ export function TelemetryImportPreview({
         )}
 
         <div className="max-h-40 overflow-y-auto rounded-lg border border-[rgba(17,17,17,0.08)]">
-          <table className="w-full text-left text-[12px]">
+          <table className="hidden w-full text-left text-[12px] lg:table">
             <thead className="sticky top-0 bg-neutral-100 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
               <tr>
                 <th className="px-3 py-2">Volta</th>
@@ -164,6 +164,37 @@ export function TelemetryImportPreview({
               ))}
             </tbody>
           </table>
+
+          <div className="lg:hidden">
+            <ul className="divide-y divide-[rgba(17,17,17,0.06)]">
+              {lapRows.map((row) => (
+                <li key={row.lap} className="px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-[12px] font-bold text-[#0d1f3c]">
+                        Volta {row.lap}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[12px] tabular-nums text-neutral-800">
+                        {row.time}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] text-neutral-600">
+                        {row.sectors || "—"}
+                      </p>
+                    </div>
+                    <div className="shrink-0 pt-0.5 text-right text-[11px]">
+                      {row.incomplete ? (
+                        <span className="font-semibold text-amber-600">Incompleta</span>
+                      ) : row.valid ? (
+                        <span className="font-semibold text-emerald-700">Válida</span>
+                      ) : (
+                        <span className="font-semibold text-neutral-500">Inválida</span>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 

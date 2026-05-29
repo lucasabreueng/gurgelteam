@@ -16,11 +16,14 @@ import { FinancialStatusBadge } from "./financial-status-badge";
 import { KartStatusBadge } from "./kart-status-badge";
 import { ScheduleActionModal } from "./schedule-action-modal";
 import { ScheduleDrawerShell } from "./schedule-drawer-shell";
+import { DrawerFooterActions } from "@/components/ui/drawer-footer";
 
 type Props = {
   eventId: string | null;
   events: ScheduleEvent[];
   onClose: () => void;
+  /** Volta para a lista de agendamentos do dia (sem fechar o fluxo do dia). */
+  onBack?: () => void;
   onAction?: (message: string) => void;
 };
 
@@ -66,6 +69,7 @@ export function ScheduleDetailsDrawer({
   eventId,
   events,
   onClose,
+  onBack,
   onAction,
 }: Props) {
   const schedule = getAppServices().schedule;
@@ -150,31 +154,29 @@ export function ScheduleDetailsDrawer({
   };
 
   const footerContent = (
-    <div className="px-4 py-4 md:px-5">
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => setRescheduleOpen(true)}
-          className="flex-1 rounded-xl border border-[rgba(13,31,60,0.2)] py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-neutral-50"
-        >
-          Remarcar
-        </button>
-        <button
-          type="button"
-          onClick={() => setCancelConfirmOpen(true)}
-          className="flex-1 rounded-xl border border-red-200 py-3 text-[11px] font-bold uppercase tracking-wider text-red-700 transition hover:bg-red-50"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={() => setSwapKartOpen(true)}
-          className="flex-1 rounded-xl bg-[#0d1f3c] py-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
-        >
-          Trocar kart
-        </button>
-      </div>
-    </div>
+    <DrawerFooterActions columns={3}>
+      <button
+        type="button"
+        onClick={() => setRescheduleOpen(true)}
+        className="rounded-xl border border-[rgba(13,31,60,0.2)] px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-neutral-50"
+      >
+        Remarcar
+      </button>
+      <button
+        type="button"
+        onClick={() => setCancelConfirmOpen(true)}
+        className="rounded-xl border border-red-200 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-red-700 transition hover:bg-red-50"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        onClick={() => setSwapKartOpen(true)}
+        className="rounded-xl bg-[#0d1f3c] px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+      >
+        Trocar kart
+      </button>
+    </DrawerFooterActions>
   );
 
   return (
@@ -182,6 +184,7 @@ export function ScheduleDetailsDrawer({
       <ScheduleDrawerShell
         open={open}
         onClose={onClose}
+        onBack={onBack}
         title="Detalhe da aula"
         titleId="schedule-detail-drawer-title"
         footer={footerContent}

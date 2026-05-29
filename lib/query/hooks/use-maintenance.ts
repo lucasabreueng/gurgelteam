@@ -17,3 +17,23 @@ export function useMaintenanceKpis() {
     queryFn: () => getAppServices().maintenance.getKpis(),
   });
 }
+
+export function useMaintenanceSimplePage() {
+  return useQuery({
+    queryKey: [...queryKeys.maintenance.all, "simple-page"] as const,
+    queryFn: () => {
+      const m = getAppServices().maintenance;
+      return {
+        kpis: m.getSimpleKpis(),
+        fleet: m.getSimpleFleet(),
+        activity: m.getRecentActivity(),
+        responsibles: m.getResponsibles(),
+        filterOptions: m.getSimpleFilterOptions(),
+        inspections: m.getInspectionsList(),
+        maintenances: m.getMaintenancesList(),
+        checklistHistory: m.getChecklistHistory(),
+        pageTabs: m.getMaintenancePageTabs(),
+      };
+    },
+  });
+}

@@ -3,6 +3,7 @@
 import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
 
 import { useEffect } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { ClientApprovalFlow } from "./client-approval-flow";
@@ -42,6 +43,9 @@ type Props = {
 
 export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
   const detail = orderId ? MaintenanceServiceMock.getDetail(orderId) : null;
+  const open = Boolean(orderId);
+  useDrawerBodyLock(open);
+
 
   useEffect(() => {
     if (!orderId) return;
@@ -49,11 +53,9 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+      };
   }, [orderId, onClose]);
 
   if (!orderId || !detail) return null;
@@ -69,7 +71,7 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
         aria-label="Fechar"
         onClick={onClose}
       />
-      <aside className="relative flex h-full w-full max-w-3xl flex-col bg-[#f3f5f9] shadow-2xl">
+      <aside className="app-drawer-panel relative flex h-full w-full max-w-3xl flex-col bg-[#f3f5f9] shadow-2xl">
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <p className="text-lg font-bold text-[#0d1f3c]">{order.osNumber}</p>

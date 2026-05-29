@@ -1,8 +1,11 @@
+"use client";
+
 import {
   HiArrowDownTray,
   HiArrowUpTray,
   HiShoppingCart,
 } from "react-icons/hi2";
+import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
 import { AdminPageHeader } from "../admin-page-header";
 import { RegisterPartButton } from "./register-part-button";
 import { RegisterSupplierButton } from "./register-supplier-button";
@@ -26,6 +29,8 @@ export function InventoryHeader({
   onRegisterPart,
   onRegisterSupplier,
 }: Props) {
+  const { tabletLandscape } = useAdminPanelTabletLayout();
+
   return (
     <AdminPageHeader
       title={title}
@@ -40,7 +45,7 @@ export function InventoryHeader({
             className="btn-outline-sm bg-white"
           >
             <HiArrowDownTray className="h-4 w-4" aria-hidden />
-            Registrar entrada
+            {tabletLandscape ? "Entrada" : "Registrar entrada"}
           </button>
           <button
             type="button"
@@ -48,7 +53,7 @@ export function InventoryHeader({
             className="btn-outline-sm bg-white"
           >
             <HiArrowUpTray className="h-4 w-4" aria-hidden />
-            Registrar saída
+            {tabletLandscape ? "Saída" : "Registrar saída"}
           </button>
           <button
             type="button"
@@ -56,10 +61,11 @@ export function InventoryHeader({
             className="btn-primary-sm"
           >
             <HiShoppingCart className="h-4 w-4" aria-hidden />
-            Solicitar compra
+            {tabletLandscape ? "Compra" : "Solicitar compra"}
           </button>
         </>
       }
+      actionsClassName="admin-page-header-actions--tablet-compact"
     />
   );
 }

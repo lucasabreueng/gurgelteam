@@ -1,18 +1,24 @@
 "use client";
 
-import type { SettingsTabKey, KartCategory, SkillLevel, PlanCategory, NotificationEvent, NotificationChannel, RoleKey, PermissionKey } from "@/lib/contracts/settings";
+import type {
+  SettingsTabKey,
+  KartCategory,
+  SkillLevel,
+  CategoryPrice,
+  NotificationEvent,
+  NotificationChannel,
+  SettingsUserAccount,
+  DocumentTemplate,
+} from "@/lib/contracts/settings";
 
 import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 
 import Image from "next/image";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { AuditLog } from "./audit-log";
-import { IntegrationCard } from "./integration-card";
-import { PermissionCard } from "./permission-card";
 import { CategoriesLevelsPanel } from "./categories-levels-panel";
-import { KartsPanel } from "./karts-panel";
-import { PlansPackagesPanel } from "./plans-packages-panel";
+import { DocumentsPanel } from "./documents-panel";
+import { PricesPanel } from "./prices-panel";
 import { ScheduleHoursPanel } from "./schedule-hours-panel";
 import {
   SettingsField,
@@ -21,6 +27,7 @@ import {
   settingsTextareaClass,
 } from "./settings-section";
 import { SettingsToggle } from "./settings-toggle";
+import { UsersPermissionsPanel } from "./users-permissions-panel";
 
 type Props = {
   activeTab: SettingsTabKey;
@@ -31,17 +38,52 @@ function markDirty(onDirty: () => void) {
   onDirty();
 }
 
-function clonePlanCategories(data: PlanCategory[]): PlanCategory[] {
-  return data.map((c) => ({
-    ...c,
-    plans: c.plans.map((p) => ({ ...p })),
-  }));
+function cloneCategoryPrices(data: CategoryPrice[]): CategoryPrice[] {
+  return data.map((p) => ({ ...p }));
+}
+
+function LogoPreview({ src }: { src: string }) {
+  if (!src) {
+    return (
+      <span className="text-sm font-medium text-neutral-400">
+        Nenhum logotipo
+      </span>
+    );
+  }
+  if (src.startsWith("blob:") || src.startsWith("data:")) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt="Logo"
+        className="h-10 w-auto max-w-[180px] object-contain"
+      />
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt="Logo"
+      width={120}
+      height={40}
+      className="h-10 w-auto"
+    />
+  );
 }
 
 function cloneLevels(levels: SkillLevel[]): SkillLevel[] {
   return levels.map((l) => ({
     ...l,
     categoryRequirements: l.categoryRequirements.map((r) => ({ ...r })),
+  }));
+}
+
+function cloneSettingsUsers(users: SettingsUserAccount[]): SettingsUserAccount[] {
+  return users.map((u) => ({
+    ...u,
+    modules: Object.fromEntries(
+      Object.entries(u.modules).map(([key, perms]) => [key, { ...perms }])
+    ) as SettingsUserAccount["modules"],
   }));
 }
 
@@ -52,9 +94,12 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
   const [skillLevels, setSkillLevels] = useState<SkillLevel[]>(() =>
     cloneLevels(SettingsServiceMock.getSkillLevels())
   );
-  const [planCategories, setPlanCategories] = useState<PlanCategory[]>(() =>
-    clonePlanCategories(
-      SettingsServiceMock.syncPlanCategoriesFromKart(SettingsServiceMock.getKartCategories(), SettingsServiceMock.getPlanCategories())
+  const [categoryPrices, setCategoryPrices] = useState<CategoryPrice[]>(() =>
+    cloneCategoryPrices(
+      SettingsServiceMock.syncCategoryPricesFromKart(
+        SettingsServiceMock.getKartCategories(),
+        SettingsServiceMock.getCategoryPrices()
+      )
     )
   );
 
@@ -70,18 +115,19 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
           ),
         }))
       );
-      setPlanCategories((prev) => SettingsServiceMock.syncPlanCategoriesFromKart(next, prev));
+      setCategoryPrices((prev) =>
+        SettingsServiceMock.syncCategoryPricesFromKart(next, prev)
+      );
       markDirty(onDirty);
     },
     [onDirty]
   );
-  const [general, setGeneral] = useState({ ...SettingsServiceMock.getGeneralSettings() });
-  const [roles, setRoles] = useState(SettingsServiceMock.getRoles().map((r) => ({ ...r, permissions: { ...r.permissions } })));
-  const [karts, setKarts] = useState(() =>
-    SettingsServiceMock.getSettingsKarts().map((k) => ({ ...k }))
-  );
-  const [feedbackScores, setFeedbackScores] = useState(
-    Object.fromEntries(SettingsServiceMock.getFeedbackCriteria().map((c) => [c.id, c.defaultScore]))
+
+  const [general, setGeneral] = useState({
+    ...SettingsServiceMock.getGeneralSettings(),
+  });
+  const [settingsUsers, setSettingsUsers] = useState<SettingsUserAccount[]>(
+    () => cloneSettingsUsers(SettingsServiceMock.getSettingsUsers())
   );
   const [notifications, setNotifications] = useState<NotificationEvent[]>(
     SettingsServiceMock.getNotificationEvents().map((e) => ({
@@ -89,22 +135,10 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
       channels: { ...e.channels },
     }))
   );
-  const [ranking, setRanking] = useState({ ...SettingsServiceMock.getRankingSettings() });
-  const [appearance, setAppearance] = useState({ ...SettingsServiceMock.getAppearanceSettings() });
-
-  const updateRolePerm = useCallback(
-    (roleKey: RoleKey, perm: PermissionKey, value: boolean) => {
-      setRoles((prev) =>
-        prev.map((r) =>
-          r.key === roleKey
-            ? { ...r, permissions: { ...r.permissions, [perm]: value } }
-            : r
-        )
-      );
-      markDirty(onDirty);
-    },
-    [onDirty]
+  const [documents, setDocuments] = useState<DocumentTemplate[]>(() =>
+    SettingsServiceMock.getDocumentTemplates().map((d) => ({ ...d }))
   );
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const toggleNotification = (
     eventId: string,
@@ -128,123 +162,161 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
           title="Geral"
           description="Identidade da equipe e canais de contato."
         >
-          <div className="grid gap-6 md:grid-cols-2">
-            <SettingsField label="Nome da equipe">
-              <input
-                className={settingsInputClass}
-                value={general.teamName}
-                onChange={(e) => {
-                  setGeneral((g) => ({ ...g, teamName: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <SettingsField label="CNPJ">
-              <input
-                className={settingsInputClass}
-                value={general.cnpj}
-                onChange={(e) => {
-                  setGeneral((g) => ({ ...g, cnpj: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <SettingsField label="E-mail">
-              <input
-                type="email"
-                className={settingsInputClass}
-                value={general.email}
-                onChange={(e) => {
-                  setGeneral((g) => ({ ...g, email: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <SettingsField label="WhatsApp">
-              <input
-                className={settingsInputClass}
-                value={general.whatsapp}
-                onChange={(e) => {
-                  setGeneral((g) => ({ ...g, whatsapp: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <SettingsField label="Instagram">
-              <input
-                className={settingsInputClass}
-                value={general.instagram}
-                onChange={(e) => {
-                  setGeneral((g) => ({ ...g, instagram: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
+          <div className="grid gap-6">
             <SettingsField label="Logo">
-              <div className="flex items-center gap-4 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4">
-                <Image
-                  src={general.logo}
-                  alt="Logo"
-                  width={120}
-                  height={40}
-                  className="h-10 w-auto"
+              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4">
+                <LogoPreview src={general.logo} />
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const url = URL.createObjectURL(file);
+                    setGeneral((g) => ({ ...g, logo: url }));
+                    markDirty(onDirty);
+                    e.target.value = "";
+                  }}
                 />
                 <button
                   type="button"
                   className="rounded-xl border border-[rgba(13,31,60,0.15)] px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c]"
-                  onClick={() => markDirty(onDirty)}
+                  onClick={() => logoInputRef.current?.click()}
                 >
                   Alterar logo
                 </button>
+                {general.logo ? (
+                  <button
+                    type="button"
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-red-700"
+                    onClick={() => {
+                      setGeneral((g) => ({ ...g, logo: "" }));
+                      markDirty(onDirty);
+                    }}
+                  >
+                    Excluir logotipo
+                  </button>
+                ) : null}
               </div>
             </SettingsField>
-            <div className="md:col-span-2">
-              <SettingsField label="Endereço">
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <SettingsField label="Nome da equipe">
                 <input
                   className={settingsInputClass}
-                  value={general.address}
+                  value={general.teamName}
                   onChange={(e) => {
-                    setGeneral((g) => ({ ...g, address: e.target.value }));
+                    setGeneral((g) => ({ ...g, teamName: e.target.value }));
+                    markDirty(onDirty);
+                  }}
+                />
+              </SettingsField>
+              <SettingsField label="CNPJ">
+                <input
+                  className={settingsInputClass}
+                  value={general.cnpj}
+                  onChange={(e) => {
+                    setGeneral((g) => ({ ...g, cnpj: e.target.value }));
+                    markDirty(onDirty);
+                  }}
+                />
+              </SettingsField>
+              <SettingsField label="E-mail">
+                <input
+                  type="email"
+                  className={settingsInputClass}
+                  value={general.email}
+                  onChange={(e) => {
+                    setGeneral((g) => ({ ...g, email: e.target.value }));
+                    markDirty(onDirty);
+                  }}
+                />
+              </SettingsField>
+              <SettingsField label="WhatsApp">
+                <input
+                  className={settingsInputClass}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={general.whatsapp}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setGeneral((g) => ({ ...g, whatsapp: digits }));
                     markDirty(onDirty);
                   }}
                 />
               </SettingsField>
             </div>
-            <div className="md:col-span-2">
-              <SettingsField label="Texto institucional">
-                <textarea
-                  className={settingsTextareaClass}
-                  value={general.institutionalText}
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <SettingsField label="Instagram">
+                <input
+                  className={settingsInputClass}
+                  value={general.instagram}
                   onChange={(e) => {
-                    setGeneral((g) => ({ ...g, institutionalText: e.target.value }));
+                    setGeneral((g) => ({ ...g, instagram: e.target.value }));
+                    markDirty(onDirty);
+                  }}
+                />
+              </SettingsField>
+              <SettingsField label="TikTok">
+                <input
+                  className={settingsInputClass}
+                  value={general.tiktok}
+                  onChange={(e) => {
+                    setGeneral((g) => ({ ...g, tiktok: e.target.value }));
+                    markDirty(onDirty);
+                  }}
+                />
+              </SettingsField>
+              <SettingsField label="Facebook">
+                <input
+                  className={settingsInputClass}
+                  value={general.facebook}
+                  onChange={(e) => {
+                    setGeneral((g) => ({ ...g, facebook: e.target.value }));
                     markDirty(onDirty);
                   }}
                 />
               </SettingsField>
             </div>
+
+            <SettingsField label="Endereço">
+              <input
+                className={settingsInputClass}
+                value={general.address}
+                onChange={(e) => {
+                  setGeneral((g) => ({ ...g, address: e.target.value }));
+                  markDirty(onDirty);
+                }}
+              />
+            </SettingsField>
+
+            <SettingsField label="Texto institucional">
+              <textarea
+                className={settingsTextareaClass}
+                value={general.institutionalText}
+                onChange={(e) => {
+                  setGeneral((g) => ({
+                    ...g,
+                    institutionalText: e.target.value,
+                  }));
+                  markDirty(onDirty);
+                }}
+              />
+            </SettingsField>
           </div>
         </SettingsSection>
       );
 
     case "usuarios":
       return (
-        <SettingsSection
-          title="Usuários e permissões"
-          description="Defina o que cada função pode fazer no painel."
-        >
-          <div className="grid gap-6 lg:grid-cols-2">
-            {roles.map((role) => (
-              <PermissionCard
-                key={role.key}
-                title={role.title}
-                description={role.description}
-                permissions={role.permissions}
-                readOnly={role.key === "admin"}
-                onChange={(perm, value) => updateRolePerm(role.key, perm, value)}
-              />
-            ))}
-          </div>
-        </SettingsSection>
+        <UsersPermissionsPanel
+          users={settingsUsers}
+          onUsersChange={setSettingsUsers}
+          onDirty={() => markDirty(onDirty)}
+        />
       );
 
     case "horarios":
@@ -256,14 +328,11 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
         />
       );
 
-    case "planos":
+    case "precos":
       return (
-        <PlansPackagesPanel
-          categories={planCategories}
-          onCategoriesChange={(next) => {
-            setPlanCategories(next);
-            markDirty(onDirty);
-          }}
+        <PricesPanel
+          prices={categoryPrices}
+          onPricesChange={setCategoryPrices}
           onDirty={() => markDirty(onDirty)}
         />
       );
@@ -282,59 +351,6 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
         />
       );
 
-    case "karts":
-      return (
-        <KartsPanel
-          kartCategories={kartCategories}
-          karts={karts}
-          onKartsChange={setKarts}
-          onDirty={() => markDirty(onDirty)}
-        />
-      );
-
-    case "feedbacks":
-      return (
-        <SettingsSection
-          title="Feedbacks"
-          description="Modelos de avaliação técnica (escala 1 a 5)."
-        >
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {SettingsServiceMock.getFeedbackCriteria().map((c) => (
-              <li
-                key={c.id}
-                className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-4 py-4"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm font-semibold text-[#0d1f3c]">{c.label}</span>
-                  <span className="text-lg font-bold tabular-nums text-accent">
-                    {feedbackScores[c.id]}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={5}
-                  step={1}
-                  value={feedbackScores[c.id]}
-                  onChange={(e) => {
-                    setFeedbackScores((s) => ({
-                      ...s,
-                      [c.id]: Number(e.target.value),
-                    }));
-                    markDirty(onDirty);
-                  }}
-                  className="mt-3 h-2 w-full cursor-pointer accent-[#0d1f3c]"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-neutral-400">
-                  <span>1</span>
-                  <span>5</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </SettingsSection>
-      );
-
     case "notificacoes":
       return (
         <SettingsSection
@@ -342,7 +358,7 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
           description="Canais por tipo de evento."
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
+            <table className="hidden w-full min-w-[520px] text-left text-sm lg:table">
               <thead>
                 <tr className="border-b border-[rgba(17,17,17,0.08)] text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                   <th className="pb-3 pr-4">Evento</th>
@@ -359,7 +375,9 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
                     key={event.id}
                     className="border-b border-[rgba(17,17,17,0.05)] last:border-0"
                   >
-                    <td className="py-4 pr-4 font-medium text-[#111]">{event.label}</td>
+                    <td className="py-4 pr-4 font-medium text-[#111]">
+                      {event.label}
+                    </td>
                     {SettingsServiceMock.getNotificationChannels().map((ch) => (
                       <td key={ch.key} className="px-2 py-4 text-center">
                         <div className="flex justify-center">
@@ -376,231 +394,53 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
                 ))}
               </tbody>
             </table>
-          </div>
-        </SettingsSection>
-      );
 
-    case "integracoes":
-      return (
-        <SettingsSection title="Integrações" description="Conecte ferramentas externas.">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SettingsServiceMock.getIntegrations().map((item) => (
-              <IntegrationCard
-                key={item.id}
-                name={item.name}
-                description={item.description}
-                status={item.status}
-                onConfigure={() => markDirty(onDirty)}
-              />
-            ))}
-          </div>
-        </SettingsSection>
-      );
-
-    case "seguranca":
-      return (
-        <SettingsSection title="Segurança" description="Conta e auditoria de acesso.">
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {SettingsServiceMock.getSecurityCards().map((card) => (
-              <li
-                key={card.id}
-                className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-5"
-              >
-                <h3 className="font-bold text-[#0d1f3c]">{card.title}</h3>
-                <p className="mt-2 flex-1 text-sm text-neutral-600">{card.description}</p>
-                <button
-                  type="button"
-                  className="mt-4 rounded-xl bg-[#0d1f3c] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white"
-                  onClick={() => markDirty(onDirty)}
-                >
-                  Gerenciar
-                </button>
-              </li>
-            ))}
-          </ul>
-        </SettingsSection>
-      );
-
-    case "aparencia":
-      return (
-        <SettingsSection title="Aparência" description="Identidade visual do painel.">
-          <div className="grid gap-6 md:grid-cols-2">
-            <SettingsField label="Cor principal">
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={appearance.primaryColor}
-                  onChange={(e) => {
-                    setAppearance((a) => ({ ...a, primaryColor: e.target.value }));
-                    markDirty(onDirty);
-                  }}
-                  className="h-11 w-14 cursor-pointer rounded-lg border border-[rgba(17,17,17,0.1)]"
-                />
-                <input
-                  className={settingsInputClass}
-                  value={appearance.primaryColor}
-                  onChange={(e) => {
-                    setAppearance((a) => ({ ...a, primaryColor: e.target.value }));
-                    markDirty(onDirty);
-                  }}
-                />
-              </div>
-            </SettingsField>
-            <SettingsField label="Cor secundária">
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={appearance.secondaryColor}
-                  onChange={(e) => {
-                    setAppearance((a) => ({ ...a, secondaryColor: e.target.value }));
-                    markDirty(onDirty);
-                  }}
-                  className="h-11 w-14 cursor-pointer rounded-lg border border-[rgba(17,17,17,0.1)]"
-                />
-                <input
-                  className={settingsInputClass}
-                  value={appearance.secondaryColor}
-                  onChange={(e) => {
-                    setAppearance((a) => ({ ...a, secondaryColor: e.target.value }));
-                    markDirty(onDirty);
-                  }}
-                />
-              </div>
-            </SettingsField>
-            <SettingsField label="Tema">
-              <div className="flex gap-2">
-                {(["light", "dark"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      setAppearance((a) => ({ ...a, theme: t }));
-                      markDirty(onDirty);
-                    }}
-                    className={`rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider ${
-                      appearance.theme === t
-                        ? "bg-[#0d1f3c] text-white"
-                        : "bg-white ring-1 ring-[rgba(17,17,17,0.1)] text-neutral-600"
-                    }`}
+            <div className="lg:hidden">
+              <ul className="space-y-2">
+                {notifications.map((event) => (
+                  <li
+                    key={event.id}
+                    className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-sm"
                   >
-                    {t === "light" ? "Claro" : "Escuro"}
-                  </button>
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+                      Evento
+                    </p>
+                    <p className="mt-1 text-[14px] font-semibold text-[#111]">
+                      {event.label}
+                    </p>
+                    <div className="mt-3 space-y-2">
+                      {SettingsServiceMock.getNotificationChannels().map((ch) => (
+                        <div
+                          key={ch.key}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-3 py-2"
+                        >
+                          <span className="text-[12px] font-semibold text-neutral-700">
+                            {ch.label}
+                          </span>
+                          <SettingsToggle
+                            checked={event.channels[ch.key]}
+                            onChange={(v) =>
+                              toggleNotification(event.id, ch.key, v)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </li>
                 ))}
-              </div>
-            </SettingsField>
-            <SettingsField label="Imagem padrão do painel">
-              <div className="relative h-28 overflow-hidden rounded-xl ring-1 ring-[rgba(17,17,17,0.08)]">
-                <Image
-                  src={appearance.panelImage}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="400px"
-                />
-              </div>
-            </SettingsField>
-          </div>
-        </SettingsSection>
-      );
-
-    case "ranking":
-      return (
-        <SettingsSection
-          title="Ranking e resultados"
-          description="Critérios de classificação e conquistas."
-        >
-          <div className="space-y-6">
-            <SettingsField label="Critério de melhor volta">
-              <input
-                className={settingsInputClass}
-                value={ranking.bestLapCriterion}
-                onChange={(e) => {
-                  setRanking((r) => ({ ...r, bestLapCriterion: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <SettingsField label="Critério de consistência">
-              <input
-                className={settingsInputClass}
-                value={ranking.consistencyCriterion}
-                onChange={(e) => {
-                  setRanking((r) => ({ ...r, consistencyCriterion: e.target.value }));
-                  markDirty(onDirty);
-                }}
-              />
-            </SettingsField>
-            <ul className="divide-y divide-[rgba(17,17,17,0.06)] rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-4">
-              {(
-                [
-                  ["monthlyRanking", "Ranking mensal"],
-                  ["generalRanking", "Ranking geral"],
-                  ["championshipPoints", "Pontuação por campeonato"],
-                  ["autoAchievements", "Conquistas automáticas"],
-                ] as const
-              ).map(([key, label]) => (
-                <li key={key} className="py-1">
-                  <SettingsToggle
-                    label={label}
-                    checked={ranking[key]}
-                    onChange={(v) => {
-                      setRanking((r) => ({ ...r, [key]: v }));
-                      markDirty(onDirty);
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
+              </ul>
+            </div>
           </div>
         </SettingsSection>
       );
 
     case "documentos":
       return (
-        <SettingsSection title="Documentos" description="Modelos legais e institucionais.">
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {SettingsServiceMock.getDocumentTemplates().map((doc) => (
-              <li
-                key={doc.id}
-                className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-[#0d1f3c]">{doc.title}</h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
-                      doc.status === "publicado"
-                        ? "bg-emerald-50 text-emerald-800"
-                        : "bg-amber-50 text-amber-800"
-                    }`}
-                  >
-                    {doc.status}
-                  </span>
-                </div>
-                <p className="mt-2 flex-1 text-sm text-neutral-600">{doc.description}</p>
-                <p className="mt-3 text-[11px] text-neutral-500">
-                  Atualizado · {doc.lastUpdated}
-                </p>
-                <button
-                  type="button"
-                  className="mt-4 rounded-xl border border-[rgba(13,31,60,0.2)] py-2 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c]"
-                  onClick={() => markDirty(onDirty)}
-                >
-                  Editar documento
-                </button>
-              </li>
-            ))}
-          </ul>
-        </SettingsSection>
-      );
-
-    case "auditoria":
-      return (
-        <SettingsSection
-          title="Auditoria"
-          description="Histórico de alterações no painel."
-        >
-          <AuditLog entries={SettingsServiceMock.getAuditLog()} />
-        </SettingsSection>
+        <DocumentsPanel
+          documents={documents}
+          onDocumentsChange={setDocuments}
+          onDirty={() => markDirty(onDirty)}
+        />
       );
 
     default:

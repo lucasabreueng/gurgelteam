@@ -28,9 +28,12 @@ export function FilterBox({
   contentClassName = "p-4 md:px-5 md:py-4",
 }: Props) {
   return (
-    <div className={[boxClass, contentClassName, className].filter(Boolean).join(" ")}>
-      <div className="flex items-stretch gap-4">
-        <div className="min-w-0 flex-1">{children}</div>
+    <div
+      data-admin-filter-box
+      className={[boxClass, contentClassName, className].filter(Boolean).join(" ")}
+    >
+      <div className="admin-filter-box-inner flex items-stretch gap-4">
+        <div className="admin-filter-fields min-w-0 flex-1">{children}</div>
         {active && onClear ? (
           <button
             type="button"
@@ -47,10 +50,16 @@ export function FilterBox({
 }
 
 export function filtersActive(values: Array<string | number | boolean | null | undefined>): boolean {
-  return values.some((v) => {
+  return countActiveFilters(values) > 0;
+}
+
+export function countActiveFilters(
+  values: Array<string | number | boolean | null | undefined>,
+): number {
+  return values.filter((v) => {
     if (typeof v === "string") return v.trim().length > 0;
     if (typeof v === "number") return true;
     if (typeof v === "boolean") return v;
     return false;
-  });
+  }).length;
 }

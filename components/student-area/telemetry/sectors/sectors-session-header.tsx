@@ -8,66 +8,62 @@ import {
   HiSparkles,
 } from "react-icons/hi2";
 import type { IconType } from "react-icons/lib";
-import { KpiCard } from "@/components/ui/kpi-card";
+import { AdminResponsiveKpis } from "@/components/admin/admin-responsive-kpis";
 import type { SectorsPageSummary } from "@/lib/contracts/telemetry/sectors";
 
 type Props = {
   summary: SectorsPageSummary;
 };
 
+const KPI_ICONS: Record<string, IconType> = {
+  voltas: HiFlag,
+  melhor: HiSparkles,
+  media: HiClock,
+  ideal: HiChartBar,
+  consistencia: HiChartPie,
+};
+
 export function SectorsSessionHeader({ summary }: Props) {
-  const kpis: {
-    label: string;
-    value: string;
-    Icon: IconType;
-    valueClassName?: string;
-  }[] = [
+  const kpis = [
     {
+      id: "voltas",
       label: "Voltas",
       value: String(summary.totalLaps),
-      Icon: HiFlag,
       valueClassName: "font-mono tabular-nums",
     },
     {
+      id: "melhor",
       label: "Melhor tempo",
       value: `${summary.bestLap}s`,
-      Icon: HiSparkles,
       valueClassName: "font-mono tabular-nums text-accent",
     },
     {
+      id: "media",
       label: "Média de tempo",
       value: `${summary.average}s`,
-      Icon: HiClock,
       valueClassName: "font-mono tabular-nums",
     },
     {
+      id: "ideal",
       label: "Volta ideal",
       value: `${summary.idealLap}s`,
-      Icon: HiChartBar,
       valueClassName: "font-mono tabular-nums text-accent",
     },
     {
+      id: "consistencia",
       label: "Consistência",
       value: summary.consistency,
-      Icon: HiChartPie,
       valueClassName: "font-mono tabular-nums",
     },
   ];
 
   return (
     <header>
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {kpis.map((kpi) => (
-          <li key={kpi.label} className="min-w-0">
-            <KpiCard
-              label={kpi.label}
-              value={kpi.value}
-              Icon={kpi.Icon}
-              valueClassName={kpi.valueClassName}
-            />
-          </li>
-        ))}
-      </ul>
+      <AdminResponsiveKpis
+        kpis={kpis}
+        icons={KPI_ICONS}
+        desktopClassName="admin-page-grid grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+      />
     </header>
   );
 }

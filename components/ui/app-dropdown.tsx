@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { HiOutlineChevronDown } from "react-icons/hi2";
+import { usePreferNativeSelect } from "@/lib/hooks/use-prefer-native-select";
 
 /** Opção do dropdown padrão da aplicação (listbox). */
 export type AppDropdownOption<T extends string | number = string | number> = {
@@ -45,9 +46,83 @@ const triggerBase =
 const optionBase =
   "app-dropdown__option flex w-full items-center rounded-lg px-2.5 py-2 text-left text-[14px] font-semibold text-primary transition";
 
+const nativeSelectClass =
+  "app-native-select block h-full min-h-12 w-full min-w-0 cursor-pointer appearance-none rounded-xl border-0 bg-transparent px-4 py-0 pr-10 text-left text-[14px] text-[#111] outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
+
+type NativeSelectProps<T extends string | number> = Pick<
+  AppDropdownProps<T>,
+  | "options"
+  | "value"
+  | "onSelect"
+  | "disabled"
+  | "aria-label"
+  | "id"
+  | "rootClassName"
+  | "triggerClassName"
+  | "chevron"
+  | "style"
+>;
+
+function AppNativeSelect<T extends string | number = string | number>({
+  options,
+  value,
+  onSelect,
+  disabled,
+  "aria-label": ariaLabel,
+  id,
+  rootClassName,
+  triggerClassName,
+  chevron,
+  style,
+}: NativeSelectProps<T>) {
+  const stringValue =
+    value === "" || value === undefined || value === null ? "" : String(value);
+  const resolvedValue = options.some((o) => String(o.value) === stringValue)
+    ? stringValue
+    : String(options[0]?.value ?? "");
+
+  return (
+    <span className={rootClassName} style={style}>
+      <span className="relative block h-full w-full min-w-0">
+        <select
+          id={id}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          value={resolvedValue}
+          onChange={(e) => {
+            const opt = options.find((o) => String(o.value) === e.target.value);
+            if (opt && !opt.disabled) onSelect(opt.value);
+          }}
+          className={[nativeSelectClass, triggerClassName].filter(Boolean).join(" ")}
+        >
+          {options.map((opt) => (
+            <option
+              key={String(opt.value)}
+              value={String(opt.value)}
+              disabled={opt.disabled}
+            >
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <span
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+          aria-hidden
+        >
+          {chevron ?? (
+            <HiOutlineChevronDown
+              className="h-[18px] w-[18px] shrink-0 text-primary opacity-80"
+              aria-hidden
+            />
+          )}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 /**
- * Dropdown padrão da aplicação: botão + listbox (sem `<select>` nativo).
- * Use este componente para qualquer lista suspensa com o mesmo visual.
+ * Dropdown padrão da aplicação: listbox no desktop; `<select>` nativo no mobile/tablet.
  */
 export function AppDropdown<T extends string | number = string | number>({
   options,
@@ -66,6 +141,7 @@ export function AppDropdown<T extends string | number = string | number>({
   style,
   listMaxHeightClassName = "max-h-52",
 }: AppDropdownProps<T>) {
+  const preferNativeSelect = usePreferNativeSelect();
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLSpanElement>(null);
 
@@ -81,7 +157,7 @@ export function AppDropdown<T extends string | number = string | number>({
   const triggerMuted = isEmptySelection || !selectedOption;
 
   React.useEffect(() => {
-    if (!open) return;
+    if (preferNativeSelect || !open) return;
 
     const onPointerDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) {
@@ -92,7 +168,6 @@ export function AppDropdown<T extends string | number = string | number>({
       if (e.key === "Escape") setOpen(false);
     };
 
-    // Evita fechar no mesmo clique que abriu o painel.
     const timer = window.setTimeout(() => {
       document.addEventListener("pointerdown", onPointerDown);
       document.addEventListener("keydown", onKeyDown);
@@ -103,7 +178,24 @@ export function AppDropdown<T extends string | number = string | number>({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, preferNativeSelect]);
+
+  if (preferNativeSelect) {
+    return (
+      <AppNativeSelect
+        options={options}
+        value={value}
+        onSelect={onSelect}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        id={id}
+        rootClassName={rootClassName}
+        triggerClassName={triggerClassName}
+        chevron={chevron}
+        style={style}
+      />
+    );
+  }
 
   return (
     <span

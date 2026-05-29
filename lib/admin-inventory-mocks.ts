@@ -134,14 +134,6 @@ export const INVENTORY_KPIS: InventoryKpi[] = [
     sparkline: [42000, 43500, 44100, 45200, 46800, 47500, 48200],
   },
   {
-    id: "most-used",
-    label: "Peças mais utilizadas",
-    value: "Corrente 219H",
-    delta: "32 saídas",
-    deltaPositive: true,
-    sparkline: [18, 22, 24, 26, 28, 30, 32],
-  },
-  {
     id: "last-movement",
     label: "Última movimentação",
     value: "Hoje às 14:32",

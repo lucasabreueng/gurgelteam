@@ -5,6 +5,7 @@ import type { NewKartFormData } from "@/lib/contracts/karts";
 import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
 
 import { useEffect, useState } from "react";
+import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { SettingsCheckbox } from "../settings/settings-checkbox";
@@ -14,6 +15,11 @@ import {
   SettingsField,
   settingsInputClass,
 } from "../settings/settings-section";
+import {
+  DRAWER_FOOTER_INNER_CLASS,
+  DRAWER_FOOTER_SHELL_CLASS,
+  DrawerFooterActions,
+} from "@/components/ui/drawer-footer";
 import { ClientSearchDropdown } from "./client-search-dropdown";
 
 const EMPTY_FORM: NewKartFormData = {
@@ -29,25 +35,47 @@ const EMPTY_FORM: NewKartFormData = {
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Quando informado, abre em modo edição com dados do kart. */
+  kartId?: string | null;
   onSuccess?: (data: NewKartFormData) => void;
 };
 
-export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
+function formFromKartId(kartId: string): NewKartFormData {
+  const detail = KartsServiceMock.getDetail(kartId);
+  if (!detail) return EMPTY_FORM;
+
+  const kart = detail.list;
+  const motor = KartsServiceMock.getRegisteredMotors().find(
+    (m) => m.name === kart.motor,
+  );
+
+  return {
+    ownershipType: kart.ownership,
+    clientId: "",
+    number: String(kart.number),
+    motor: motor?.id ?? "",
+    engineHours: String(kart.usageHours),
+    lastMaintenanceDate: "",
+    lastMaintenanceUnknown: true,
+  };
+}
+
+export function NewKartDrawer({ open, onClose, kartId = null, onSuccess }: Props) {
+  const isEdit = Boolean(kartId);
   const [form, setForm] = useState<NewKartFormData>(EMPTY_FORM);
+  useDrawerBodyLock(open);
 
   useEffect(() => {
     if (!open) return;
-    setForm(EMPTY_FORM);
+    setForm(kartId ? formFromKartId(kartId) : EMPTY_FORM);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open, onClose, kartId]);
 
   const isClientKart = form.ownershipType === "client";
   const hasMaintenanceDate =
@@ -58,7 +86,7 @@ export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
     form.number.trim().length > 0 &&
     form.motor.length > 0 &&
     form.engineHours.trim().length > 0 &&
-    hasMaintenanceDate &&
+    (isEdit || hasMaintenanceDate) &&
     (!isClientKart || form.clientId.length > 0);
 
   const handleSubmit = () => {
@@ -87,7 +115,7 @@ export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
   ];
 
   return (
-    <div className="fixed inset-0 z-[228] flex justify-end">
+    <div className="fixed inset-0 z-[228] flex max-lg:justify-stretch lg:justify-end">
       <button
         type="button"
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
@@ -98,7 +126,7 @@ export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-kart-drawer-title"
-        className="relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)] lg:shrink-0"
       >
         <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -107,10 +135,12 @@ export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
                 id="new-kart-drawer-title"
                 className="text-xl font-bold text-[#0d1f3c]"
               >
-                Novo kart
+                {isEdit ? "Editar kart" : "Novo kart"}
               </h1>
               <p className="mt-1 text-sm text-neutral-600">
-                Cadastre um kart próprio ou de cliente na frota.
+                {isEdit
+                  ? "Atualize os dados do kart na frota."
+                  : "Cadastre um kart próprio ou de cliente na frota."}
               </p>
             </div>
             <button
@@ -190,56 +220,62 @@ export function NewKartDrawer({ open, onClose, onSuccess }: Props) {
               />
             </SettingsField>
 
-            <SettingsField label="Data da última manutenção">
-              <SettingsDatePicker
-                aria-label="Data da última manutenção"
-                value={form.lastMaintenanceDate}
-                disabled={form.lastMaintenanceUnknown}
-                onChange={(isoDate) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    lastMaintenanceDate: isoDate,
-                  }))
-                }
-                disableFuture
-              />
-              <label className="mt-3 flex cursor-pointer items-center gap-2.5">
-                <SettingsCheckbox
-                  checked={form.lastMaintenanceUnknown}
-                  onChange={(checked) =>
+            {!isEdit ? (
+              <SettingsField label="Data da última manutenção">
+                <SettingsDatePicker
+                  aria-label="Data da última manutenção"
+                  value={form.lastMaintenanceDate}
+                  disabled={form.lastMaintenanceUnknown}
+                  onChange={(isoDate) =>
                     setForm((prev) => ({
                       ...prev,
-                      lastMaintenanceUnknown: checked,
-                      lastMaintenanceDate: checked ? "" : prev.lastMaintenanceDate,
+                      lastMaintenanceDate: isoDate,
                     }))
                   }
-                  aria-label="Não sei a data da última manutenção"
+                  disableFuture
                 />
-                <span className="text-sm font-medium text-neutral-600">
-                  Não sei a data da última manutenção
-                </span>
-              </label>
-            </SettingsField>
+                <label className="mt-3 flex cursor-pointer items-center gap-2.5">
+                  <SettingsCheckbox
+                    checked={form.lastMaintenanceUnknown}
+                    onChange={(checked) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        lastMaintenanceUnknown: checked,
+                        lastMaintenanceDate: checked
+                          ? ""
+                          : prev.lastMaintenanceDate,
+                      }))
+                    }
+                    aria-label="Não sei a data da última manutenção"
+                  />
+                  <span className="text-sm font-medium text-neutral-600">
+                    Não sei a data da última manutenção
+                  </span>
+                </label>
+              </SettingsField>
+            ) : null}
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-[rgba(13,31,60,0.2)] px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/40"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="inline-flex items-center justify-center rounded-xl bg-[#0d1f3c] px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-md disabled:opacity-50"
-            >
-              Salvar kart
-            </button>
+        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+          <div className={DRAWER_FOOTER_INNER_CLASS}>
+            <DrawerFooterActions columns={2}>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-outline-md bg-white"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="btn-primary-md disabled:opacity-50"
+              >
+                {isEdit ? "Salvar alterações" : "Salvar kart"}
+              </button>
+            </DrawerFooterActions>
           </div>
         </footer>
       </aside>
