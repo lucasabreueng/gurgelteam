@@ -2,6 +2,10 @@
 
 import type { SettingsTabKey } from "@/lib/contracts/settings";
 import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
+import {
+  adminSettingsProfileTabActiveClass,
+  adminSettingsProfileTabClass,
+} from "@/lib/design";
 
 type Props = {
   active: SettingsTabKey;
@@ -21,10 +25,10 @@ export function SettingsSidebar({ active, onChange }: Props) {
             key={tab.key}
             type="button"
             onClick={() => onChange(tab.key)}
-            className={`shrink-0 rounded-xl px-4 py-2.5 text-left text-[13px] font-semibold transition lg:w-full lg:rounded-2xl lg:px-4 lg:py-3 ${
+            className={`shrink-0 text-left text-[13px] font-semibold transition lg:w-full lg:rounded-2xl lg:px-4 lg:py-3 ${
               isActive
-                ? "border border-transparent bg-[#0d1f3c] text-white max-lg:shadow-none lg:shadow-[0_4px_14px_rgba(13,31,60,0.2)]"
-                : "border border-[rgba(17,17,17,0.08)] bg-white text-neutral-600 hover:border-accent/30 hover:bg-[#fafbfc] hover:text-[#0d1f3c] lg:border-transparent lg:bg-transparent lg:shadow-none lg:hover:bg-white/80"
+                ? `${adminSettingsProfileTabActiveClass} max-lg:shadow-none lg:shadow-[var(--ds-shadow-card)]`
+                : `${adminSettingsProfileTabClass} lg:border-transparent lg:bg-transparent lg:shadow-none lg:hover:bg-[var(--ds-bg-muted)]`
             }`}
           >
             {tab.label}

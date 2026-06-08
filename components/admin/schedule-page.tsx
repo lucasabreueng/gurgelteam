@@ -1,14 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { ScheduleViewKey } from "@/lib/contracts/schedule";
+import { findNewClassStudentByClientId } from "@/lib/clients-runtime-store";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { isUuid } from "@/lib/schedule/resolve-schedule-ids";
+import { filterAgendaOperationalEvents } from "@/lib/schedule/schedule-event-filters";
+import { queryKeys } from "@/lib/query/keys";
 import {
   useScheduleDefaultDate,
   useScheduleEvents,
   useScheduleUpcomingDays,
 } from "@/lib/query/hooks/use-schedule";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
 import { getAppServices } from "@/lib/data-source/app-services";
 import { AdminShell } from "./admin-shell";
 import { ScheduleHeader } from "./schedule/schedule-header";
@@ -20,6 +27,8 @@ import { ScheduleDayAppointmentsSheet } from "./schedule/schedule-day-appointmen
 import { ScheduleDetailsDrawer } from "./schedule/schedule-details-drawer";
 import { BlockScheduleDrawer } from "./schedule/block-schedule-drawer";
 import { NewClassModal } from "./schedule/new-class/new-class-modal";
+import { AdminScheduleSkeleton } from "./admin-page-skeletons";
+import { AdminErrorState } from "./admin-error-state";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -32,11 +41,24 @@ const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
 
 export function SchedulePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const [bootstrapStudentId] = useState(
+    () => searchParams.get("studentId") ?? undefined,
+  );
   const [view, setView] = useState<ScheduleViewKey>("day");
-  const { data: defaultDate } = useScheduleDefaultDate();
+  const { data: defaultDate, isPending: defaultDateLoading } = useScheduleDefaultDate();
   const [selectedDate, setSelectedDate] = useState("");
-  const { data: scheduleEvents = [] } = useScheduleEvents();
-  const { data: upcomingDays = [] } = useScheduleUpcomingDays();
+  const { data: scheduleEventsRaw = [], isPending: eventsLoading, isError: eventsError, refetch: refetchEvents } = useScheduleEvents();
+  const scheduleEvents = useMemo(
+    () => filterAgendaOperationalEvents(scheduleEventsRaw),
+    [scheduleEventsRaw],
+  );
+  const { data: upcomingDays = [], isPending: upcomingDaysLoading, isError: upcomingError, refetch: refetchUpcoming } = useScheduleUpcomingDays();
+  const isPageLoading =
+    defaultDateLoading || eventsLoading || upcomingDaysLoading;
+  const isPageError = eventsError || upcomingError;
+  const { canEdit } = useModuleAccess("agenda");
 
   useEffect(() => {
     if (defaultDate && !selectedDate) setSelectedDate(defaultDate);
@@ -47,8 +69,10 @@ export function SchedulePage() {
   const [blockDrawerOpen, setBlockDrawerOpen] = useState(false);
   const [newClassTime, setNewClassTime] = useState<string | undefined>();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackIsError, setFeedbackIsError] = useState(false);
   const [daySheetDate, setDaySheetDate] = useState<string | null>(null);
   const [detailFromDaySheet, setDetailFromDaySheet] = useState(false);
+  const [blocksRefreshToken, setBlocksRefreshToken] = useState(0);
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -63,10 +87,32 @@ export function SchedulePage() {
     [selectedDate],
   );
 
-  const handleSuccess = useCallback((message: string) => {
-    setFeedback(message);
-    window.setTimeout(() => setFeedback(null), 4000);
-  }, []);
+  const refreshOperationalQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.lessons.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.karts.all });
+  }, [queryClient]);
+
+  const handleSuccess = useCallback(
+    (message: string, isError = false) => {
+      setFeedback(message);
+      setFeedbackIsError(isError);
+      if (!isError) {
+        refreshOperationalQueries();
+        setBlocksRefreshToken((current) => current + 1);
+      }
+      window.setTimeout(() => {
+        setFeedback(null);
+        setFeedbackIsError(false);
+      }, 5000);
+    },
+    [refreshOperationalQueries],
+  );
+
+  useEffect(() => {
+    if (!bootstrapStudentId) return;
+    setNewClassOpen(true);
+  }, [bootstrapStudentId]);
 
   const onCreateClass = useCallback((time?: string) => {
     setNewClassTime(typeof time === "string" ? time : undefined);
@@ -84,6 +130,7 @@ export function SchedulePage() {
     onCreateClass,
     onBlockConfirmed: handleSuccess,
     onOpenBlockDrawer: () => setBlockDrawerOpen(true),
+    blocksRefreshToken,
     view,
     onViewChange: setView,
   };
@@ -106,8 +153,8 @@ export function SchedulePage() {
         mainClassName="w-full min-w-0 max-w-full overflow-x-hidden"
         pageHeader={
           <ScheduleHeader
-            onNewClass={() => onCreateClass()}
-            onBlockSlot={() => setBlockDrawerOpen(true)}
+            onNewClass={canEdit ? () => onCreateClass() : undefined}
+            onBlockSlot={canEdit ? () => setBlockDrawerOpen(true) : undefined}
           />
         }
       >
@@ -115,12 +162,27 @@ export function SchedulePage() {
           {feedback ? (
             <p
               role="status"
-              className="shrink-0 rounded-xl border border-emerald-200/60 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900"
+              className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-semibold ${
+                feedbackIsError
+                  ? "border-red-200/60 bg-red-50 text-red-900"
+                  : "border-emerald-200/60 bg-emerald-50 text-emerald-900"
+              }`}
             >
               {feedback}
             </p>
           ) : null}
 
+          {isPageError ? (
+            <AdminErrorState
+              onRetry={() => {
+                void refetchEvents();
+                void refetchUpcoming();
+              }}
+            />
+          ) : isPageLoading ? (
+            <AdminScheduleSkeleton />
+          ) : (
+            <>
           {!isWeekView ? (
             <section className="w-full min-w-0 max-w-full shrink-0 overflow-hidden">
               <UpcomingDaysStrip
@@ -166,6 +228,8 @@ export function SchedulePage() {
               </div>
             ) : null}
           </div>
+            </>
+          )}
         </div>
       </AdminShell>
 
@@ -177,7 +241,16 @@ export function SchedulePage() {
         }}
         initialDate={selectedDate}
         initialTime={newClassTime}
-        onSuccess={handleSuccess}
+        initialStudentId={
+          bootstrapStudentId
+            ? getDataSourceMode() === "http" || isUuid(bootstrapStudentId)
+              ? bootstrapStudentId
+              : findNewClassStudentByClientId(bootstrapStudentId)?.id
+            : undefined
+        }
+        onSuccess={(message) => handleSuccess(message)}
+        onError={(message) => handleSuccess(message, true)}
+        onScheduled={refreshOperationalQueries}
       />
 
       <BlockScheduleDrawer
@@ -185,6 +258,7 @@ export function SchedulePage() {
         initialDate={selectedDate}
         onClose={() => setBlockDrawerOpen(false)}
         onSaved={handleSuccess}
+        onError={(message) => handleSuccess(message, true)}
       />
 
       <ScheduleDayAppointmentsSheet
@@ -213,7 +287,10 @@ export function SchedulePage() {
           setDetailFromDaySheet(false);
           setDaySheetDate(null);
         }}
-        onAction={handleSuccess}
+        onAction={(message) => {
+          refreshOperationalQueries();
+          handleSuccess(message);
+        }}
       />
     </>
   );

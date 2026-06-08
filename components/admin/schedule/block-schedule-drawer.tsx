@@ -1,36 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { SettingsDatePicker } from "@/components/admin/settings/settings-date-picker";
 import { SettingsCheckbox } from "@/components/admin/settings/settings-checkbox";
 import { ScheduleDrawerShell } from "./schedule-drawer-shell";
 import { DrawerFooterActions } from "@/components/ui/drawer-footer";
 import {
-  ScheduleBlocksServiceMock,
-  type ScheduleBlockEntry,
-} from "@/services/schedule/scheduleBlocksServiceMock";
+  adminDrawerCancelBtnClass,
+  adminDrawerPrimaryBtnClass,
+  adminDrawerSectionClass,
+  adminLabelClass,
+  adminTextareaClass,
+} from "@/lib/design";
 import { getAppServices } from "@/lib/data-source/app-services";
+import { useClientsReference } from "@/lib/query/hooks/use-clients";
 import { useScheduleMeta } from "@/lib/query/hooks/use-schedule";
+import type { ScheduleBlockEntry } from "@/services/schedule/scheduleBlocksService";
+import { formatScheduleCategoryLabels } from "@/lib/schedule/schedule-slot-selection";
 import type { ScheduleTimeSlot } from "@/lib/contracts/settings";
-import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 
 type Props = {
   open: boolean;
   initialDate?: string;
   onClose: () => void;
   onSaved?: (message: string) => void;
+  onError?: (message: string) => void;
 };
 
-function categoryName(categoryId: string): string {
-  return (
-    SettingsServiceMock.getKartCategories().find((c) => c.id === categoryId)
-      ?.name ?? categoryId
+function formatSlotLabel(
+  slot: ScheduleTimeSlot,
+  kartCategories: { id: string; name: string }[],
+): string {
+  const categoryName = formatScheduleCategoryLabels(
+    slot.categoryIds,
+    kartCategories,
   );
-}
-
-function slotLabel(slot: ScheduleTimeSlot): string {
-  return `${slot.start} – ${slot.end} · ${categoryName(slot.categoryId)}`;
+  return `${slot.start} – ${slot.end} · ${categoryName}`;
 }
 
 export function BlockScheduleDrawer({
@@ -38,8 +44,10 @@ export function BlockScheduleDrawer({
   initialDate,
   onClose,
   onSaved,
+  onError,
 }: Props) {
-  const schedule = getAppServices().schedule;
+  const { schedule, scheduleBlocks } = getAppServices();
+  const { data: reference } = useClientsReference();
   const { data: meta } = useScheduleMeta();
   const defaultDate = meta?.today ?? "2026-05-21";
   const [date, setDate] = useState(() => initialDate ?? defaultDate);
@@ -49,13 +57,10 @@ export function BlockScheduleDrawer({
   );
   const [reason, setReason] = useState("");
   const [existingBlocks, setExistingBlocks] = useState<ScheduleBlockEntry[]>([]);
+  const [slots, setSlots] = useState<ScheduleTimeSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   useDrawerBodyLock(open);
-
-
-  const slots = useMemo(
-    () => ScheduleBlocksServiceMock.getAllScheduleSlotsForDate(date),
-    [date],
-  );
 
   useEffect(() => {
     if (!open) return;
@@ -63,11 +68,6 @@ export function BlockScheduleDrawer({
     setMode("slots");
     setSelectedSlotIds(new Set());
     setReason("");
-    setExistingBlocks(
-      ScheduleBlocksServiceMock.getBlocksForDate(
-        initialDate ?? defaultDate,
-      ),
-    );
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -75,14 +75,35 @@ export function BlockScheduleDrawer({
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      };
+    };
   }, [open, initialDate, onClose, defaultDate]);
 
   useEffect(() => {
     if (!open) return;
-    setExistingBlocks(ScheduleBlocksServiceMock.getBlocksForDate(date));
-    setSelectedSlotIds(new Set());
-  }, [date, open]);
+    let cancelled = false;
+    setLoading(true);
+
+    void Promise.all([
+      scheduleBlocks.getAllScheduleSlotsForDate(date),
+      scheduleBlocks.getBlocksForDate(date),
+    ])
+      .then(([nextSlots, blocks]) => {
+        if (cancelled) return;
+        setSlots(nextSlots);
+        setExistingBlocks(blocks);
+        setSelectedSlotIds(new Set());
+      })
+      .catch(() => {
+        if (!cancelled) onError?.("Não foi possível carregar os horários.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [date, open, scheduleBlocks, onError]);
 
   const toggleSlot = (slotId: string) => {
     setSelectedSlotIds((prev) => {
@@ -93,31 +114,41 @@ export function BlockScheduleDrawer({
     });
   };
 
-  const handleSave = () => {
-    if (slots.length === 0) return;
+  const handleSave = async () => {
+    if (slots.length === 0 || saving) return;
 
     const slotIds =
       mode === "full" ? slots.map((s) => s.id) : [...selectedSlotIds];
 
     if (slotIds.length === 0) return;
 
-    ScheduleBlocksServiceMock.saveScheduleBlock({
-      date,
-      slotIds,
-      fullDay: mode === "full",
-      reason,
-    });
+    setSaving(true);
+    try {
+      await scheduleBlocks.saveScheduleBlock({
+        date,
+        slotIds,
+        fullDay: mode === "full",
+        reason,
+      });
 
-    setExistingBlocks(ScheduleBlocksServiceMock.getBlocksForDate(date));
-    onSaved?.(
-      mode === "full"
-        ? `Dia ${schedule.formatDateLower(date)} bloqueado por completo.`
-        : `${slotIds.length} horário(s) bloqueado(s) em ${schedule.formatDateLower(date)}.`,
-    );
-    onClose();
+      const blocks = await scheduleBlocks.getBlocksForDate(date);
+      setExistingBlocks(blocks);
+      onSaved?.(
+        mode === "full"
+          ? `Dia ${schedule.formatDateLower(date)} bloqueado por completo.`
+          : `${slotIds.length} horário(s) bloqueado(s) em ${schedule.formatDateLower(date)}.`,
+      );
+      onClose();
+    } catch {
+      onError?.("Não foi possível salvar o bloqueio.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const canSave =
+    !loading &&
+    !saving &&
     slots.length > 0 &&
     (mode === "full" || selectedSlotIds.size > 0);
 
@@ -133,24 +164,25 @@ export function BlockScheduleDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[rgba(13,31,60,0.2)] py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-neutral-50"
+            disabled={saving}
+            className={adminDrawerCancelBtnClass}
           >
             Cancelar
           </button>
           <button
             type="button"
             disabled={!canSave}
-            onClick={handleSave}
-            className="rounded-xl bg-[#0d1f3c] py-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={() => void handleSave()}
+            className={adminDrawerPrimaryBtnClass}
           >
-            Salvar bloqueio
+            {saving ? "Salvando…" : "Salvar bloqueio"}
           </button>
         </DrawerFooterActions>
       }
     >
       <div className="space-y-5 p-4 md:p-5">
-            <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[rgba(17,17,17,0.06)]">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+            <div className={adminDrawerSectionClass}>
+              <label className={adminLabelClass}>
                 Data
               </label>
               <div className="mt-2">
@@ -162,8 +194,8 @@ export function BlockScheduleDrawer({
               </div>
             </div>
 
-            <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[rgba(17,17,17,0.06)]">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+            <div className={adminDrawerSectionClass}>
+              <p className={adminLabelClass}>
                 Tipo de bloqueio
               </p>
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -178,7 +210,7 @@ export function BlockScheduleDrawer({
                     className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-3 transition ${
                       mode === key
                         ? "border-accent/40 bg-accent/5 ring-1 ring-accent/30"
-                        : "border-[rgba(17,17,17,0.1)] hover:border-[rgba(17,17,17,0.18)]"
+                        : "border-[var(--ds-border-field)] hover:border-accent/25"
                     }`}
                   >
                     <input
@@ -188,7 +220,7 @@ export function BlockScheduleDrawer({
                       onChange={() => setMode(key)}
                       className="accent-accent"
                     />
-                    <span className="text-sm font-semibold text-[#0d1f3c]">
+                    <span className="text-sm font-semibold text-[var(--ds-text-primary)]">
                       {label}
                     </span>
                   </label>
@@ -197,12 +229,16 @@ export function BlockScheduleDrawer({
             </div>
 
             {mode === "slots" ? (
-              <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[rgba(17,17,17,0.06)]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <div className={adminDrawerSectionClass}>
+                <p className={adminLabelClass}>
                   Horários da grade
                 </p>
-                {slots.length === 0 ? (
-                  <p className="mt-3 text-sm text-neutral-500">
+                {loading ? (
+                  <p className="mt-3 text-sm text-[var(--ds-text-muted)]">
+                    Carregando horários…
+                  </p>
+                ) : slots.length === 0 ? (
+                  <p className="mt-3 text-sm text-[var(--ds-text-muted)]">
                     Não há horários cadastrados para este dia da semana.
                   </p>
                 ) : (
@@ -214,21 +250,21 @@ export function BlockScheduleDrawer({
                           <div
                             className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
                               checked
-                                ? "border-accent/30 bg-[rgba(13,31,60,0.04)]"
-                                : "border-[rgba(17,17,17,0.1)] bg-[#fafbfc] hover:border-accent/25"
+                                ? "border-accent/30 bg-accent/[0.06]"
+                                : "border-[var(--ds-border-field)] bg-[var(--ds-bg-muted)] hover:border-accent/25"
                             }`}
                           >
                             <SettingsCheckbox
                               checked={checked}
                               onChange={() => toggleSlot(slot.id)}
-                              aria-label={slotLabel(slot)}
+                              aria-label={formatSlotLabel(slot, reference?.categories ?? [])}
                             />
                             <button
                               type="button"
                               onClick={() => toggleSlot(slot.id)}
-                              className="min-w-0 flex-1 text-left text-sm font-medium text-[#0d1f3c]"
+                              className="min-w-0 flex-1 text-left text-sm font-medium text-[var(--ds-text-primary)]"
                             >
-                              {slotLabel(slot)}
+                              {formatSlotLabel(slot, reference?.categories ?? [])}
                             </button>
                           </div>
                         </li>
@@ -238,18 +274,17 @@ export function BlockScheduleDrawer({
                 )}
               </div>
             ) : (
-              <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-sm text-amber-950">
-                {slots.length === 0
+              <div className="rounded-xl border border-[var(--ds-warning-border)] bg-[var(--ds-warning-bg)] px-4 py-3 text-sm text-[var(--ds-warning-text)]">
+                {loading
+                  ? "Carregando horários…"
+                  : slots.length === 0
                   ? "Não há horários cadastrados para bloquear neste dia."
                   : `Todos os ${slots.length} horário(s) de ${schedule.formatDateLower(date)} ficarão indisponíveis para agendamento.`}
               </div>
             )}
 
-            <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[rgba(17,17,17,0.06)]">
-              <label
-                htmlFor="block-reason"
-                className="text-[10px] font-bold uppercase tracking-wider text-neutral-500"
-              >
+            <div className={adminDrawerSectionClass}>
+              <label htmlFor="block-reason" className={adminLabelClass}>
                 Motivo (opcional)
               </label>
               <textarea
@@ -258,20 +293,20 @@ export function BlockScheduleDrawer({
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
                 placeholder="Ex.: Manutenção na pista, evento corporativo…"
-                className="mt-2 w-full resize-none rounded-xl border border-[rgba(17,17,17,0.12)] bg-white px-3 py-2.5 text-sm text-[#0d1f3c] outline-none focus:ring-2 focus:ring-accent/20"
+                className={`${adminTextareaClass} mt-2 min-h-0`}
               />
             </div>
 
             {existingBlocks.length > 0 ? (
-              <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[rgba(17,17,17,0.06)]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <div className={adminDrawerSectionClass}>
+                <p className={adminLabelClass}>
                   Bloqueios nesta data
                 </p>
                 <ul className="mt-2 space-y-2">
                   {existingBlocks.map((block) => (
                     <li
                       key={block.id}
-                      className="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-700"
+                      className="rounded-lg bg-[var(--ds-bg-muted)] px-3 py-2 text-xs text-[var(--ds-text-secondary)]"
                     >
                       {block.fullDay
                         ? "Dia inteiro"

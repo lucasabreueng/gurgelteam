@@ -109,7 +109,7 @@ function TelemetryWorkspaceFrame({ children }: { children: ReactNode }) {
 
         ref={immersiveRootRef}
 
-        className="telemetry-immersive-root fixed inset-0 z-[200] flex min-h-0 flex-col overflow-hidden bg-[#f3f5f9]"
+        className="telemetry-immersive-root fixed inset-0 z-[200] flex min-h-0 flex-col overflow-hidden bg-[var(--ds-bg-page)]"
 
       >
 

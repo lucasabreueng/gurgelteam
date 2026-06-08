@@ -1,6 +1,6 @@
 "use client";
 
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
 
 import { HiCheckCircle } from "react-icons/hi2";
 
@@ -11,6 +11,10 @@ type Props = {
 };
 
 export function DelinquencyTab({ onAction }: Props) {
+  const { data, isLoading } = useFinanceInsights();
+  const items = data?.delinquencyItems ?? [];
+  const total = data?.delinquencyTotal ?? "—";
+
   return (
     <div className="admin-page-stack">
       <div className="flex justify-end">
@@ -19,10 +23,10 @@ export function DelinquencyTab({ onAction }: Props) {
             Total em atraso
           </p>
           <p className="text-2xl font-bold tabular-nums text-red-700">
-            {FinancialServiceMock.getDelinquencyTotal()}
+            {isLoading ? "…" : total}
           </p>
           <p className="text-xs text-red-700/80">
-            {FinancialServiceMock.getDelinquencyItems().length} clientes
+            {items.length} clientes
           </p>
         </div>
       </div>
@@ -32,7 +36,7 @@ export function DelinquencyTab({ onAction }: Props) {
       <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
         <h3 className="text-sm font-bold text-[#0d1f3c]">Resumo por cliente</h3>
         <ul className="mt-4 space-y-3">
-          {FinancialServiceMock.getDelinquencyItems().map((item) => (
+          {items.map((item) => (
             <li
               key={item.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#fafbfc] p-4 ring-1 ring-[rgba(17,17,17,0.06)]"
@@ -65,4 +69,3 @@ export function DelinquencyTab({ onAction }: Props) {
     </div>
   );
 }
-

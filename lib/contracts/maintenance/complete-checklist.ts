@@ -11,17 +11,16 @@ export type MaintenancePageTabKey =
 export type CompleteChecklistType =
   | "revisao_periodica"
   | "pos_acidente"
-  | "pre_campeonato"
+  | "pre_evento"
   | "retorno_retifica"
   | "pre_venda"
   | "personalizado";
 
 export type ChecklistItemRating = "ok" | "atencao" | "reprovado";
 
-export type ChecklistFinalStatus =
-  | "aprovado"
-  | "aprovado_ressalvas"
-  | "reprovado";
+import type { ChecklistFinalStatus } from "../enums";
+
+export type { ChecklistFinalStatus } from "../enums";
 
 export type ChecklistTemplateItem = {
   id: string;
@@ -103,7 +102,7 @@ export const COMPLETE_CHECKLIST_TYPE_LABELS: Record<
 > = {
   revisao_periodica: "Revisão Periódica",
   pos_acidente: "Pós-Acidente",
-  pre_campeonato: "Pré-Campeonato",
+  pre_evento: "Pré-Evento",
   retorno_retifica: "Retorno de Retífica",
   pre_venda: "Pré-Venda",
   personalizado: "Personalizado",

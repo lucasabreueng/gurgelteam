@@ -1,6 +1,6 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import type { MaintenanceOrderDetail } from "@/lib/contracts/maintenance";
 
@@ -67,7 +67,7 @@ export function MaintenanceMetrics({ metrics }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase text-neutral-500">
             Custo mensal
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={costOption}
             style={{ height: 180 }}
             opts={{ renderer: "svg" }}
@@ -77,7 +77,7 @@ export function MaintenanceMetrics({ metrics }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase text-neutral-500">
             Peças mais trocadas
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={partsOption}
             style={{ height: 180 }}
             opts={{ renderer: "svg" }}
@@ -87,7 +87,7 @@ export function MaintenanceMetrics({ metrics }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase text-neutral-500">
             Disponibilidade operacional
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={availOption}
             style={{ height: 180 }}
             opts={{ renderer: "svg" }}

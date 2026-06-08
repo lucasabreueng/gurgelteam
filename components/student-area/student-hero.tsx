@@ -1,9 +1,15 @@
-import Image from "next/image";
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
-import Link from "next/link";
+"use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
 
 export function StudentHero() {
+  const { data: home, isLoading } = usePilotHome();
+  const profile = home?.profile;
+  const nextClass = home?.nextClass;
+  const heroLevel = home?.heroLevel;
+
   return (
     <section className="relative overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.08)] shadow-[0_8px_32px_rgba(13,31,60,0.08)] md:rounded-3xl">
       <div className="absolute inset-0">
@@ -28,14 +34,16 @@ export function StudentHero() {
 
       <div className="relative p-6 lg:p-10">
         <span className="inline-block rounded-md border border-[#0d2847] bg-[#0d1f3c] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-md shadow-black/40">
-          {StudentAreaServiceMock.getStudentProfile().tag}
+          {isLoading ? "…" : profile?.tag}
         </span>
         <p className="mt-6 text-xl font-semibold tracking-tight text-white md:text-[32px]">
           Bem-vindo de volta,{" "}
-          <span className="text-[#0E1A35]">{StudentAreaServiceMock.getStudentProfile().firstName}</span>
+          <span className="text-[#0E1A35]">
+            {isLoading ? "…" : profile?.firstName}
+          </span>
         </p>
         <p className="mt-2 text-[14px] text-white/74">
-          Piloto desde {StudentAreaServiceMock.getStudentProfile().pilotSinceYear}
+          Piloto desde {isLoading ? "…" : profile?.pilotSinceYear}
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:max-w-3xl">
@@ -52,25 +60,31 @@ export function StudentHero() {
               </Link>
             </div>
             <p className="mt-3 text-lg font-semibold tracking-tight">
-              {StudentAreaServiceMock.getNextClass().dateLabel}
+              {isLoading ? "…" : nextClass?.dateLabel}
             </p>
-            <p className="text-sm text-white/88">{StudentAreaServiceMock.getNextClass().timeRange}</p>
+            <p className="text-sm text-white/88">
+              {isLoading ? "…" : nextClass?.timeRange}
+            </p>
           </div>
 
           <div className="rounded-2xl border border-white/15 bg-black/45 p-5 backdrop-blur-md">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-white/75">
               Nível do piloto
             </p>
-            <p className="mt-2 text-xl font-bold text-white">{StudentAreaServiceMock.getHeroLevel().title}</p>
+            <p className="mt-2 text-xl font-bold text-white">
+              {isLoading ? "…" : heroLevel?.title}
+            </p>
             <div className="mt-4">
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/20">
                 <div
                   className="h-full rounded-full bg-[#c41e3a]"
-                  style={{ width: `${StudentAreaServiceMock.getHeroLevel().progressPercent}%` }}
+                  style={{
+                    width: `${heroLevel?.progressPercent ?? 0}%`,
+                  }}
                 />
               </div>
               <p className="mt-2 text-xs text-white/65">
-                {StudentAreaServiceMock.getHeroLevel().progressPercent}% do plano atual
+                {heroLevel?.progressPercent ?? 0}% do plano atual
               </p>
             </div>
           </div>

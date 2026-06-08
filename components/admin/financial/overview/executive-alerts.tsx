@@ -2,8 +2,9 @@
 
 import type { ExecutiveAlertAction } from "@/lib/admin-financial-mocks";
 import type { FinancialTabKey } from "@/lib/contracts/finance/finance.types";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useExecutiveAlerts } from "@/lib/query/hooks/use-finance-charts";
 
+import { adminAccentPanelClass } from "@/lib/design";
 import { FinancialChartCard } from "../financial-chart-card";
 
 const PRIORITY_STYLES = {
@@ -48,13 +49,13 @@ export function ExecutiveAlerts({
   onNavigate,
   onAction,
 }: Props) {
-  const alerts = FinancialServiceMock.getExecutiveAlerts();
+  const { data: alerts = [] } = useExecutiveAlerts();
 
   return (
     <FinancialChartCard
       title="Central de alertas"
       subtitle="Prioridades que exigem ação imediata"
-      className="border-accent/20 bg-gradient-to-br from-accent/[0.05] to-white"
+      className={adminAccentPanelClass}
     >
       <ul className="space-y-3">
         {alerts.map((alert) => (

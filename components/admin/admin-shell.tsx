@@ -7,11 +7,16 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
+import { getDataSourceMode } from "@/lib/data-source/mode";
 import { useAdminPanelDocument } from "@/lib/hooks/use-admin-panel-document";
 import { useAdminPanelPageScrollReset } from "@/lib/hooks/use-admin-panel-page-scroll-reset";
 import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
+import { useAdminPermissions } from "@/lib/query/hooks/use-admin-permissions";
+import { useLegalComplianceGuard } from "@/lib/hooks/use-legal-compliance-guard";
 import { MobileHeaderBar } from "@/components/shell/mobile-header-bar";
+import { AdminTabPanelSkeleton } from "./admin-page-skeletons";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 
@@ -32,6 +37,8 @@ type Props = {
   shellContentClassName?: string;
   /** Desativa layout tablet (ex.: modo imersivo da telemetria). */
   disableTabletShell?: boolean;
+  /** Desativa verificação de permissão por módulo (uso interno). */
+  skipAccessGuard?: boolean;
 };
 
 /** Layout: sidebar + cabeçalho + conteúdo (fixo no tablet; sticky no desktop) */
@@ -46,8 +53,40 @@ export function AdminShell({
   stackClassName = "",
   shellContentClassName = "",
   disableTabletShell = false,
+  skipAccessGuard = false,
 }: Props) {
   useAdminPanelDocument();
+  const router = useRouter();
+  const isHttpMode = getDataSourceMode() === "http";
+  const { canAccessArea, canViewNav, isPending: permissionsPending, isSessionError } =
+    useAdminPermissions();
+  const { isPending: legalCompliancePending } = useLegalComplianceGuard(
+    !skipAccessGuard,
+  );
+  const accessDenied =
+    isHttpMode &&
+    !skipAccessGuard &&
+    !permissionsPending &&
+    !isSessionError &&
+    (!canAccessArea() || !canViewNav(activeNav));
+
+  useEffect(() => {
+    if (!isHttpMode || skipAccessGuard || permissionsPending) return;
+    if (isSessionError) {
+      router.replace("/login?next=/admin");
+      return;
+    }
+    if (!accessDenied) return;
+    router.replace("/403");
+  }, [
+    accessDenied,
+    isHttpMode,
+    isSessionError,
+    permissionsPending,
+    router,
+    skipAccessGuard,
+  ]);
+
   const mainRef = useAdminPanelPageScrollReset(activeNav);
   const { tabletLandscape } = useAdminPanelTabletLayout();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -126,7 +165,7 @@ export function AdminShell({
 
   return (
     <div
-      className={`admin-area-page bg-[#f3f5f9] text-[#111] ${shellGridClass}`.trim()}
+      className={`admin-area-page admin-panel-shell ${shellGridClass}`.trim()}
       style={shellStyle}
     >
       <div className="admin-shell-sidebar-slot lg:col-start-1 lg:min-w-0">
@@ -164,7 +203,7 @@ export function AdminShell({
           {!tabletShell ? (
             <header
               ref={headerRef}
-              className="border-b border-[rgba(17,17,17,0.08)] bg-white"
+              className="admin-panel-chrome--card"
             >
               <div className="admin-page-gutter py-3 max-lg:py-2.5">
                 {!sidebarCollapsed ? (
@@ -184,7 +223,7 @@ export function AdminShell({
           {pageHeader ? (
             <div
               ref={pageHeaderRef}
-              className="border-b border-[rgba(17,17,17,0.08)] bg-[#f3f5f9]"
+              className="admin-panel-chrome"
             >
               <div className="admin-page-gutter admin-page-header-chrome">
                 {pageHeader}
@@ -193,7 +232,7 @@ export function AdminShell({
           ) : null}
 
           {fixedSubHeader ? (
-            <div className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <div className="admin-panel-chrome--muted">
               {fixedSubHeader}
             </div>
           ) : null}
@@ -208,7 +247,13 @@ export function AdminShell({
           } ${mainClassName}`}
         >
           <div className={`admin-page-stack ${stackClassName}`.trim()}>
-            {children}
+            {isHttpMode &&
+            !skipAccessGuard &&
+            (permissionsPending || legalCompliancePending) ? (
+              <AdminTabPanelSkeleton />
+            ) : accessDenied ? null : (
+              children
+            )}
           </div>
         </main>
       </div>

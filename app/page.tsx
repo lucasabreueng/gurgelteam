@@ -1,12 +1,12 @@
 import { Header } from "@/sections/Header";
-import { ClientHero } from "@/components/client-hero";
+import { Hero } from "@/sections/Hero";
 import { About } from "@/sections/About";
 import { Steps } from "@/sections/Steps";
 import { Differentials } from "@/sections/Differentials";
 import { Services } from "@/sections/Services";
-import { ClientTestimonials } from "@/components/client-testimonials";
+import { Testimonials } from "@/sections/Testimonials";
 import { Faq } from "@/sections/Faq";
-import { ClientPartners } from "@/components/client-partners";
+import { Partners } from "@/sections/Partners";
 import { Footer } from "@/sections/Footer";
 
 export default function HomePage() {
@@ -14,14 +14,14 @@ export default function HomePage() {
     <>
       <Header />
       <main>
-        <ClientHero />
+        <Hero />
         <About />
         <Steps />
         <Differentials />
         <Services />
-        <ClientTestimonials />
+        <Testimonials />
         <Faq />
-        <ClientPartners />
+        <Partners />
       </main>
       <Footer />
     </>

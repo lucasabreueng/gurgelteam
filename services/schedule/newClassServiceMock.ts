@@ -1,21 +1,4 @@
-import { NewClassRepositoryMock } from "@/repositories/schedule/NewClassRepositoryMock";
+import { createNewClassService } from "@/services/schedule/newClassService";
 
-export const NewClassServiceMock = {
-  getScheduleInstructorId: () => NewClassRepositoryMock.getScheduleInstructorId(),
-  getInstructor: () => NewClassRepositoryMock.getInstructor(),
-  getStudents: () => NewClassRepositoryMock.getStudents(),
-  getRentalKarts: () => NewClassRepositoryMock.getRentalKarts(),
-  getThirdPartyKarts: () => NewClassRepositoryMock.getThirdPartyKarts(),
-  getClassAlerts: () => NewClassRepositoryMock.getClassAlerts(),
-  getSmartSuggestion: () => NewClassRepositoryMock.getSmartSuggestion(),
-  getDefaultClassDate: () => NewClassRepositoryMock.getDefaultClassDate(),
-  getDefaultClassTime: () => NewClassRepositoryMock.getDefaultClassTime(),
-  getGurgelEventsForDate: NewClassRepositoryMock.getGurgelEventsForDate,
-  buildGurgelTimeline: NewClassRepositoryMock.buildGurgelTimeline,
-  getDefaultSlotForDate: NewClassRepositoryMock.getDefaultSlotForDate,
-  getSlotStatusForTime: NewClassRepositoryMock.getSlotStatusForTime,
-  getAlertsForSelection: NewClassRepositoryMock.getAlertsForSelection,
-  formatClassDateTime: NewClassRepositoryMock.formatClassDateTime,
-  getCategoryLabel: NewClassRepositoryMock.getCategoryLabel,
-  getLevelLabel: NewClassRepositoryMock.getLevelLabel,
-};
+/** @deprecated Use getAppServices().newClass */
+export const NewClassServiceMock = createNewClassService();

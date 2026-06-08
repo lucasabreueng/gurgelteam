@@ -9,17 +9,52 @@ import type {
   NotificationChannel,
   SettingsUserAccount,
   DocumentTemplate,
+  DreAccountTerm,
+  FinancialCategoryTerm,
+  InventoryPartCategoryTerm,
+  RegisteredMotorTerm,
+  RegisteredChassisTerm,
 } from "@/lib/contracts/settings";
 
+import { SettingsRepositoryMock } from "@/repositories/settings/SettingsRepositoryMock";
 import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 
 import Image from "next/image";
-import { useCallback, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
+import { getAppServices } from "@/lib/data-source/app-services";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { adminTableBodyRowClass } from "@/lib/design";
+import { queryKeys } from "@/lib/query/keys";
+import { useScheduleHoursConfig } from "@/lib/query/hooks/use-week-schedule";
+import { useSettingsUsers } from "@/lib/query/hooks/use-settings-users";
+import {
+  useSettingsCatalog,
+  useSettingsDocuments,
+  useSettingsNotifications,
+  useSettingsOrganization,
+  useSettingsTermsRegistry,
+} from "@/lib/query/hooks/use-settings-panels";
+import {
+  catalogToUiState,
+  uiStateToCatalogPayload,
+} from "@/lib/settings/map-catalog-ui";
 
 import { CategoriesLevelsPanel } from "./categories-levels-panel";
 import { DocumentsPanel } from "./documents-panel";
 import { PricesPanel } from "./prices-panel";
-import { ScheduleHoursPanel } from "./schedule-hours-panel";
+import {
+  ScheduleHoursPanel,
+  type ScheduleHoursPanelHandle,
+} from "./schedule-hours-panel";
 import {
   SettingsField,
   SettingsSection,
@@ -27,11 +62,17 @@ import {
   settingsTextareaClass,
 } from "./settings-section";
 import { SettingsToggle } from "./settings-toggle";
+import { TermsRegistryPanel } from "./terms-registry-panel";
 import { UsersPermissionsPanel } from "./users-permissions-panel";
 
 type Props = {
   activeTab: SettingsTabKey;
   onDirty: () => void;
+  onSaved?: () => void;
+};
+
+export type SettingsTabContentHandle = {
+  save: () => Promise<void>;
 };
 
 function markDirty(onDirty: () => void) {
@@ -87,7 +128,36 @@ function cloneSettingsUsers(users: SettingsUserAccount[]): SettingsUserAccount[]
   }));
 }
 
-export function SettingsTabContent({ activeTab, onDirty }: Props) {
+export const SettingsTabContent = forwardRef<SettingsTabContentHandle, Props>(
+  function SettingsTabContent({ activeTab, onDirty, onSaved }, ref) {
+  const scheduleHoursRef = useRef<ScheduleHoursPanelHandle>(null);
+  const queryClient = useQueryClient();
+  const {
+    data: scheduleHoursConfig,
+    isLoading: scheduleHoursLoading,
+    refetch: refetchScheduleHours,
+  } = useScheduleHoursConfig();
+  const { data: remoteSettingsUsers } = useSettingsUsers();
+  const { data: remoteCatalog } = useSettingsCatalog();
+  const { data: remoteOrganization } = useSettingsOrganization();
+  const { data: remoteNotifications } = useSettingsNotifications();
+  const { data: remoteDocuments } = useSettingsDocuments();
+  const { data: remoteTermsRegistry } = useSettingsTermsRegistry();
+  const isHttpMode = getDataSourceMode() === "http";
+
+  const publishDocumentTemplates = useCallback(
+    async (nextDocuments: DocumentTemplate[]) => {
+      if (isHttpMode) {
+        await getAppServices().settings.saveDocumentTemplates(nextDocuments);
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.settings.documents(),
+        });
+      }
+      onSaved?.();
+    },
+    [isHttpMode, onSaved, queryClient],
+  );
+
   const [kartCategories, setKartCategories] = useState<KartCategory[]>(() =>
     SettingsServiceMock.getKartCategories().map((c) => ({ ...c }))
   );
@@ -123,22 +193,223 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
     [onDirty]
   );
 
-  const [general, setGeneral] = useState({
-    ...SettingsServiceMock.getGeneralSettings(),
-  });
+  const [general, setGeneral] = useState(() => ({
+    ...SettingsRepositoryMock.getGeneralSettings(),
+  }));
   const [settingsUsers, setSettingsUsers] = useState<SettingsUserAccount[]>(
-    () => cloneSettingsUsers(SettingsServiceMock.getSettingsUsers())
+    () => cloneSettingsUsers(SettingsRepositoryMock.getSettingsUsers())
   );
-  const [notifications, setNotifications] = useState<NotificationEvent[]>(
-    SettingsServiceMock.getNotificationEvents().map((e) => ({
+  const [notifications, setNotifications] = useState<NotificationEvent[]>(() =>
+    SettingsRepositoryMock.getNotificationEvents().map((e) => ({
       ...e,
       channels: { ...e.channels },
     }))
   );
   const [documents, setDocuments] = useState<DocumentTemplate[]>(() =>
-    SettingsServiceMock.getDocumentTemplates().map((d) => ({ ...d }))
+    SettingsRepositoryMock.getDocumentTemplates().map((d) => ({ ...d }))
+  );
+  const [dreAccounts, setDreAccounts] = useState<DreAccountTerm[]>(() =>
+    SettingsRepositoryMock.getDreAccounts().map((a) => ({ ...a })),
+  );
+  const [financialCategories, setFinancialCategories] = useState<
+    FinancialCategoryTerm[]
+  >(() => SettingsRepositoryMock.getFinancialCategories().map((c) => ({ ...c })));
+  const [inventoryPartCategories, setInventoryPartCategories] = useState<
+    InventoryPartCategoryTerm[]
+  >(() => SettingsRepositoryMock.getInventoryPartCategories().map((c) => ({ ...c })));
+  const [registeredMotors, setRegisteredMotors] = useState<RegisteredMotorTerm[]>(
+    () =>
+      getDataSourceMode() === "http"
+        ? []
+        : SettingsRepositoryMock.getRegisteredMotorTerms().map((m) => ({ ...m })),
+  );
+  const [registeredChassis, setRegisteredChassis] = useState<RegisteredChassisTerm[]>(
+    () =>
+      getDataSourceMode() === "http"
+        ? []
+        : SettingsRepositoryMock.getRegisteredChassisTerms().map((c) => ({ ...c })),
   );
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (remoteSettingsUsers?.length) {
+      setSettingsUsers(cloneSettingsUsers(remoteSettingsUsers));
+    }
+  }, [remoteSettingsUsers]);
+
+  useEffect(() => {
+    if (!remoteCatalog) return;
+    const ui = catalogToUiState(remoteCatalog);
+    setKartCategories(ui.categories);
+    setSkillLevels(cloneLevels(ui.levels));
+    setCategoryPrices(cloneCategoryPrices(ui.prices));
+  }, [remoteCatalog]);
+
+  useEffect(() => {
+    if (!remoteOrganization) return;
+    setGeneral({
+      teamName: remoteOrganization.teamName,
+      logo: remoteOrganization.logo,
+      cnpj: remoteOrganization.cnpj,
+      email: remoteOrganization.email,
+      whatsapp: remoteOrganization.whatsapp,
+      address: remoteOrganization.address,
+      instagram: remoteOrganization.instagram,
+      tiktok: remoteOrganization.tiktok,
+      facebook: remoteOrganization.facebook,
+      institutionalText: remoteOrganization.institutionalText,
+    });
+  }, [remoteOrganization]);
+
+  useEffect(() => {
+    if (!remoteNotifications?.length) return;
+    setNotifications(
+      remoteNotifications.map((e) => ({
+        ...e,
+        channels: { ...e.channels },
+      })),
+    );
+  }, [remoteNotifications]);
+
+  useEffect(() => {
+    if (!remoteDocuments) return;
+    setDocuments(remoteDocuments.map((d) => ({ ...d })));
+  }, [remoteDocuments]);
+
+  useEffect(() => {
+    if (!remoteTermsRegistry) return;
+    setDreAccounts(remoteTermsRegistry.dreAccounts.map((a) => ({ ...a })));
+    setFinancialCategories(
+      remoteTermsRegistry.financialCategories.map((c) => ({ ...c })),
+    );
+    setInventoryPartCategories(
+      remoteTermsRegistry.inventoryPartCategories.map((c) => ({ ...c })),
+    );
+    setRegisteredMotors(remoteTermsRegistry.motors.map((m) => ({ ...m })));
+    setRegisteredChassis(remoteTermsRegistry.chassis.map((c) => ({ ...c })));
+  }, [remoteTermsRegistry]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      async save() {
+        const settings = getAppServices().settings;
+
+        if (activeTab === "horarios") {
+          if (scheduleHoursLoading) {
+            throw new Error(
+              "Aguarde o carregamento da grade semanal antes de salvar.",
+            );
+          }
+          const config = scheduleHoursRef.current?.getScheduleHoursConfig();
+          if (!config?.days?.length) {
+            throw new Error(
+              "Grade semanal indisponível. Recarregue a página e tente novamente.",
+            );
+          }
+          await getAppServices().weekSchedule.saveScheduleHoursConfig(config);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.schedule.all,
+          });
+          await refetchScheduleHours();
+        }
+
+        if (!isHttpMode) return;
+
+        if (activeTab === "geral") {
+          await settings.saveGeneralSettings({
+            teamName: general.teamName,
+            logo: general.logo,
+            cnpj: general.cnpj,
+            email: general.email,
+            whatsapp: general.whatsapp,
+            address: general.address,
+            instagram: general.instagram,
+            tiktok: general.tiktok,
+            facebook: general.facebook,
+            institutionalText: general.institutionalText,
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.organization(),
+          });
+        }
+
+        if (activeTab === "usuarios") {
+          await settings.saveSettingsUsers(settingsUsers);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.users(),
+          });
+        }
+
+        if (activeTab === "precos" || activeTab === "categorias") {
+          const payload = uiStateToCatalogPayload(
+            kartCategories,
+            categoryPrices,
+            skillLevels,
+          );
+          await settings.saveSettingsCatalog(payload);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.catalog(),
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.karts.categories(),
+          });
+        }
+
+        if (activeTab === "notificacoes") {
+          await settings.saveNotificationEvents(notifications);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.notifications(),
+          });
+        }
+
+        if (activeTab === "documentos") {
+          await settings.saveDocumentTemplates(documents);
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.documents(),
+          });
+        }
+
+        if (activeTab === "termos") {
+          await settings.saveTermsRegistry({
+            dreAccounts,
+            financialCategories,
+            inventoryPartCategories,
+            motors: registeredMotors,
+            chassis: registeredChassis,
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.settings.termsRegistry(),
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.karts.terms(),
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.karts.categories(),
+          });
+        }
+      },
+    }),
+    [
+      activeTab,
+      isHttpMode,
+      queryClient,
+      scheduleHoursLoading,
+      refetchScheduleHours,
+      settingsUsers,
+      general,
+      kartCategories,
+      categoryPrices,
+      skillLevels,
+      notifications,
+      documents,
+      dreAccounts,
+      financialCategories,
+      inventoryPartCategories,
+      registeredMotors,
+      registeredChassis,
+    ],
+  );
 
   const toggleNotification = (
     eventId: string,
@@ -322,8 +593,13 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
     case "horarios":
       return (
         <ScheduleHoursPanel
+          ref={scheduleHoursRef}
           kartCategories={kartCategories}
           skillLevels={skillLevels}
+          initialWeekDays={scheduleHoursConfig?.days}
+          initialSpecificDates={scheduleHoursConfig?.specificDates}
+          initialExceptions={scheduleHoursConfig?.exceptions}
+          configLoading={scheduleHoursLoading}
           onDirty={() => markDirty(onDirty)}
         />
       );
@@ -345,6 +621,38 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
           levels={skillLevels}
           onLevelsChange={(next) => {
             setSkillLevels(next);
+            markDirty(onDirty);
+          }}
+          onDirty={() => markDirty(onDirty)}
+        />
+      );
+
+    case "termos":
+      return (
+        <TermsRegistryPanel
+          dreAccounts={dreAccounts}
+          onDreAccountsChange={(next) => {
+            setDreAccounts(next);
+            markDirty(onDirty);
+          }}
+          financialCategories={financialCategories}
+          onFinancialCategoriesChange={(next) => {
+            setFinancialCategories(next);
+            markDirty(onDirty);
+          }}
+          inventoryPartCategories={inventoryPartCategories}
+          onInventoryPartCategoriesChange={(next) => {
+            setInventoryPartCategories(next);
+            markDirty(onDirty);
+          }}
+          motors={registeredMotors}
+          onMotorsChange={(next) => {
+            setRegisteredMotors(next);
+            markDirty(onDirty);
+          }}
+          chassis={registeredChassis}
+          onChassisChange={(next) => {
+            setRegisteredChassis(next);
             markDirty(onDirty);
           }}
           onDirty={() => markDirty(onDirty)}
@@ -373,7 +681,7 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
                 {notifications.map((event) => (
                   <tr
                     key={event.id}
-                    className="border-b border-[rgba(17,17,17,0.05)] last:border-0"
+                    className={adminTableBodyRowClass}
                   >
                     <td className="py-4 pr-4 font-medium text-[#111]">
                       {event.label}
@@ -440,10 +748,12 @@ export function SettingsTabContent({ activeTab, onDirty }: Props) {
           documents={documents}
           onDocumentsChange={setDocuments}
           onDirty={() => markDirty(onDirty)}
+          onPublishSave={publishDocumentTemplates}
         />
       );
 
     default:
       return null;
   }
-}
+},
+);

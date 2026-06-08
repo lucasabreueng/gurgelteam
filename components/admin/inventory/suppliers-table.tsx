@@ -11,6 +11,8 @@ import {
   InventoryTableActions,
   InventoryTableShell,
   TableIconButton,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -25,10 +27,16 @@ import {
 import { useInventorySuppliers } from "./use-inventory-suppliers";
 import { useInventoryTableState } from "./use-inventory-table-state";
 
+import {
+  adminBadgeErrorClass,
+  adminBadgeNeutralStatusClass,
+  adminBadgeSuccessClass,
+} from "@/lib/design";
+
 const STATUS_STYLE: Record<SupplierStatus, string> = {
-  ativo: "bg-emerald-50 text-emerald-800 ring-emerald-200/60",
-  atrasado: "bg-red-50 text-red-800 ring-red-200/60",
-  inativo: "bg-neutral-100 text-neutral-600 ring-neutral-200/60",
+  ativo: adminBadgeSuccessClass,
+  atrasado: adminBadgeErrorClass,
+  inativo: adminBadgeNeutralStatusClass,
 };
 
 const DEFAULT_FILTERS: SuppliersFilterState = {
@@ -108,7 +116,7 @@ export function SuppliersTable({
           }
         >
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={inventoryThFirstClass}>Código</th>
               <th className={inventoryThClass}>Descrição</th>
               <th className={inventoryThClass}>Status</th>
@@ -124,7 +132,7 @@ export function SuppliersTable({
             {paginatedItems.map((s) => (
               <tr
                 key={s.id}
-                className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+                className={adminTableBodyRowClass}
               >
                 <td className={inventoryTdFirstClass}>{s.code}</td>
                 <td className={inventoryTdDescClass}>{s.name}</td>

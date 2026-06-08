@@ -2,6 +2,7 @@ import type { GurgelSessionNotes } from "./lesson-registration-mocks";
 import type { LapRow } from "./lesson-registration-laps";
 import type { LessonSessionStatus } from "./lesson-registration-mocks";
 import { SEED_LESSON_REGISTRATIONS } from "./lesson-registration-seeds";
+import { finalizeLessonRegistrationSideEffects } from "./operational-side-effects";
 
 export type SavedLessonRegistration = {
   sessionId: string;
@@ -26,6 +27,7 @@ export function getSessionStatusOverride(
 export function saveLessonRegistration(data: SavedLessonRegistration) {
   registrations.set(data.sessionId, data);
   statusOverrides.set(data.sessionId, "concluida");
+  finalizeLessonRegistrationSideEffects(data.sessionId);
 }
 
 export function getLessonRegistration(

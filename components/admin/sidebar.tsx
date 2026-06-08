@@ -13,20 +13,22 @@ import {
   HiChevronDoubleRight,
   HiClipboardDocumentList,
   HiCog6Tooth,
-  HiDocumentChartBar,
   HiSquares2X2,
-  HiTrophy,
   HiTruck,
   HiUsers,
-  HiAcademicCap,
+  HiUserGroup,
   HiBolt,
   HiWrench,
 } from "react-icons/hi2";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
+import { useAdminHeaderProfile } from "@/lib/query/hooks/use-admin-header-profile";
+import { useAdminPermissions } from "@/lib/query/hooks/use-admin-permissions";
 import { DashboardServiceMock } from "@/services/dashboard/dashboardServiceMock";
 import { ShellMobileAccountLinks } from "@/components/shell/mobile-account-links";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ShellSidebarTabletProfile } from "@/components/shell/shell-sidebar-tablet-profile";
 import { CollapsedRailNavItem } from "@/components/shell/collapsed-rail-nav-item";
+import { shellSidebarClass } from "@/lib/design";
 import { useCollapsedNavArm } from "@/lib/hooks/use-collapsed-nav-arm";
 
 const NAV_HREF: Partial<Record<AdminNavKey, string>> = {
@@ -34,6 +36,7 @@ const NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   agenda: "/admin/agenda",
   registroAulas: "/admin/registro-aulas",
   alunos: "/admin/clientes",
+  equipe: "/admin/equipe",
   karts: "/admin/karts",
   manutencao: "/admin/manutencao",
   estoque: "/admin/estoque",
@@ -47,14 +50,12 @@ const ICON_MAP: Record<AdminNavKey, IconType> = {
   agenda: HiCalendarDays,
   registroAulas: HiClipboardDocumentList,
   alunos: HiUsers,
-  instrutores: HiAcademicCap,
+  equipe: HiUserGroup,
   karts: HiTruck,
   manutencao: HiWrench,
   estoque: HiArchiveBox,
   telemetria: HiBolt,
-  campeonatos: HiTrophy,
   financeiro: HiBanknotes,
-  relatorios: HiDocumentChartBar,
   configuracoes: HiCog6Tooth,
 };
 
@@ -85,7 +86,13 @@ export function Sidebar({
 }: Props) {
   const router = useRouter();
   const { arm, clearArm, isArmed } = useCollapsedNavArm();
-  const profile = DashboardServiceMock.getProfile();
+  const { profile } = useAdminHeaderProfile();
+  const { canViewNav } = useAdminPermissions();
+
+  const navItems = DashboardServiceMock.getNav().filter((item) =>
+    canViewNav(item.key),
+  );
+  const profileHref = canViewNav("configuracoes") ? "/admin/configuracoes" : "/admin";
 
   useEffect(() => {
     for (const href of Object.values(NAV_HREF)) {
@@ -192,7 +199,7 @@ export function Sidebar({
               : "mt-5 pb-6"
         }`}
       >
-        {DashboardServiceMock.getNav().map((item) => {
+        {navItems.map((item) => {
           const Icon = ICON_MAP[item.key];
           const active = activeNav === item.key;
           const href = NAV_HREF[item.key];
@@ -256,16 +263,21 @@ export function Sidebar({
       </nav>
 
       {!collapsed && !showTabletSidebarControls ? (
-        <ShellMobileAccountLinks
-          profileHref="/admin/configuracoes"
-          logoutHref="/"
-          onNavigate={onCloseMobile}
-        />
+        <>
+          <div className="mt-2 px-2 lg:hidden">
+            <ThemeToggle variant="menu" onDarkSurface />
+          </div>
+          <ShellMobileAccountLinks
+            profileHref={profileHref}
+            logoutHref="/"
+            onNavigate={onCloseMobile}
+          />
+        </>
       ) : null}
 
       {showTabletSidebarControls ? (
         <ShellSidebarTabletProfile
-          profileHref="/admin/configuracoes"
+          profileHref={profileHref}
           avatarSrc={profile.avatar}
           collapsed={collapsed}
           onNavigate={onCloseMobile}
@@ -279,8 +291,8 @@ export function Sidebar({
       <aside
         className={`${
           collapsed
-            ? "fixed inset-y-0 left-0 z-50 flex h-[calc(var(--app-vh,1vh)*100)] max-h-[calc(var(--app-vh,1vh)*100)] w-[72px] min-h-0 flex-col overflow-visible border-r border-white/10 bg-accent-gradient-soft p-2"
-            : "hidden w-[288px] shrink-0 bg-accent-gradient-soft p-6 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/10"
+            ? `fixed inset-y-0 left-0 z-50 flex h-[calc(var(--app-vh,1vh)*100)] max-h-[calc(var(--app-vh,1vh)*100)] w-[72px] min-h-0 flex-col overflow-visible border-r border-white/10 p-2 ${shellSidebarClass}`
+            : `hidden w-[288px] shrink-0 p-6 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/10 ${shellSidebarClass}`
         } ${showTabletSidebarControls && !collapsed ? "!flex !h-[calc(var(--app-vh,1vh)*100)] !max-h-[calc(var(--app-vh,1vh)*100)] !min-h-0" : ""}`}
       >
         {inner}
@@ -295,7 +307,7 @@ export function Sidebar({
           />
           <aside
             id="shell-mobile-menu"
-            className="fixed inset-y-0 right-0 z-[80] flex w-[min(90vw,300px)] flex-col bg-accent-gradient-soft p-6 text-white shadow-2xl lg:hidden"
+            className={`fixed inset-y-0 right-0 z-[80] flex w-[min(90vw,300px)] flex-col p-6 shadow-2xl lg:hidden ${shellSidebarClass}`}
           >
             {inner}
           </aside>

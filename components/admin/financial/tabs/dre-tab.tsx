@@ -2,9 +2,9 @@
 
 import type { DrePeriodFilter } from "@/lib/admin-dre-mocks";
 import type { DreStructuredRow } from "@/lib/admin-dre-mocks";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useDreDataset } from "@/lib/query/hooks/use-dre";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { DreAccountModal } from "../dre/dre-account-modal";
 import { DreCostCenters, DreRevenueCenters } from "../dre/dre-centers-panel";
@@ -19,11 +19,9 @@ type Props = {
 
 export function DreTab({ filter }: Props) {
   const [selectedRow, setSelectedRow] = useState<DreStructuredRow | null>(null);
+  const { data: dataset } = useDreDataset(filter);
 
-  const dataset = useMemo(
-    () => FinancialServiceMock.getDreDataset(filter),
-    [filter]
-  );
+  if (!dataset) return null;
 
   return (
     <div className="admin-page-stack">

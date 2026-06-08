@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import type { PilotViewOption } from "@/lib/contracts/student/dashboard-view";
 import { PilotViewSelector } from "./pilot-view-selector";
 
 type Props = {
-  firstName: string;
+  displayName: string;
   subtitle: string;
   pilotViewOptions?: PilotViewOption[];
   activePilotViewId?: string;
@@ -14,7 +13,7 @@ type Props = {
 };
 
 export function StudentDashboardHeader({
-  firstName,
+  displayName,
   subtitle,
   pilotViewOptions,
   activePilotViewId,
@@ -28,21 +27,16 @@ export function StudentDashboardHeader({
 
   return (
     <AdminPageHeader
-      title={`Olá, ${firstName}`}
+      title={`Olá, ${displayName}`}
       subtitle={subtitle}
       actions={
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {showPilotSelector ? (
-            <PilotViewSelector
-              options={pilotViewOptions}
-              value={activePilotViewId}
-              onChange={onPilotViewChange}
-            />
-          ) : null}
-          <Link href="/" className="btn-outline-md">
-            Voltar ao site
-          </Link>
-        </div>
+        showPilotSelector ? (
+          <PilotViewSelector
+            options={pilotViewOptions}
+            value={activePilotViewId}
+            onChange={onPilotViewChange}
+          />
+        ) : undefined
       }
     />
   );

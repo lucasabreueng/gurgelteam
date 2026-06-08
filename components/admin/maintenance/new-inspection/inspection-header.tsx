@@ -1,7 +1,9 @@
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
-import type { InspectionTypeKey } from "@/lib/contracts/maintenance";
-import { HiXMark } from "react-icons/hi2";
+"use client";
 
+import type { InspectionTypeKey, InspectionTypeOption } from "@/lib/contracts/maintenance";
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
+
+import { HiXMark } from "react-icons/hi2";
 
 type Props = {
   kartNumber: number;
@@ -24,9 +26,10 @@ export function InspectionHeader({
   onOpenOs,
   onClose,
 }: Props) {
+  const { data: template } = useInspectionTemplate();
+  const options = (template?.typeOptions ?? []) as InspectionTypeOption[];
   const typeLabel =
-    InspectionServiceMock.getTypeOptions().find((t) => t.key === inspectionType)?.label ??
-    "—";
+    options.find((t) => t.key === inspectionType)?.label ?? "—";
 
   return (
     <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-4 py-3 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:px-6 md:py-4">

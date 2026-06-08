@@ -1,6 +1,7 @@
 /** Dados mockados — cadastro (sem persistência real) */
 
 import { isUnder14 } from "@/lib/auth-accounts-mocks";
+import { isCompleteBrazilDate } from "@/lib/brazil-date-input";
 
 export const CADASTRO_MOCK = {
   loginPrompt: "Já tem conta?",
@@ -70,6 +71,9 @@ export type CadastroFormValues = {
   cpf: string;
   email: string;
   password: string;
+  acceptedPrivacy: boolean;
+  acceptedTerms: boolean;
+  acceptedImageUsage: boolean;
 };
 
 export type CadastroFieldErrors = {
@@ -79,6 +83,8 @@ export type CadastroFieldErrors = {
   cpf?: string;
   email?: string;
   password?: string[];
+  acceptedPrivacy?: string;
+  acceptedTerms?: string;
 };
 
 export function getCadastroFieldErrors(
@@ -90,7 +96,11 @@ export function getCadastroFieldErrors(
 
   if (!first) errors.firstName = "Informe o nome.";
   if (!last) errors.lastName = "Informe o sobrenome.";
-  if (!values.birthDate) errors.birthDate = "Selecione a data de nascimento.";
+  if (!values.birthDate) {
+    errors.birthDate = "Informe a data de nascimento.";
+  } else if (values.birthDate.includes("/") && !isCompleteBrazilDate(values.birthDate)) {
+    errors.birthDate = "Informe uma data válida (dd/mm/aaaa).";
+  }
 
   const cpfDigits = values.cpf.replace(/\D/g, "");
   if (!cpfDigits) errors.cpf = "Informe o CPF.";
@@ -103,6 +113,13 @@ export function getCadastroFieldErrors(
   if (!values.password) errors.password = ["Informe a senha."];
   else if (!isPasswordValid(values.password)) {
     errors.password = getFailedPasswordRuleLabels(values.password);
+  }
+
+  if (!values.acceptedPrivacy) {
+    errors.acceptedPrivacy = "Aceite a Política de privacidade para continuar.";
+  }
+  if (!values.acceptedTerms) {
+    errors.acceptedTerms = "Aceite os Termos de uso para continuar.";
   }
 
   return errors;

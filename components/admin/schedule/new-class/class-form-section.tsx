@@ -2,10 +2,19 @@
 
 import { useEffect, useMemo } from "react";
 import type { KartOwnershipMode } from "@/lib/contracts/schedule";
-import { NewClassServiceMock } from "@/services/schedule/newClassServiceMock";
+import type { NewClassStudentOption } from "@/lib/admin-new-class-mocks";
+import type { NewClassFormCatalog } from "@/lib/schedule/new-class-catalog";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { SettingsDatePicker } from "../../settings/settings-date-picker";
 import { SettingsDropdown } from "../../settings/settings-dropdown";
 import { SettingsField } from "../../settings/settings-section";
+import { adminBadgeWarningClass, adminCardClass, adminInputReadonlyClass } from "@/lib/design";
+
+const choiceTileActiveClass =
+  "rounded-xl border-2 border-accent bg-accent px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-white transition";
+const choiceTileInactiveClass =
+  "rounded-xl border-2 border-[var(--ds-border-field)] bg-[var(--ds-bg-muted)] px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-[var(--ds-text-primary)] transition hover:border-accent/30";
+const readonlyFieldClass = `${adminInputReadonlyClass} font-semibold ring-1 ring-[var(--ds-border-subtle)]`;
 
 const KART_MODE_OPTIONS: { key: KartOwnershipMode; label: string }[] = [
   { key: "rental", label: "Frota" },
@@ -14,6 +23,8 @@ const KART_MODE_OPTIONS: { key: KartOwnershipMode; label: string }[] = [
 ];
 
 type Props = {
+  catalog: NewClassFormCatalog;
+  catalogLoading?: boolean;
   studentId: string;
   categoryId: string;
   kartId: string;
@@ -26,7 +37,16 @@ type Props = {
   onDateChange: (v: string) => void;
 };
 
+function resolveOwnKartValue(student: NewClassStudentOption | undefined): string {
+  if (!student?.hasOwnKart) return "";
+  if (student.ownKartId) return student.ownKartId;
+  if (student.ownKartNumber) return `own-${student.ownKartNumber}`;
+  return "";
+}
+
 export function ClassFormSection({
+  catalog,
+  catalogLoading = false,
   studentId,
   categoryId,
   kartId,
@@ -38,52 +58,64 @@ export function ClassFormSection({
   onKartModeChange,
   onDateChange,
 }: Props) {
-  const student = NewClassServiceMock.getStudents().find((s) => s.id === studentId);
+  const { newClass } = getAppServices();
+  const student = catalog.students.find((s) => s.id === studentId);
 
   const studentOptions = useMemo(
     () => [
-      { value: "", label: "Selecione o aluno…" },
-      ...NewClassServiceMock.getStudents().map((s) => ({
+      {
+        value: "",
+        label: catalogLoading ? "Carregando alunos…" : "Selecione o aluno…",
+      },
+      ...catalog.students.map((s) => ({
         value: s.id,
         label: s.name,
       })),
     ],
-    []
+    [catalog.students, catalogLoading],
   );
 
   const fleetKartOptions = useMemo(
     () => [
-      { value: "", label: "Selecione o kart da frota…" },
-      ...NewClassServiceMock.getRentalKarts().map((k) => ({
+      {
+        value: "",
+        label: catalogLoading
+          ? "Carregando karts…"
+          : "Selecione o kart da frota…",
+      },
+      ...catalog.rentalKarts.map((k) => ({
         value: k.id,
         label: `Kart ${k.number} — ${k.category}`,
       })),
     ],
-    []
+    [catalog.rentalKarts, catalogLoading],
   );
 
   const thirdPartyKartOptions = useMemo(
     () => [
-      { value: "", label: "Selecione o kart de terceiro…" },
-      ...NewClassServiceMock.getThirdPartyKarts().map((k) => ({
+      {
+        value: "",
+        label: catalogLoading
+          ? "Carregando karts…"
+          : "Selecione o kart de terceiro…",
+      },
+      ...catalog.thirdPartyKarts.map((k) => ({
         value: k.id,
         label: `Kart ${k.number} — ${k.ownerName}`,
       })),
     ],
-    []
+    [catalog.thirdPartyKarts, catalogLoading],
   );
 
-  const ownKartValue = student?.ownKartNumber
-    ? `own-${student.ownKartNumber}`
-    : "";
+  const ownKartValue = resolveOwnKartValue(student);
 
   const categoryOptions = useMemo(() => {
     if (!student) return [];
     return student.allowedCategoryIds.map((id) => ({
       id,
-      label: NewClassServiceMock.getCategoryLabel(id),
+      label: newClass.getCategoryLabel(id),
     }));
-  }, [student]);
+  }, [student, newClass]);
 
   useEffect(() => {
     if (!student) return;
@@ -99,7 +131,7 @@ export function ClassFormSection({
 
   useEffect(() => {
     if (!student || kartMode !== "own") return;
-    if (student.hasOwnKart && student.ownKartNumber) {
+    if (student.hasOwnKart && ownKartValue) {
       onKartChange(ownKartValue);
     } else {
       onKartChange("");
@@ -111,7 +143,7 @@ export function ClassFormSection({
     onCategoryChange("");
     onKartChange("");
     onKartModeChange("rental");
-    const next = NewClassServiceMock.getStudents().find((s) => s.id === id);
+    const next = catalog.students.find((s) => s.id === id);
     if (next?.allowedCategoryIds.length === 1) {
       onCategoryChange(next.allowedCategoryIds[0]);
     }
@@ -119,7 +151,7 @@ export function ClassFormSection({
 
   const handleKartMode = (mode: KartOwnershipMode) => {
     onKartModeChange(mode);
-    if (mode === "own" && student?.ownKartNumber) {
+    if (mode === "own" && student?.ownKartNumber && ownKartValue) {
       onKartChange(ownKartValue);
     } else {
       onKartChange("");
@@ -127,8 +159,8 @@ export function ClassFormSection({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-sm md:p-5">
-      <h2 className="text-sm font-bold text-[#0d1f3c]">Dados da aula</h2>
+    <section className={`${adminCardClass} space-y-4 p-4 md:p-5`}>
+      <h2 className="text-sm font-bold text-[var(--ds-text-primary)]">Dados da aula</h2>
 
       <SettingsField label="Aluno">
         <SettingsDropdown
@@ -136,6 +168,7 @@ export function ClassFormSection({
           options={studentOptions}
           value={studentId}
           onSelect={handleStudentChange}
+          disabled={catalogLoading}
         />
       </SettingsField>
 
@@ -143,7 +176,7 @@ export function ClassFormSection({
         <>
           {categoryOptions.length === 1 ? (
             <SettingsField label="Categoria">
-              <p className="rounded-xl bg-[#fafbfc] px-4 py-3 text-sm font-semibold text-[#0d1f3c] ring-1 ring-[rgba(17,17,17,0.06)]">
+              <p className={readonlyFieldClass}>
                 {categoryOptions[0].label}
               </p>
             </SettingsField>
@@ -155,11 +188,11 @@ export function ClassFormSection({
                     key={cat.id}
                     type="button"
                     onClick={() => onCategoryChange(cat.id)}
-                    className={`rounded-xl border-2 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                    className={
                       categoryId === cat.id
-                        ? "border-[#0d1f3c] bg-[#0d1f3c] text-white"
-                        : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[#0d1f3c] hover:border-accent/30"
-                    }`}
+                        ? choiceTileActiveClass
+                        : choiceTileInactiveClass
+                    }
                   >
                     {cat.label}
                   </button>
@@ -169,8 +202,8 @@ export function ClassFormSection({
           )}
 
           <SettingsField label="Nível">
-            <p className="rounded-xl bg-[#fafbfc] px-4 py-3 text-sm font-semibold text-[#0d1f3c] ring-1 ring-[rgba(17,17,17,0.06)]">
-              {NewClassServiceMock.getLevelLabel(student.levelId)}
+            <p className={readonlyFieldClass}>
+              {newClass.getLevelLabel(student.levelId)}
             </p>
           </SettingsField>
         </>
@@ -181,11 +214,13 @@ export function ClassFormSection({
           aria-label="Data da aula"
           value={date}
           onChange={onDateChange}
+          lowercaseLabel
+          disablePast
         />
       </SettingsField>
 
       <div className="min-w-0 space-y-2">
-        <span className="text-[12px] font-bold uppercase tracking-wider text-neutral-500">
+        <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
           Kart
         </span>
         {student ? (
@@ -196,11 +231,11 @@ export function ClassFormSection({
                   key={opt.key}
                   type="button"
                   onClick={() => handleKartMode(opt.key)}
-                  className={`rounded-xl border-2 px-2 py-2.5 text-[10px] font-bold uppercase tracking-wide transition sm:text-[11px] ${
+                  className={`${
                     kartMode === opt.key
-                      ? "border-[#0d1f3c] bg-[#0d1f3c] text-white"
-                      : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[#0d1f3c] hover:border-accent/30"
-                  }`}
+                      ? choiceTileActiveClass
+                      : choiceTileInactiveClass
+                  } px-2 py-2.5 text-[10px] sm:text-[11px]`}
                 >
                   {opt.label}
                 </button>
@@ -221,7 +256,7 @@ export function ClassFormSection({
             {kartMode === "own" ? (
               student.hasOwnKart && student.ownKartNumber ? (
                 <SettingsField label="Kart próprio">
-                  <p className="rounded-xl bg-[#fafbfc] px-3 py-2.5 text-sm font-semibold text-[#0d1f3c] ring-1 ring-[rgba(17,17,17,0.06)]">
+                  <p className={`${readonlyFieldClass} px-3 py-2.5`}>
                     Kart {student.ownKartNumber}
                     {student.ownKartCategory
                       ? ` — ${student.ownKartCategory}`
@@ -230,7 +265,7 @@ export function ClassFormSection({
                   </p>
                 </SettingsField>
               ) : (
-                <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-900 ring-1 ring-amber-200/60">
+                <p className={`rounded-xl px-3 py-2.5 text-xs font-medium ring-1 ${adminBadgeWarningClass}`}>
                   Este aluno não possui kart próprio cadastrado.
                 </p>
               )
@@ -248,7 +283,7 @@ export function ClassFormSection({
             ) : null}
           </div>
         ) : (
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-[var(--ds-text-muted)]">
             Selecione um aluno para escolher o kart.
           </p>
         )}

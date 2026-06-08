@@ -1,6 +1,7 @@
 "use client";
 
-import type { KartOwnership, KartStatus } from "@/lib/contracts/karts";
+import type { KartOwnership } from "@/lib/contracts/karts";
+import type { KartFleetFilterStatus } from "@/lib/admin-karts-mocks";
 
 import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
 
@@ -14,7 +15,7 @@ export type KartsFilterState = {
   search: string;
   ownership: KartOwnership | "";
   categoryId: string;
-  status: KartStatus | "";
+  status: KartFleetFilterStatus;
   maintenance: string;
 };
 
@@ -103,12 +104,12 @@ export function KartsFilters({
               aria-label="Status"
               value={filters.status}
               options={statusOptions}
-              onSelect={(v) => onChange({ status: v as KartStatus | "" })}
+              onSelect={(v) => onChange({ status: v as KartFleetFilterStatus })}
             />
           </div>
           <div className={dropdownCell}>
             <SettingsDropdown
-              aria-label="Próxima manutenção"
+              aria-label="Manutenção preventiva"
               value={filters.maintenance}
               options={maintOptions}
               onSelect={(maintenance) => onChange({ maintenance })}

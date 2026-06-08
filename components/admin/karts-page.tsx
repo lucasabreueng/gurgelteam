@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { IconType } from "react-icons/lib";
 import {
   HiClock,
@@ -12,9 +13,13 @@ import {
 } from "react-icons/hi2";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { FleetKartListItem, NewKartFormData } from "@/lib/contracts/karts";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { useKartsFleet, useKartsKpis } from "@/lib/query/hooks/use-karts";
-import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
+import { useKartTerms } from "@/lib/query/hooks/use-kart-terms";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
+import { queryKeys } from "@/lib/query/keys";
 import { AdminShell } from "./admin-shell";
+import { ConfirmDialog } from "./settings/confirm-dialog";
 import { KartDetailDrawer } from "./karts/kart-detail-drawer";
 import { KartsFleetTable } from "./karts/karts-fleet-table";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
@@ -26,6 +31,10 @@ import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters
 import { countActiveFilters } from "@/components/ui/filter-box";
 import { KartsHeader } from "./karts/karts-header";
 import { NewKartDrawer } from "./karts/new-kart-drawer";
+import {
+  AdminKpiStripSkeleton,
+  AdminTableSkeleton,
+} from "./admin-page-skeletons";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -70,19 +79,21 @@ function matchesFilters(
   }
   if (filters.ownership && kart.ownership !== filters.ownership) return false;
   if (filters.categoryId && kart.categoryId !== filters.categoryId) return false;
-  if (filters.status && kart.status !== filters.status) return false;
-  if (filters.maintenance === "overdue" && kart.nextMaintenanceDays >= 0) {
+  if (filters.status && kart.fleetStatus !== filters.status) return false;
+
+  const { mostUrgent } = kart.preventiveMaintenance;
+  if (filters.maintenance === "overdue" && !mostUrgent.overdue) {
     return false;
   }
   if (
     filters.maintenance === "7" &&
-    (kart.nextMaintenanceDays < 0 || kart.nextMaintenanceDays > 7)
+    (mostUrgent.overdue || mostUrgent.hoursRemaining > 7)
   ) {
     return false;
   }
   if (
     filters.maintenance === "30" &&
-    (kart.nextMaintenanceDays < 0 || kart.nextMaintenanceDays > 30)
+    (mostUrgent.overdue || mostUrgent.hoursRemaining > 30)
   ) {
     return false;
   }
@@ -90,9 +101,14 @@ function matchesFilters(
 }
 
 export function KartsPage() {
-  const { data: fleetKarts = [] } = useKartsFleet();
-  const { data: kartsKpis = [] } = useKartsKpis();
-  const registeredMotors = KartsServiceMock.getRegisteredMotors();
+  const queryClient = useQueryClient();
+  const { data: fleetKarts = [], isPending: fleetLoading } = useKartsFleet();
+  const { data: kartsKpis = [], isPending: kpisLoading } = useKartsKpis();
+  const isPageLoading = fleetLoading || kpisLoading;
+  const { canEdit, canDelete } = useModuleAccess("karts");
+  const { data: kartTerms } = useKartTerms();
+  const registeredMotors =
+    kartTerms?.motors ?? getAppServices().karts.getRegisteredMotors();
   const router = useRouter();
   const [filters, setFilters] = useState<KartsFilterState>(DEFAULT_FILTERS);
   const [detailState, setDetailState] = useState<DetailState | null>(null);
@@ -102,6 +118,7 @@ export function KartsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -141,15 +158,41 @@ export function KartsPage() {
       const motorName =
         registeredMotors.find((motor) => motor.id === data.motor)?.name ??
         data.motor;
+      void queryClient.invalidateQueries({ queryKey: queryKeys.karts.all });
       setFeedback(
         mode === "edit"
-          ? `Kart ${data.number} (${motorName}) atualizado com sucesso (mock).`
-          : `Kart ${data.number} (${motorName}) cadastrado com sucesso (mock).`,
+          ? `Kart ${data.number} (${motorName}) atualizado com sucesso.`
+          : `Kart ${data.number} (${motorName}) cadastrado com sucesso.`,
       );
       window.setTimeout(() => setFeedback(null), 4000);
     },
-    [registeredMotors],
+    [registeredMotors, queryClient],
   );
+
+  const pendingDeleteKart =
+    fleetKarts.find((kart) => kart.id === pendingDeleteId) ?? null;
+
+  const handleDeleteKart = async (id: string) => {
+    const target = fleetKarts.find((kart) => kart.id === id);
+    if (!target) return;
+    try {
+      await getAppServices().karts.removeKart(id);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.karts.all });
+      if (detailState?.kartId === id) setDetailState(null);
+      if (editKartId === id) setEditKartId(null);
+      setFeedback(`Kart ${target.number} foi excluído.`);
+      window.setTimeout(() => setFeedback(null), 5000);
+    } catch (error) {
+      setFeedback(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o kart.",
+      );
+      window.setTimeout(() => setFeedback(null), 5000);
+    } finally {
+      setPendingDeleteId(null);
+    }
+  };
 
   const handleEditKart = useCallback((kartId: string) => {
     setDetailState(null);
@@ -164,10 +207,14 @@ export function KartsPage() {
         mobileTitle="Karts"
         pageHeader={
           <KartsHeader
-            onNewKart={() => {
-              setEditKartId(null);
-              setNewKartOpen(true);
-            }}
+            onNewKart={
+              canEdit
+                ? () => {
+                    setEditKartId(null);
+                    setNewKartOpen(true);
+                  }
+                : undefined
+            }
             onOpenFilters={() => setFiltersOpen(true)}
             activeFilterCount={countActiveFilters([
               filters.search,
@@ -188,11 +235,19 @@ export function KartsPage() {
           </p>
         ) : null}
 
+        {isPageLoading ? (
+          <>
+            <AdminKpiStripSkeleton count={6} />
+            <AdminTableSkeleton rows={8} />
+          </>
+        ) : (
+          <>
         <AdminResponsiveKpis
           kpis={kartsKpis}
           icons={KPI_ICONS}
           defaultIcon={HiClock}
           desktopClassName="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+          showDeltaBadge={false}
         />
 
         <ResponsiveTableFilters
@@ -225,9 +280,12 @@ export function KartsPage() {
             onViewDetails={(id) =>
               setDetailState({ kartId: id, focusHistory: false })
             }
-            onEdit={handleEditKart}
+            onEdit={canEdit ? handleEditKart : undefined}
+            onDelete={canDelete ? setPendingDeleteId : undefined}
           />
         </section>
+          </>
+        )}
 
       </AdminShell>
 
@@ -238,16 +296,34 @@ export function KartsPage() {
           setNewKartOpen(false);
           setEditKartId(null);
         }}
-        onSuccess={(data) =>
-          handleKartFormSuccess(data, editKartId ? "edit" : "create")
+        onSuccess={handleKartFormSuccess}
+        onError={(message) => {
+          setFeedback(message);
+          window.setTimeout(() => setFeedback(null), 5000);
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Excluir kart"
+        message={
+          pendingDeleteKart
+            ? `Deseja excluir o Kart ${pendingDeleteKart.number}? Esta ação não pode ser desfeita.`
+            : ""
         }
+        confirmLabel="Excluir kart"
+        cancelLabel="Cancelar"
+        onConfirm={() => {
+          if (pendingDeleteId) void handleDeleteKart(pendingDeleteId);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
       />
 
       <KartDetailDrawer
         kartId={detailState?.kartId ?? null}
         focusHistory={detailState?.focusHistory}
         onClose={() => setDetailState(null)}
-        onEdit={handleEditKart}
+        onEdit={canEdit ? handleEditKart : undefined}
       />
     </>
   );

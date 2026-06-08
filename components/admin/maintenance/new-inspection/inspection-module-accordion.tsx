@@ -1,8 +1,7 @@
 "use client";
 
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
-
-import type { InspectionItemState } from "@/lib/contracts/maintenance";
+import type { InspectionItemState, InspectionModuleDef } from "@/lib/contracts/maintenance";
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
 
 import { useState } from "react";
 import { HiChevronDown } from "react-icons/hi2";
@@ -15,13 +14,23 @@ type Props = {
 };
 
 export function InspectionModuleAccordion({ items, onItemChange }: Props) {
+  const { data: template, isLoading } = useInspectionTemplate();
+  const modules = (template?.modules ?? []) as InspectionModuleDef[];
   const [openIds, setOpenIds] = useState<string[]>(["motor", "freios"]);
 
   const toggle = (id: string) => {
     setOpenIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
+
+  if (isLoading) {
+    return (
+      <section>
+        <div className="h-40 animate-pulse rounded-2xl bg-white" />
+      </section>
+    );
+  }
 
   return (
     <section>
@@ -30,7 +39,7 @@ export function InspectionModuleAccordion({ items, onItemChange }: Props) {
         Avalie cada sistema do kart
       </p>
       <ul className="mt-4 space-y-3">
-        {InspectionServiceMock.getModules().map((mod) => {
+        {modules.map((mod) => {
           const open = openIds.includes(mod.id);
           const modItems = mod.items.map((i) => items[i.id]);
           const done = modItems.filter((s) => s?.status).length;

@@ -26,4 +26,15 @@ export type {
   AuditEntry,
 } from "@/lib/admin-settings-mocks";
 
-export { MODULE_LABELS, MODULE_GROUPS } from "@/lib/admin-settings-mocks";
+export type {
+  DreAccountKind,
+  DreAccountTerm,
+  FinancialCategoryFlow,
+  FinancialCategoryTerm,
+  InventoryPartCategoryTerm,
+  RegisteredMotorTerm,
+  RegisteredChassisTerm,
+  SettingsTermsRegistry,
+} from "@/lib/admin-settings-terms-mocks";
+
+export { MODULE_LABELS, MODULE_GROUPS } from "@/lib/contracts/module-registry";

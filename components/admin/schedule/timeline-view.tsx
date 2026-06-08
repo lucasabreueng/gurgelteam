@@ -9,8 +9,9 @@ type Props = {
   events: ScheduleEvent[];
   onEventClick: (id: string) => void;
   onCreateClass?: (time?: string) => void;
-  onBlockConfirmed?: (message: string) => void;
+  onBlockConfirmed?: (message: string, isError?: boolean) => void;
   onOpenBlockDrawer?: () => void;
+  blocksRefreshToken?: number;
   view: ScheduleViewKey;
   onViewChange: (view: ScheduleViewKey) => void;
 };

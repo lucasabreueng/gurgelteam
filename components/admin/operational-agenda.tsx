@@ -1,13 +1,32 @@
 "use client";
 
 import { useOperationalAgenda } from "@/lib/query/hooks/use-dashboard";
+import { adminTableBodyRowClass } from "@/lib/design";
 
 type Props = {
   className?: string;
 };
 
 export function OperationalAgenda({ className = "" }: Props) {
-  const { data: agenda = [] } = useOperationalAgenda();
+  const { data: agenda = [], isPending } = useOperationalAgenda();
+
+  if (isPending) {
+    return (
+      <div
+        className={`flex h-full flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-7 ${className}`}
+        aria-busy="true"
+        aria-label="Carregando agenda operacional"
+      >
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 w-48 rounded-lg bg-neutral-200/80" />
+          <div className="h-4 w-32 rounded-lg bg-neutral-200/80" />
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="h-10 w-full rounded-lg bg-neutral-200/80" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -33,7 +52,7 @@ export function OperationalAgenda({ className = "" }: Props) {
               {agenda.map((slot) => (
                 <tr
                   key={slot.id}
-                  className="border-b border-[rgba(17,17,17,0.06)] last:border-0"
+                  className={adminTableBodyRowClass}
                 >
                   <td className="py-3.5 pr-3 text-[13px] font-semibold tabular-nums text-[#0d1f3c]">
                     {slot.startTime} – {slot.endTime}

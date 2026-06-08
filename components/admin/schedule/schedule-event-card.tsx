@@ -1,7 +1,7 @@
 "use client";
 
 import type { ScheduleEvent } from "@/lib/contracts/schedule";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
 const STATUS_DOT: Record<string, string> = {
@@ -23,7 +23,7 @@ type Props = {
 
 export function ScheduleEventCard({ event, onClick, compact }: Props) {
   const dot = STATUS_DOT[event.status] ?? "bg-neutral-400";
-  const statusLabels = ScheduleServiceMock.getEventStatusLabels();
+  const statusLabels = getAppServices().schedule.getEventStatusLabels();
 
   return (
     <button
@@ -49,10 +49,11 @@ export function ScheduleEventCard({ event, onClick, compact }: Props) {
           <p className="text-xs font-semibold text-accent">{event.typeLabel}</p>
           {!compact ? (
             <>
-              <p className="mt-2 text-xs text-neutral-600">
-                Instrutor: {event.instructorName}
-                {event.kartNumber > 0 ? ` · Kart ${event.kartNumber}` : ""}
-              </p>
+              {event.kartNumber > 0 ? (
+                <p className="mt-2 text-xs text-neutral-600">
+                  Kart {event.kartNumber}
+                </p>
+              ) : null}
               <p className="mt-1 text-[10px] font-bold uppercase text-neutral-500">
                 {statusLabels[event.status]}
               </p>

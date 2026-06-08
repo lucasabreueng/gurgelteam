@@ -2,14 +2,22 @@
 
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 
-import Image from "next/image";
 import { HiEye, HiPencil } from "react-icons/hi2";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import {type ClientListItem} from "@/lib/contracts/clients";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import {
+  adminBadgeNeutralClass,
+  adminCardClass,
+  adminCardHoverClass,
+  adminTextAccentBoldClass,
+  adminTextAccentClass,
+} from "@/lib/design";
+import {
   ClientCategoriesBadges,
   ClientLevelBadge,
-  ClientStatusBadge} from "./client-badges";
+  ClientStatusBadge,
+} from "./client-badges";
 
 type Props = {
   client: ClientListItem;
@@ -30,20 +38,17 @@ export function ClientCard({
   const levelName = ClientsServiceMock.resolveLevelName(client.levelId, skillLevels);
 
   return (
-    <article className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] transition hover:border-accent/20 hover:shadow-[0_8px_28px_rgba(13,31,60,0.1)]">
+    <article className={`flex flex-col p-5 ${adminCardClass} ${adminCardHoverClass}`}>
       <div className="flex gap-4">
-        <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl ring-2 ring-white shadow-md">
-          <Image
-            src={client.avatar}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="56px"
-          />
-        </span>
+        <UserAvatar
+          src={client.avatar}
+          name={client.name}
+          size={56}
+          roundedClass="rounded-2xl"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-[#0d1f3c]">{client.name}</h3>
+            <h3 className={adminTextAccentBoldClass}>{client.name}</h3>
             {client.atRisk ? (
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-red-700 ring-1 ring-red-200/60">
                 Risco
@@ -80,10 +85,10 @@ export function ClientCard({
       </dl>
 
       <p className="mt-3 text-[12px] text-neutral-600">
-        <span className="font-semibold text-[#0d1f3c]">{client.activePlan}</span>
+        <span className={adminTextAccentClass}>{client.activePlan}</span>
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-[rgba(17,17,17,0.06)] pt-4">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-black/[0.06] pt-4">
         <ActionBtn
           icon={HiEye}
           label="Ver"
@@ -107,7 +112,7 @@ function ActionBtn({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-lg border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#0d1f3c] transition hover:border-accent/25 hover:bg-white"
+      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide ${adminBadgeNeutralClass} transition hover:border-accent/25 hover:bg-white`}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}

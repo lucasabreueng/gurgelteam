@@ -126,7 +126,7 @@ export function RegisterPartDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Registrar peça"
-        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(42vw,640px)]"
+        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[var(--ds-bg-panel)] shadow-2xl lg:max-w-[min(42vw,640px)]"
       >
         <RegisterPartHeader
           context={context}

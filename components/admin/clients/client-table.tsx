@@ -2,8 +2,12 @@
 
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 
-import Image from "next/image";
-import { HiEye, HiPencil } from "react-icons/hi2";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { HiEye, HiPencil, HiTrash } from "react-icons/hi2";
+import {
+  adminTableActionButtonClass,
+  adminTextAccentClass,
+} from "@/lib/design";
 import {type ClientListItem} from "@/lib/contracts/clients";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import {
@@ -11,6 +15,12 @@ import {
   ClientLevelBadge,
   ClientStatusBadge} from "./client-badges";
 import { ClientTablePagination } from "./client-table-pagination";
+import {
+  clientsTableBodyRowHoverClass,
+  clientsTableScrollClass,
+  clientsTableHeadRowClass,
+  clientsTableWrapClass,
+} from "./clients-table-shared";
 
 type Props = {
   clients: ClientListItem[];
@@ -23,6 +33,7 @@ type Props = {
   onPageSizeChange: (size: number) => void;
   onViewProfile: (id: string) => void;
   onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 };
 
 export function ClientTable({
@@ -35,13 +46,14 @@ export function ClientTable({
   onPageChange,
   onPageSizeChange,
   onViewProfile,
-  onEdit}: Props) {
+  onEdit,
+  onDelete}: Props) {
   return (
-    <div className="overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
-      <div className="overflow-x-auto rounded-t-2xl">
+    <div className={clientsTableWrapClass}>
+      <div className={clientsTableScrollClass}>
         <table className="w-full min-w-[880px] text-left text-sm">
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+            <tr className={clientsTableHeadRowClass}>
               <th className="px-4 py-3.5">Piloto</th>
               <th className="px-3 py-3.5">Categoria</th>
               <th className="px-3 py-3.5">Nível</th>
@@ -50,7 +62,7 @@ export function ClientTable({
               <th className="px-3 py-3.5">Próxima</th>
               <th className="px-3 py-3.5">Melhor volta</th>
               <th className="px-3 py-3.5">Consist.</th>
-              <th className="px-4 py-3.5 text-right"></th>
+              <th className="px-4 py-3.5 text-right" aria-label="Ações" />
             </tr>
           </thead>
           <tbody>
@@ -62,7 +74,7 @@ export function ClientTable({
               return (
                 <tr
                   key={client.id}
-                  className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+                  className={clientsTableBodyRowHoverClass}
                 >
                   <td className="px-4 py-3.5">
                     <button
@@ -70,17 +82,9 @@ export function ClientTable({
                       onClick={() => onViewProfile(client.id)}
                       className="flex items-center gap-3 text-left transition hover:opacity-80"
                     >
-                      <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl ring-2 ring-white shadow-sm">
-                        <Image
-                          src={client.avatar}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                        />
-                      </span>
+                      <UserAvatar src={client.avatar} name={client.name} size={40} />
                       <span>
-                        <span className="block font-semibold text-[#0d1f3c]">
+                        <span className={`block ${adminTextAccentClass}`}>
                           {client.name}
                         </span>
                         {client.atRisk ? (
@@ -116,14 +120,24 @@ export function ClientTable({
                     <div className="flex items-center justify-end gap-1">
                       <IconAction
                         icon={HiEye}
-                        label="Ver perfil"
+                        label={`Ver perfil de ${client.name}`}
                         onClick={() => onViewProfile(client.id)}
                       />
-                      <IconAction
-                        icon={HiPencil}
-                        label="Editar"
-                        onClick={() => onEdit?.(client.id)}
-                      />
+                      {onEdit ? (
+                        <IconAction
+                          icon={HiPencil}
+                          label={`Editar ${client.name}`}
+                          onClick={() => onEdit(client.id)}
+                        />
+                      ) : null}
+                      {onDelete ? (
+                        <IconAction
+                          icon={HiTrash}
+                          label={`Excluir ${client.name}`}
+                          onClick={() => onDelete(client.id)}
+                          variant="danger"
+                        />
+                      ) : null}
                     </div>
                   </td>
                 </tr>
@@ -153,10 +167,13 @@ export function ClientTable({
 function IconAction({
   icon: Icon,
   label,
-  onClick}: {
+  onClick,
+  variant = "default",
+}: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick?: () => void;
+  variant?: "default" | "danger";
 }) {
   return (
     <button
@@ -164,7 +181,11 @@ function IconAction({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-[#0d1f3c]/5 hover:text-[#0d1f3c]"
+      className={`${adminTableActionButtonClass} ${
+        variant === "danger"
+          ? "text-red-600 hover:border-red-200 hover:bg-red-50"
+          : ""
+      }`}
     >
       <Icon className="h-4 w-4" />
     </button>

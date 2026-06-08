@@ -12,6 +12,8 @@ export type {
   TelemetryTabKey,
   TelemetrySessionLap,
   Achievement,
+  AchievementCategory,
+  ACHIEVEMENT_CATEGORY_META,
   TrainingLapDetail,
   ResultRow,
   VideoMaterial,

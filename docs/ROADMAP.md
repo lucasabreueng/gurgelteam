@@ -1,7 +1,8 @@
 # ROADMAP — Gurgel Team
 
-> **Última atualização:** 2026-05-28  
-> **Fonte:** código existente, `CHECKPOINT.md`, `FRONTEND_ARCHITECTURE_REPORT.md`, `FRONTEND_AUDIT.md`  
+> **Última atualização:** 2026-06-05  
+> **Handoff:** [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) · [`MIGRATION_STATUS.md`](MIGRATION_STATUS.md)  
+> **Fonte:** código existente, `CHECKPOINT.md`, `FRONTEND_ARCHITECTURE_REPORT.md`  
 > **Legenda:** `[CONFIRMADO]` = implementado no código · `[EM ANDAMENTO]` = parcialmente implementado · `[PENDENTE]` = planejado/documentado mas ausente
 
 ---
@@ -59,7 +60,8 @@
 | Item | Rota |
 |------|------|
 | Dashboard piloto | `/piloto` |
-| Perfil (dados, segurança, consentimentos) | `/piloto/perfil` |
+| Reservar horário (calendário + slots) | `/piloto/reservar` |
+| Perfil (dados, vinculados, segurança, consentimentos) | `/piloto/perfil` |
 | Telemetria (importação, análise, setores) | `/piloto/telemetria/*` |
 
 ### 1.6 Telemetria (motor client-side)
@@ -72,14 +74,23 @@
 | Catálogo de pistas | `lib/telemetry-engine/tracks/` |
 | Vendor GoPro (esbuild) | `scripts/build-gopro-vendor.mjs` |
 
-### 1.7 Integração HTTP (parcial)
+### 1.7 Backend e integração HTTP (Fase 5–6)
 
 | Item | Status |
 |------|--------|
-| Agenda — repository HTTP | `[CONFIRMADO]` — `ScheduleRepositoryHttp.ts` |
-| Agenda — rotas API Next | `[CONFIRMADO]` — 4 rotas GET |
-| OCR cronometragem — API OpenAI | `[CONFIRMADO]` — POST `/api/admin/lesson-registration/ocr` |
+| Prisma + PostgreSQL (Supabase) | `[CONFIRMADO]` — migration + seed |
+| Auth sessão + cookie | `[CONFIRMADO]` — `/api/v1/auth/*` |
+| Middleware route guard | `[CONFIRMADO]` — `ENABLE_ROUTE_GUARD` |
+| Domínios P0 backend | `[CONFIRMADO]` — schedule, clients, karts, lessons, reference |
 | Modo `NEXT_PUBLIC_DATA_SOURCE=http` | `[CONFIRMADO]` |
+| Agenda HTTP completa (P0) | `[CONFIRMADO]` — eventos, bloqueios, remarcação, nova aula, slots, grade semanal |
+| Grade semanal persistida (Configurações) | `[CONFIRMADO]` — `PUT /api/v1/schedule/week` |
+| Supabase client + health | `[CONFIRMADO]` |
+| OCR cronometragem | `[CONFIRMADO]` — POST `/api/v1/lessons/ocr` (+ legado admin) |
+| Clientes/karts HTTP (parcial UI) | `[EM ANDAMENTO]` |
+| Registro aulas HTTP (parcial UI) | `[EM ANDAMENTO]` |
+| Demais domínios HTTP | `[PENDENTE]` |
+| Proxy `/api/admin/*` → v1 | `[PENDENTE]` |
 
 ### 1.8 Documentação
 
@@ -97,15 +108,14 @@
 
 | Item | Estado | Evidência |
 |------|--------|-----------|
-| Agenda modo HTTP | Bridge mock via rotas Next; backend real ausente | `FRONTEND_ARCHITECTURE_REPORT.md` |
-| Registro de aulas | UI robusta; OCR funcional; persistência local | `lesson-registration-store.ts` |
-| Telemetria piloto/admin | Pipeline maduro; sem persistência remota | `telemetry-engine/` |
-| Perfil piloto | UI completa; persistência mock | `student-profile-mocks.ts` |
+| Fase 6 — integração HTTP | Agenda P0 concluída; demais domínios mock | `MIGRATION_STATUS.md` |
+| Registro de aulas | API v1 pronta; UI parcialmente mock | `createLessonsService()` |
+| Clientes / karts | API v1; detalhes e KPIs parciais | `ClientsRepositoryHttp`, `KartsRepositoryHttp` |
+| Configurações | Grade semanal HTTP; resto mock | `weekScheduleService`, `SettingsServiceMock` |
+| Config — datas específicas / exceções | Mock only | `schedule-hours-panel.tsx` |
+| Telemetria piloto/admin | Pipeline client-side; sem persistência remota | `telemetry-engine/` |
 | Reserva pública | Fluxo UI; dados mock | `/reserva` |
-| Migração UI → services | Admin e piloto migrados; stores locais restantes | `CHECKPOINT.md` |
-| Estoque mutável | Parts/suppliers em store local | `inventory-*-store.ts` |
-| Bloqueios agenda | Lógica em repository mock; sem HTTP | `ScheduleBlocksRepositoryMock.ts` |
-| Reagendamento | Lógica de disponibilidade implementada; sem HTTP | `ScheduleRescheduleRepositoryMock.ts` |
+| Design system / loading states | Fragmentado | `UI_AUDIT.md` |
 
 ---
 
@@ -115,23 +125,21 @@
 
 | Item | Prioridade | Referência |
 |------|------------|------------|
-| Backend/API real | Crítica | `CHECKPOINT.md` |
-| Banco de dados (schema) | Crítica | `DATABASE_REFERENCE.md` |
-| Auth/sessão real (JWT/cookies) | Crítica | Sem `middleware.ts` |
-| Middleware de proteção de rotas | Crítica | Páginas 401/403 existem, guards não |
-| HTTP repositories — demais domínios | Alta | `FRONTEND_ARCHITECTURE_REPORT.md` |
-| HTTP — bloqueios/remarcação/nova aula | Alta | `CHECKPOINT.md` |
-| Substituir handlers mock das rotas API | Alta | `app/api/admin/schedule/*` |
-| Persistência telemetria remota | Alta | Client-side only |
-| Trilha auditoria consentimentos | Média | UI existe, backend não |
+| Wire UI registro de aulas → HTTP | Alta | `MIGRATION_STATUS.md` §9 |
+| Config — datas específicas / exceções grade | Alta | mock em `admin-settings-mocks.ts` |
+| HTTP — financeiro, estoque, manutenção | Alta | `API_SPEC.md` |
+| Proxy rotas legadas `/api/admin/*` → v1 | Média | 5 rotas legadas |
+| Dashboard admin HTTP | Média | mock |
+| Área piloto HTTP | Média | ⚠️ home/perfil/account/reserva GET; POST reserva pendente |
+| Persistência telemetria remota | Média | client-side only |
+| Workers/jobs assíncronos | Baixa | `ASYNC_JOBS.md` |
+| Trilha auditoria consentimentos | Baixa | UI existe |
 
 ### 3.2 Módulos admin sem rota
 
 | Módulo | Nav key | Status |
 |--------|---------|--------|
-| Instrutores | `instrutores` | `[PENDENTE]` — só ModuleKey |
-| Campeonatos | `campeonatos` | `[PENDENTE]` — card no dashboard only |
-| Relatórios operacionais | `relatorios` | `[PENDENTE]` — relatórios financeiros existem |
+| Relatórios operacionais | `relatorios` | `[PLANEJADO]` — ModuleKey em settings; sem rota admin |
 
 ### 3.3 Integrações externas
 
@@ -166,8 +174,6 @@
 
 ### 4.2 Produto
 
-- Módulo de instrutores (gestão, carga horária, disponibilidade)
-- Módulo de campeonatos (inscrições, resultados, pontuação)
 - Relatórios operacionais dedicados (além dos financeiros)
 - App mobile nativo ou PWA `[INFERIDO]`
 - Notificações push `[INFERIDO]`
@@ -210,6 +216,8 @@
 | 2026-05-27 | Checkpoint arquitetural — UI desacoplada de mocks | `CHECKPOINT.md` |
 | 2026-05-27 | Auditoria frontend completa | `FRONTEND_AUDIT.md` |
 | 2026-05-28 | Documentação permanente `/docs` | Este roadmap |
+| 2026-06-01 | Agenda P0 HTTP + grade semanal persistida | `MIGRATION_STATUS.md` |
+| 2026-06-01 | Supabase + migrations/seed aplicados | `prisma/`, `.env.example` |
 
 ---
 
@@ -219,15 +227,16 @@ Baseado em `FRONTEND_AUDIT.md` §12:
 
 | Critério | Status |
 |----------|--------|
-| Contratos DTO por domínio | Parcial — existem, acoplados a mocks |
+| Contratos DTO por domínio | Parcial — v1 schemas para P0 |
 | UI sem imports diretos de mocks | Concluído — admin/piloto |
 | Design system estabilizado | Pendente |
 | Estados loading/error/empty padronizados | Pendente |
 | Regras de negócio formalizadas | Parcial — `BUSINESS_RULES.md` |
-| Auth/sessão definida | Pendente |
-| Schema de banco definido | Parcial — `DATABASE_REFERENCE.md` |
+| Auth/sessão definida | **Concluído** — cookie + middleware |
+| Schema de banco definido | **Concluído** — Prisma + migration |
+| Domínios P0 em HTTP | **Concluído** — agenda, auth, clients/karts/lessons API |
 
-**Veredicto atual:** `[CONFIRMADO]` — **NÃO pronto para backend** sem estabilizar contratos, design system e estados de UI.
+**Veredicto atual:** Fase 6 em andamento — **agenda P0 pronta**; demais módulos ainda mock. Ver `MIGRATION_STATUS.md`.
 
 ---
 
@@ -241,4 +250,4 @@ Baseado em `FRONTEND_AUDIT.md` §12:
 4. **Design system cleanup** — tokens, badges, tabelas
 5. **Estados de UI globais** — loading/error/skeleton
 6. **Telemetria persistência** — upload + processamento remoto
-7. **Módulos pendentes** — instrutores, campeonatos, relatórios
+7. **Módulos pendentes** — relatórios (operacionais)

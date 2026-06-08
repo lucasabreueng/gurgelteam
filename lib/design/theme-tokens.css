@@ -1,0 +1,126 @@
+/**
+ * Tokens semânticos — light (default) e dark (html[data-color-mode="dark"]).
+ * Usados em lib/design/classes.ts, globals.css e Tailwind (ds-*).
+ */
+
+:root {
+  /* Landing / marketing */
+  --color-primary: #111111;
+  --color-secondary: #f0f2f4;
+  --color-bg: #ffffff;
+  --color-text: #333333;
+  --color-accent: #0d1f3c;
+  --color-accent-hover: #0a1630;
+  --color-white: #ffffff;
+  --color-divider: #1111111a;
+  --color-dark-divider: #ffffff1a;
+
+  /* Sidebar admin/piloto — navy fixo (não usa --color-accent no dark) */
+  --ds-sidebar-bg: #0d1f3c;
+
+  /* Painel admin / piloto — light */
+  --ds-bg-page: #f3f5f9;
+  --ds-bg-panel: #f3f5f9;
+  --ds-bg-card: #ffffff;
+  --ds-bg-muted: #fafbfc;
+  --ds-bg-input: #fafbfc;
+  --ds-bg-elevated: #ffffff;
+  --ds-bg-table-row-hover: #f3f5f9;
+  --ds-bg-chrome: #f3f5f9;
+  --ds-border: rgba(17, 17, 17, 0.08);
+  --ds-border-subtle: rgba(17, 17, 17, 0.06);
+  --ds-border-field: rgba(17, 17, 17, 0.1);
+  --ds-border-strong: rgba(17, 17, 17, 0.12);
+  --ds-border-dashed: rgba(17, 17, 17, 0.12);
+  --ds-border-accent-open: rgba(13, 31, 60, 0.35);
+  --ds-text-primary: #0d1f3c;
+  --ds-text-body: #111111;
+  --ds-text-secondary: #525252;
+  --ds-text-muted: #737373;
+  --ds-shadow-card: 0 2px 12px rgba(13, 31, 60, 0.04);
+  --ds-shadow-card-hover: 0 6px 24px rgba(13, 31, 60, 0.08);
+  --ds-shadow-popover: 0 12px 40px rgba(13, 31, 60, 0.15);
+  --ds-shadow-primary-btn: 0 4px 16px rgba(13, 31, 60, 0.25);
+
+  /* Estados */
+  --ds-success-bg: rgba(16, 185, 129, 0.08);
+  --ds-success-border: rgba(16, 185, 129, 0.35);
+  --ds-success-text: #047857;
+  --ds-warning-bg: rgba(245, 158, 11, 0.1);
+  --ds-warning-border: rgba(245, 158, 11, 0.35);
+  --ds-warning-text: #b45309;
+  --ds-error-bg: rgba(196, 30, 58, 0.08);
+  --ds-error-border: rgba(196, 30, 58, 0.28);
+  --ds-error-text: #c41e3a;
+  --ds-info-bg: rgba(59, 130, 246, 0.08);
+  --ds-info-border: rgba(59, 130, 246, 0.3);
+  --ds-info-text: #1d4ed8;
+
+  /* Gráficos */
+  --ds-chart-grid: #e2e8f0;
+  --ds-chart-axis: #64748b;
+  --ds-chart-line: #0d1f3c;
+  --ds-chart-area: rgba(13, 31, 60, 0.12);
+  --ds-chart-tooltip-bg: #ffffff;
+  --ds-chart-tooltip-text: #0d1f3c;
+}
+
+html[data-color-mode="dark"] {
+  color-scheme: dark;
+
+  /* Landing — navy premium */
+  --color-primary: #e8edf5;
+  --color-secondary: #131b2e;
+  --color-bg: #0a0f1a;
+  --color-text: #a8b4c8;
+  --color-accent: #5b8fd4;
+  --color-accent-hover: #7aa8e8;
+  --color-divider: rgba(255, 255, 255, 0.08);
+  --color-dark-divider: rgba(255, 255, 255, 0.1);
+
+  --ds-sidebar-bg: #0c1220;
+
+  /* Painel admin / piloto — dark */
+  --ds-bg-page: #0a0f1a;
+  --ds-bg-panel: #0c1220;
+  --ds-bg-card: #131b2e;
+  --ds-bg-muted: #101828;
+  --ds-bg-input: #101828;
+  --ds-bg-elevated: #1a2438;
+  --ds-bg-table-row-hover: #1a2438;
+  --ds-bg-chrome: #0c1220;
+  --ds-border: rgba(255, 255, 255, 0.08);
+  --ds-border-subtle: rgba(255, 255, 255, 0.06);
+  --ds-border-field: rgba(255, 255, 255, 0.12);
+  --ds-border-strong: rgba(255, 255, 255, 0.14);
+  --ds-border-dashed: rgba(255, 255, 255, 0.12);
+  --ds-border-accent-open: rgba(91, 143, 212, 0.55);
+  --ds-text-primary: #e8edf5;
+  --ds-text-body: #d1dae8;
+  --ds-text-secondary: #8b9bb5;
+  --ds-text-muted: #6b7a94;
+  --ds-shadow-card: 0 2px 16px rgba(0, 0, 0, 0.35);
+  --ds-shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --ds-shadow-popover: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --ds-shadow-primary-btn: 0 4px 20px rgba(91, 143, 212, 0.35);
+
+  --ds-success-bg: rgba(16, 185, 129, 0.12);
+  --ds-success-border: rgba(52, 211, 153, 0.35);
+  --ds-success-text: #6ee7b7;
+  --ds-warning-bg: rgba(245, 158, 11, 0.12);
+  --ds-warning-border: rgba(251, 191, 36, 0.35);
+  --ds-warning-text: #fcd34d;
+  --ds-error-bg: rgba(239, 68, 68, 0.12);
+  --ds-error-border: rgba(248, 113, 113, 0.35);
+  --ds-error-text: #fca5a5;
+  --ds-info-bg: rgba(59, 130, 246, 0.12);
+  --ds-info-border: rgba(96, 165, 250, 0.35);
+  --ds-info-text: #93c5fd;
+
+  --ds-chart-grid: rgba(255, 255, 255, 0.08);
+  --ds-chart-axis: #8b9bb5;
+  --ds-chart-line: #5b8fd4;
+  --ds-chart-area: rgba(91, 143, 212, 0.2);
+  --ds-chart-tooltip-bg: #1a2438;
+  --ds-chart-tooltip-text: #e8edf5;
+}

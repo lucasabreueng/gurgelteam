@@ -38,6 +38,7 @@ export function ReceivablesTab({
         icons={KPI_ICONS}
         defaultIcon={HiClock}
         desktopClassName="admin-page-grid grid grid-cols-2 lg:grid-cols-4"
+        showDeltaBadge={false}
       />
 
       <AccountsReceivableTable

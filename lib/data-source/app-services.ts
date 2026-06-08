@@ -1,86 +1,99 @@
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
-import { CashFlowServiceMock } from "@/services/cashflow/cashFlowServiceMock";
-import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
-import { DashboardServiceMock } from "@/services/dashboard/dashboardServiceMock";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
-import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
-import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
-import { LessonServiceMock } from "@/services/lessons/lessonServiceMock";
-import { ChecklistServiceMock } from "@/services/maintenance/checklistServiceMock";
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
-import { NewMaintenanceServiceMock } from "@/services/maintenance/newMaintenanceServiceMock";
+import { createCashFlowService } from "@/services/cashflow/cashFlowService";
+import { createClientsService } from "@/services/clients/clientsService";
+import { createDashboardService } from "@/services/dashboard/dashboardService";
+import { createFinancialService } from "@/services/finance/financialService";
+import { createInventoryService } from "@/services/inventory/inventoryService";
+import { createKartsService } from "@/services/karts/kartsService";
+import { createLessonsService } from "@/services/lessons/lessonsService";
+import { createChecklistService } from "@/services/maintenance/checklistService";
+import { createInspectionService } from "@/services/maintenance/inspectionService";
+import { createMaintenanceService } from "@/services/maintenance/maintenanceService";
+import { createNewMaintenanceService } from "@/services/maintenance/newMaintenanceService";
 import { PartsServiceMock } from "@/services/parts/partsServiceMock";
-import { NewClassServiceMock } from "@/services/schedule/newClassServiceMock";
-import { ScheduleBlocksServiceMock } from "@/services/schedule/scheduleBlocksServiceMock";
-import { ScheduleKartsServiceMock } from "@/services/schedule/scheduleKartsServiceMock";
-import { ScheduleRescheduleServiceMock } from "@/services/schedule/scheduleRescheduleServiceMock";
+import { createNotificationsService } from "@/services/notifications/notificationsService";
+import { createNewClassService } from "@/services/schedule/newClassService";
+import { createScheduleBlocksService } from "@/services/schedule/scheduleBlocksService";
+import { createScheduleKartsService } from "@/services/schedule/scheduleKartsService";
+import { createScheduleRescheduleService } from "@/services/schedule/scheduleRescheduleService";
 import {
   createScheduleService,
   type ScheduleService,
 } from "@/services/schedule/scheduleService";
-import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
-import { StudentDashboardServiceMock } from "@/services/student/studentDashboardServiceMock";
-import { StudentProfileServiceMock } from "@/services/student/studentProfileServiceMock";
-import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock";
+import { createWeekScheduleService } from "@/services/schedule/weekScheduleService";
+import { createSettingsService } from "@/services/settings/settingsService";
+import { createTeamService } from "@/services/team/teamService";
+import { createStudentAreaService } from "@/services/student/studentAreaService";
+import {
+  createStudentDashboardService,
+  createStudentProfileService,
+} from "@/services/student/studentServices";
+import { createTelemetryService } from "@/services/telemetry/telemetryService";
+import { createPilotBookingService } from "@/services/student/pilotBookingService";
 
 export type AppServices = {
   auth: typeof AuthServiceMock;
-  cashFlow: typeof CashFlowServiceMock;
-  clients: typeof ClientsServiceMock;
-  dashboard: typeof DashboardServiceMock;
-  finance: typeof FinancialServiceMock;
-  inventory: typeof InventoryServiceMock;
-  karts: typeof KartsServiceMock;
-  lessons: typeof LessonServiceMock;
-  maintenance: typeof MaintenanceServiceMock;
-  checklist: typeof ChecklistServiceMock;
-  inspection: typeof InspectionServiceMock;
-  newMaintenance: typeof NewMaintenanceServiceMock;
+  cashFlow: ReturnType<typeof createCashFlowService>;
+  clients: ReturnType<typeof createClientsService>;
+  dashboard: ReturnType<typeof createDashboardService>;
+  finance: ReturnType<typeof createFinancialService>;
+  inventory: ReturnType<typeof createInventoryService>;
+  karts: ReturnType<typeof createKartsService>;
+  lessons: ReturnType<typeof createLessonsService>;
+  maintenance: ReturnType<typeof createMaintenanceService>;
+  checklist: ReturnType<typeof createChecklistService>;
+  inspection: ReturnType<typeof createInspectionService>;
+  newMaintenance: ReturnType<typeof createNewMaintenanceService>;
   parts: typeof PartsServiceMock;
   schedule: ScheduleService;
-  scheduleBlocks: typeof ScheduleBlocksServiceMock;
-  scheduleKarts: typeof ScheduleKartsServiceMock;
-  scheduleReschedule: typeof ScheduleRescheduleServiceMock;
-  newClass: typeof NewClassServiceMock;
-  settings: typeof SettingsServiceMock;
-  studentArea: typeof StudentAreaServiceMock;
-  studentDashboard: typeof StudentDashboardServiceMock;
-  studentProfile: typeof StudentProfileServiceMock;
-  telemetry: typeof TelemetryServiceMock;
+  scheduleBlocks: ReturnType<typeof createScheduleBlocksService>;
+  scheduleKarts: ReturnType<typeof createScheduleKartsService>;
+  scheduleReschedule: ReturnType<typeof createScheduleRescheduleService>;
+  notifications: ReturnType<typeof createNotificationsService>;
+  newClass: ReturnType<typeof createNewClassService>;
+  weekSchedule: ReturnType<typeof createWeekScheduleService>;
+  settings: ReturnType<typeof createSettingsService>;
+  team: ReturnType<typeof createTeamService>;
+  studentArea: ReturnType<typeof createStudentAreaService>;
+  studentDashboard: ReturnType<typeof createStudentDashboardService>;
+  studentProfile: ReturnType<typeof createStudentProfileService>;
+  telemetry: ReturnType<typeof createTelemetryService>;
+  pilotBooking: ReturnType<typeof createPilotBookingService>;
 };
 
-const mockServices: AppServices = {
+const appServices: AppServices = {
   auth: AuthServiceMock,
-  cashFlow: CashFlowServiceMock,
-  clients: ClientsServiceMock,
-  dashboard: DashboardServiceMock,
-  finance: FinancialServiceMock,
-  inventory: InventoryServiceMock,
-  karts: KartsServiceMock,
-  lessons: LessonServiceMock,
-  maintenance: MaintenanceServiceMock,
-  checklist: ChecklistServiceMock,
-  inspection: InspectionServiceMock,
-  newMaintenance: NewMaintenanceServiceMock,
+  cashFlow: createCashFlowService(),
+  clients: createClientsService(),
+  dashboard: createDashboardService(),
+  finance: createFinancialService(),
+  inventory: createInventoryService(),
+  karts: createKartsService(),
+  lessons: createLessonsService(),
+  maintenance: createMaintenanceService(),
+  checklist: createChecklistService(),
+  inspection: createInspectionService(),
+  newMaintenance: createNewMaintenanceService(),
   parts: PartsServiceMock,
   schedule: createScheduleService(),
-  scheduleBlocks: ScheduleBlocksServiceMock,
-  scheduleKarts: ScheduleKartsServiceMock,
-  scheduleReschedule: ScheduleRescheduleServiceMock,
-  newClass: NewClassServiceMock,
-  settings: SettingsServiceMock,
-  studentArea: StudentAreaServiceMock,
-  studentDashboard: StudentDashboardServiceMock,
-  studentProfile: StudentProfileServiceMock,
-  telemetry: TelemetryServiceMock,
+  scheduleBlocks: createScheduleBlocksService(),
+  scheduleKarts: createScheduleKartsService(),
+  scheduleReschedule: createScheduleRescheduleService(),
+  notifications: createNotificationsService(),
+  newClass: createNewClassService(),
+  weekSchedule: createWeekScheduleService(),
+  settings: createSettingsService(),
+  team: createTeamService(),
+  studentArea: createStudentAreaService(),
+  studentDashboard: createStudentDashboardService(),
+  studentProfile: createStudentProfileService(),
+  telemetry: createTelemetryService(),
+  pilotBooking: createPilotBookingService(),
 };
 
 /**
- * Retorna a fachada de services da aplicação conforme `NEXT_PUBLIC_DATA_SOURCE`.
- * Em modo `http`, ainda não há implementação — falha de forma explícita.
+ * Registry de services — mock ou HTTP conforme `NEXT_PUBLIC_DATA_SOURCE`.
  */
 export function getAppServices(): AppServices {
-  return mockServices;
+  return appServices;
 }

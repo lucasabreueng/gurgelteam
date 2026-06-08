@@ -1,9 +1,47 @@
 # BUSINESS_RULES — Gurgel Team
 
 > **Última atualização:** 2026-05-28  
+> **Status:** `[CONFIRMADO]` — Fase 2  
 > **Fonte:** `lib/*-mocks.ts`, `lib/contracts/`, `repositories/`, `lib/auth/`  
 > **Legenda:** `[CONFIRMADO]` = codificado em mock/repository · `[INFERIDO]` = deduzido de UI sem validação server-side  
 > **Aviso:** regras existem apenas no frontend — backend não valida ainda.
+
+---
+
+## 0. Registro de regras (IDs)
+
+Índice para rastreio Fase 2–5. Detalhes nas seções abaixo.
+
+| ID | Domínio | Regra resumida | Enforcement hoje | Alvo |
+|----|---------|----------------|------------------|------|
+| BR-AUTH-MINOR | Auth | Menor &lt;14 não cadastra sozinho | `[CONFIRMADO]` UI cadastro | API 403 |
+| BR-AUTH-PWD | Auth | Senha: 8+ chars, maiúsc, número, especial | `[CONFIRMADO]` Zod | API |
+| BR-AUTH-LOGIN | Auth | Login email ou username | `[CONFIRMADO]` mock | API |
+| BR-PERM-DEFAULT | Permissões | Usuário novo sem módulos | `[CONFIRMADO]` settings mock | DB |
+| BR-PERM-MODULE | Permissões | CRUD por ModuleKey | `[CONFIRMADO]` UI only | Middleware |
+| BR-SCH-CONFIRM | Agenda | Confirmar aula → status confirmado | `[CONFIRMADO]` runtime | API |
+| BR-SCH-CONFLICT | Agenda | Kart/recurso/aluno conflito | `[CONFIRMADO]` detect UI | API |
+| BR-SCH-RESCHED | Agenda | Remarcar só slot livre + categoria | `[CONFIRMADO]` mock repo | API |
+| BR-SCH-BLOCK | Agenda | Bloqueio slot/dia inteiro | `[CONFIRMADO]` mock + HTTP | API |
+| BR-SCH-WEEK | Agenda | Grade semanal persistida | `[CONFIRMADO]` HTTP | Config → agenda |
+| BR-LES-FINISH | Registro | Finalizar → evento finalizado + kart | `[CONFIRMADO]` runtime | API |
+| BR-LES-OCR | Registro | OCR opcional OpenAI | `[CONFIRMADO]` API route | Job async |
+| BR-KART-BLOCK | Frota | Kart manutenção bloqueia agenda/registro | `[CONFIRMADO]` runtime | API |
+| BR-KART-RELEASE | Frota | Checklist aprovado libera kart | `[CONFIRMADO]` runtime | API |
+| BR-FIN-RECV | Financeiro | Receita cria recebível | `[CONFIRMADO]` runtime | API |
+| BR-FIN-PAY | Financeiro | Pagamento quita recebível | `[CONFIRMADO]` runtime | API |
+| BR-FIN-PKG | Financeiro | Pacote debita crédito ao agendar | `[INFERIDO]` mock | API |
+| BR-STK-QTY | Estoque | Saída &gt; stock → erro | `[CONFIRMADO]` mock | API |
+| BR-STK-ALERT | Estoque | Critical/low thresholds | `[CONFIRMADO]` mock | API |
+| BR-MNT-OS | Manutenção | OS → status kart | `[CONFIRMADO]` runtime parcial | API |
+| BR-TEL-INVALID | Telemetria | Volta inválida fora stats | `[INFERIDO]` engine | API |
+| BR-CONSENT-IMG | Consent | Revoga imagem → bloqueio | `[PLANEJADO]` | API + UI |
+| BR-LEGAL-CANCEL | Legal | Cancelamento 24h / no-show | `[CONFIRMADO]` docs settings | API |
+| BR-LEVEL-PROG | Config | Nível por tempo volta/categoria | `[CONFIRMADO]` settings | API |
+| BR-RPT-ACCESS | Relatórios | Operacional exige módulo `relatorios` | `[PLANEJADO]` spec | Middleware |
+| BR-RPT-EXPORT | Relatórios | Export gera `report_run` + audit | `[PLANEJADO]` | Job async |
+
+**Documentos relacionados:** `STATE_MACHINES.md` (transições) · `ENTITY_CATALOG.md` (entidades)
 
 ---
 
@@ -16,15 +54,15 @@
 | RoleKey | verAlunos | editarAlunos | verFinanceiro | editarAgenda | publicarResultados | alterarConfiguracoes |
 |---------|-----------|--------------|---------------|--------------|-------------------|---------------------|
 | `admin` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `instrutor` | ✓ | ✓ | ✗ | ✓ | ✓ | ✗ |
 | `recepcao` | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
 | `financeiro` | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| `mecanico` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 ### 1.2 Permissões granulares por módulo
 
 Cada usuário tem `visualizar | editar | excluir` por `ModuleKey`:
 
-**Módulos admin:** dashboard, agenda, registroAulas, alunos, instrutores, karts, manutencao, estoque, telemetria, campeonatos, financeiro, relatorios, configuracoes
+**Módulos admin:** dashboard, agenda, registroAulas, alunos, karts, manutencao, estoque, telemetria, financeiro, relatorios, configuracoes
 
 **Módulos piloto:** pilotoDashboard, pilotoAgenda, pilotoEvolucao, pilotoFeedbacks, pilotoPlano, pilotoTelemetria, pilotoResultados, pilotoMateriais, pilotoConquistas, pilotoRanking
 
@@ -32,8 +70,7 @@ Cada usuário tem `visualizar | editar | excluir` por `ModuleKey`:
 
 | Papel | Acesso |
 |-------|--------|
-| **Administrador** | Todos os 22 módulos, CRUD completo |
-| **Instrutor** | agenda, registroAulas, alunos (V/E), karts/manutencao (só ver), pilotoFeedbacks, pilotoPlano |
+| **Administrador** | Todos os 21 módulos, CRUD completo |
 | **Mecânico** | karts, manutencao, estoque (V/E, sem excluir) |
 | **Piloto** | Área piloto (só visualizar) |
 | **Responsável** | alunos, agenda (só ver) + área piloto parcial |
@@ -129,7 +166,7 @@ Eventos: confirmação, lembrete, cancelamento, feedback, resultado publicado, v
 
 - Melhor volta: volta válida (sem entrada/saída)
 - Consistência: desvio padrão < 0,35s nas 5 melhores voltas
-- Rankings: mensal, geral, pontos de campeonato, conquistas automáticas
+- Rankings: mensal, geral, conquistas automáticas
 
 ### 3.9 Documentos legais
 
@@ -148,7 +185,7 @@ Eventos: confirmação, lembrete, cancelamento, feedback, resultado publicado, v
 
 ### 4.1 Tipos de evento
 
-aula_individual, aula_grupo, treino_livre, treino_avancado, telemetria, campeonato, manutencao, reserva_kart, bloqueio_pista
+aula_individual, aula_grupo, treino_livre, treino_avancado, telemetria, manutencao, reserva_kart, bloqueio_pista
 
 ### 4.2 Status de evento
 
@@ -165,7 +202,7 @@ disponivel, reservado, em_treino, manutencao, bloqueado_checklist
 ### 4.5 Conflitos operacionais (detectados)
 
 - Kart em manutenção mas reservado
-- Instrutor com sobreposição de horário
+- Recurso operacional (kart/pista) com sobreposição de horário
 - Aluno com pagamento pendente
 - Limite de alunos excedido (ex.: treino avançado "Limite 8 pilotos")
 
@@ -173,7 +210,7 @@ disponivel, reservado, em_treino, manutencao, bloqueado_checklist
 
 | Regra | Detalhe |
 |-------|---------|
-| Instrutor fixo | **Gurgel** (`GURGEL_SCHEDULE_INSTRUCTOR_ID = "i1"`) |
+| Registrado por | Campo `registradoPor` (FK → users) — staff que registra/avalia a aula |
 | Slots | Derivados da grade de configurações |
 | Status de slot | `available | busy | break | conflict | level_mismatch` |
 | Level mismatch | Slot com `levelId` diferente do aluno → marcado, mas selecionável |
@@ -214,7 +251,7 @@ overview, receivables, payables, cashflow, dre
 
 ### 5.2 Fontes de receita
 
-Aulas avulsas, pacotes, aluguel de kart, manutenção kart cliente, eventos/campeonatos, coaching/telemetria
+Aulas avulsas, pacotes, aluguel de kart, manutenção kart cliente, eventos, coaching/telemetria
 
 ### 5.3 Status de títulos (receber e pagar)
 
@@ -312,7 +349,7 @@ Função: `getStockAlert()` em `admin-parts-mocks.ts`
 
 ### 7.1 Tipos de OS
 
-preventiva, corretiva, emergencial (+ revisao, setup, pos_incidente, pre_campeonato na criação)
+preventiva, corretiva, emergencial (+ revisao, setup, pos_incidente, pre_evento na criação)
 
 ### 7.2 Fluxo de status (ordem)
 
@@ -339,7 +376,7 @@ Requer teste em pista (`tests.performed`, `approved`, `released`)
 
 ### 7.7 Checklist
 
-Tipos: pre, post, revisao, campeonato
+Tipos: pre, post, revisao, evento
 
 **Resultado automático** (`computeInspectionSummary`):
 - Item crítico com fail → **bloqueado**
@@ -350,7 +387,7 @@ Itens críticos: banco, volante, pressão/resposta freio, vazamentos, corrente, 
 
 ### 7.8 Inspeção técnica
 
-8 tipos (pre_treino, pos_treino, preventiva, corretiva, pre_campeonato, pos_incidente, vistoria, entrada)
+8 tipos (pre_treino, pos_treino, preventiva, corretiva, pre_evento, pos_incidente, vistoria, entrada)
 
 **Resultado** (`computeInspectionResult`):
 - Severidade crítica ou condição geral crítica → bloqueado
@@ -447,7 +484,9 @@ Consistência de setores/tempos exigida antes de finalizar registro
 
 ## 12. Regras de relatórios
 
-**Fonte:** `lib/admin-financial-mocks.ts` (`FINANCIAL_REPORTS`)
+**Fontes:** `lib/admin-financial-mocks.ts` (`FINANCIAL_REPORTS`), `lib/contracts/reports/report-definitions.ts`, `docs/OPERATIONAL_REPORTS_SPEC.md`
+
+### 12.1 Relatórios financeiros (módulo `financeiro`)
 
 | ID | Relatório |
 |----|-----------|
@@ -460,7 +499,30 @@ Consistência de setores/tempos exigida antes de finalizar registro
 | delinq | Inadimplência |
 | cashflow | Fluxo de caixa |
 
-**Nota:** módulo "Relatórios" (`ModuleKey: relatorios`) existe na navegação, mas **sem mock dedicado** além dos financeiros acima.
+**UI:** aba **Relatórios** em `/admin/financeiro?tab=reports` — toast mock na exportação.
+
+### 12.2 Relatórios operacionais (módulo `relatorios`)
+
+**Estado:** `[PLANEJADO]` — `ModuleKey` em settings; **sem rota/página admin**.
+
+Catálogo alvo (5 IDs) em `lib/contracts/reports/report-definitions.ts`. Spec: `OPERATIONAL_REPORTS_SPEC.md`.
+
+| ID | Relatório |
+|----|-----------|
+| track_occupancy | Ocupação da pista |
+| schedule_utilization | Utilização da agenda |
+| pilot_performance | Desempenho de pilotos |
+| fleet_usage | Uso da frota |
+| maintenance_summary | Resumo de manutenção |
+
+### 12.3 Regras transversais
+
+| ID | Regra |
+|----|-------|
+| BR-RPT-ACCESS | Catálogo operacional requer módulo `relatorios` |
+| BR-RPT-FIN-LINK | Financeiros acessíveis via financeiro ou catálogo unificado com deep link |
+| BR-RPT-EXPORT | Toda exportação registra `report_run` + evento audit |
+| BR-RPT-PERIOD | Período máximo 12 meses por execução `[INFERIDO]` |
 
 ---
 

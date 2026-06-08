@@ -45,6 +45,9 @@ export const AuthServiceMock = {
   getRecoveryResendCooldownSeconds: () =>
     PasswordRecoveryRepositoryMock.getResendCooldownSeconds(),
   getRecoveryResetPath: () => PasswordRecoveryRepositoryMock.getResetPath(),
+  setRecoveryToken: PasswordRecoveryRepositoryMock.setRecoveryToken,
+  getRecoveryToken: PasswordRecoveryRepositoryMock.getRecoveryToken,
+  clearRecoveryToken: PasswordRecoveryRepositoryMock.clearRecoveryToken,
   resolveRecoveryAccount: PasswordRecoveryRepositoryMock.resolveRecoveryAccount,
   maskRecoveryTarget: PasswordRecoveryRepositoryMock.maskRecoveryTarget,
   setRecoveryVerified: PasswordRecoveryRepositoryMock.setRecoveryVerified,

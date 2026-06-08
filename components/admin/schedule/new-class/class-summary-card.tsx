@@ -1,3 +1,5 @@
+import { adminCardClass } from "@/lib/design";
+
 type Props = {
   studentName: string;
   timeRange: string;
@@ -14,26 +16,26 @@ export function ClassSummaryCard({
   durationLabel,
 }: Props) {
   return (
-    <section className="rounded-2xl border-2 border-[#0d1f3c]/15 bg-gradient-to-br from-[#fafbfc] to-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-[#0d1f3c]">Resumo da aula</h2>
+    <section className={`${adminCardClass} border-2 border-accent/20 p-5`}>
+      <h2 className="text-sm font-bold text-[var(--ds-text-primary)]">Resumo da aula</h2>
       <dl className="mt-4 space-y-3 text-sm">
-        <div className="flex justify-between gap-4 border-b border-[rgba(17,17,17,0.06)] pb-2">
-          <dt className="text-neutral-500">Aluno</dt>
-          <dd className="font-bold text-[#0d1f3c]">{studentName || "—"}</dd>
+        <div className={`flex justify-between gap-4 border-b border-[var(--ds-border-subtle)] pb-2`}>
+          <dt className="text-[var(--ds-text-muted)]">Aluno</dt>
+          <dd className="font-bold text-[var(--ds-text-primary)]">{studentName || "—"}</dd>
         </div>
-        <div className="flex justify-between gap-4 border-b border-[rgba(17,17,17,0.06)] pb-2">
-          <dt className="text-neutral-500">Horário</dt>
-          <dd className="font-bold tabular-nums text-[#0d1f3c]">
+        <div className={`flex justify-between gap-4 border-b border-[var(--ds-border-subtle)] pb-2`}>
+          <dt className="text-[var(--ds-text-muted)]">Horário</dt>
+          <dd className="font-bold tabular-nums text-[var(--ds-text-primary)]">
             {dateLabel}, {timeRange}
           </dd>
         </div>
-        <div className="flex justify-between gap-4 border-b border-[rgba(17,17,17,0.06)] pb-2">
-          <dt className="text-neutral-500">Kart</dt>
-          <dd className="font-bold text-[#0d1f3c]">{kartLabel || "—"}</dd>
+        <div className={`flex justify-between gap-4 border-b border-[var(--ds-border-subtle)] pb-2`}>
+          <dt className="text-[var(--ds-text-muted)]">Kart</dt>
+          <dd className="font-bold text-[var(--ds-text-primary)]">{kartLabel || "—"}</dd>
         </div>
         <div className="flex justify-between gap-4 pt-1">
-          <dt className="text-neutral-500">Duração</dt>
-          <dd className="font-bold text-[#0d1f3c]">{durationLabel}</dd>
+          <dt className="text-[var(--ds-text-muted)]">Duração</dt>
+          <dd className="font-bold text-[var(--ds-text-primary)]">{durationLabel}</dd>
         </div>
       </dl>
     </section>

@@ -1,59 +1,133 @@
 "use client";
 
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
-import type { Achievement } from "@/lib/contracts/student-area";
+import { usePilotAchievements } from "@/lib/query/hooks/use-pilot-achievements";
+import type { Achievement, AchievementCategory } from "@/lib/contracts/student-area";
+import { ACHIEVEMENT_CATEGORY_META } from "@/lib/student-area-mocks";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { IconType } from "react-icons/lib";
-import { FiAward, FiCheckCircle, FiFlag, FiLayers, FiZap } from "react-icons/fi";
+import {
+  FiActivity,
+  FiAward,
+  FiBarChart2,
+  FiBookOpen,
+  FiCalendar,
+  FiClock,
+  FiFlag,
+  FiLayers,
+  FiShield,
+  FiStar,
+  FiTarget,
+  FiTrendingUp,
+  FiUsers,
+  FiZap,
+} from "react-icons/fi";
 import { HiLockClosed } from "react-icons/hi2";
 
+import { StudentCardActionButton } from "./student-card-action-button";
+import { StudentCardEmptyState } from "./student-card-empty-state";
+import { useAchievementPreviewGrid } from "./use-achievement-preview-grid";
 
 type BadgeStyle = {
   Icon: IconType;
   ring: string;
   iconBg: string;
-  label: string;
   rarity: "lendário" | "épico" | "raro" | "comum";
 };
 
 const BADGE_BY_ID: Record<string, BadgeStyle> = {
-  primeira_aula: {
-    Icon: FiLayers,
+  primeira_bandeirada: {
+    Icon: FiFlag,
     ring: "from-amber-400 via-yellow-500 to-amber-600",
     iconBg: "bg-gradient-to-br from-amber-500/90 to-orange-700/95",
-    label: "Primeira aula",
     rarity: "comum",
   },
-  sub55: {
-    Icon: FiZap,
-    ring: "from-sky-400 via-blue-600 to-indigo-700",
-    iconBg: "bg-gradient-to-br from-sky-500/90 to-indigo-800/95",
-    label: "Sub 55s",
-    rarity: "raro",
+  piloto_frequente: {
+    Icon: FiUsers,
+    ring: "from-sky-400 via-blue-500 to-indigo-600",
+    iconBg: "bg-gradient-to-br from-sky-500/90 to-indigo-700/95",
+    rarity: "comum",
   },
-  aulas5: {
-    Icon: FiCheckCircle,
+  veterano_pista: {
+    Icon: FiLayers,
     ring: "from-orange-500 via-red-500 to-rose-600",
     iconBg: "bg-gradient-to-br from-orange-500/90 to-red-700/95",
-    label: "5 aulas",
-    rarity: "épico",
-  },
-  podio: {
-    Icon: FiAward,
-    ring: "from-fuchsia-500 via-purple-600 to-violet-800",
-    iconBg: "bg-gradient-to-br from-amber-400/90 via-yellow-500/85 to-amber-700/95",
-    label: "Pódio",
-    rarity: "lendário",
-  },
-  consistencia: {
-    Icon: FiFlag,
-    ring: "from-emerald-400 via-teal-500 to-cyan-700",
-    iconBg: "bg-gradient-to-br from-emerald-500/90 to-teal-800/95",
-    label: "Consistência",
     rarity: "raro",
   },
+  sempre_presente: {
+    Icon: FiCalendar,
+    ring: "from-emerald-400 via-teal-500 to-cyan-700",
+    iconBg: "bg-gradient-to-br from-emerald-500/90 to-teal-800/95",
+    rarity: "épico",
+  },
+  em_evolucao: {
+    Icon: FiTrendingUp,
+    ring: "from-violet-400 via-purple-500 to-fuchsia-700",
+    iconBg: "bg-gradient-to-br from-violet-500/90 to-fuchsia-800/95",
+    rarity: "comum",
+  },
+  ajuste_fino: {
+    Icon: FiActivity,
+    ring: "from-sky-400 via-blue-600 to-indigo-700",
+    iconBg: "bg-gradient-to-br from-sky-500/90 to-indigo-800/95",
+    rarity: "raro",
+  },
+  aluno_aplicado: {
+    Icon: FiBookOpen,
+    ring: "from-fuchsia-500 via-purple-600 to-violet-800",
+    iconBg: "bg-gradient-to-br from-fuchsia-500/90 to-violet-800/95",
+    rarity: "épico",
+  },
+  telemetria_na_veia: {
+    Icon: FiBarChart2,
+    ring: "from-cyan-400 via-teal-500 to-emerald-700",
+    iconBg: "bg-gradient-to-br from-cyan-500/90 to-emerald-800/95",
+    rarity: "raro",
+  },
+  volta_rapida: {
+    Icon: FiZap,
+    ring: "from-yellow-400 via-amber-500 to-orange-600",
+    iconBg: "bg-gradient-to-br from-yellow-500/90 to-orange-700/95",
+    rarity: "comum",
+  },
+  top_3: {
+    Icon: FiAward,
+    ring: "from-amber-400 via-yellow-500 to-amber-700",
+    iconBg: "bg-gradient-to-br from-amber-400/90 via-yellow-500/85 to-amber-700/95",
+    rarity: "raro",
+  },
+  vitoria_pista: {
+    Icon: FiStar,
+    ring: "from-fuchsia-500 via-rose-500 to-red-600",
+    iconBg: "bg-gradient-to-br from-fuchsia-500/90 to-red-700/95",
+    rarity: "lendário",
+  },
+  mestre_consistencia: {
+    Icon: FiTarget,
+    ring: "from-emerald-400 via-green-500 to-teal-700",
+    iconBg: "bg-gradient-to-br from-emerald-500/90 to-teal-800/95",
+    rarity: "lendário",
+  },
+  ritmo_competidor: {
+    Icon: FiShield,
+    ring: "from-blue-400 via-indigo-500 to-violet-700",
+    iconBg: "bg-gradient-to-br from-blue-500/90 to-violet-800/95",
+    rarity: "raro",
+  },
+  foco_total: {
+    Icon: FiClock,
+    ring: "from-neutral-400 via-slate-500 to-zinc-700",
+    iconBg: "bg-gradient-to-br from-slate-500/90 to-zinc-800/95",
+    rarity: "épico",
+  },
 };
+
+const CATEGORY_ORDER: AchievementCategory[] = [
+  "participacao",
+  "evolucao",
+  "desempenho",
+  "consistencia",
+];
 
 function rarityBadgeClass(rarity: BadgeStyle["rarity"]) {
   switch (rarity) {
@@ -68,91 +142,138 @@ function rarityBadgeClass(rarity: BadgeStyle["rarity"]) {
   }
 }
 
+function getBadgeStyle(ach: Achievement): BadgeStyle {
+  return (
+    BADGE_BY_ID[ach.id] ?? {
+      Icon: FiAward,
+      ring: "from-neutral-400 to-neutral-600",
+      iconBg: "bg-neutral-600",
+      rarity: "comum",
+    }
+  );
+}
+
 function AchievementBadgeItem({
   ach,
-  compact,
+  variant = "card",
 }: {
   ach: Achievement;
-  compact?: boolean;
+  variant?: "card" | "modal";
 }) {
-  const style = BADGE_BY_ID[ach.id] ?? {
-    Icon: FiAward,
-    ring: "from-neutral-400 to-neutral-600",
-    iconBg: "bg-neutral-600",
-    label: ach.label,
-    rarity: "comum" as const,
-  };
-  const { Icon, ring, iconBg, rarity } = style;
+  const { Icon, ring, iconBg, rarity } = getBadgeStyle(ach);
   const locked = !ach.unlocked;
+  const tooltip = locked
+    ? `${ach.description} — continue treinando!`
+    : ach.description;
 
-  return (
-    <div
-      className={`flex flex-col items-center text-center ${compact ? "min-w-0" : "h-full min-h-0 min-w-0"}`}
-    >
-      <div
-        className={`flex w-full items-center justify-center ${compact ? "" : "min-h-0 flex-1"} ${locked ? "opacity-85" : ""}`}
-        title={locked ? "Bloqueada — continue treinando!" : style.label}
-      >
+  if (variant === "modal") {
+    return (
+      <div className="flex flex-col items-center gap-2 text-center">
         <div
-          className={`aspect-square w-full max-h-full min-w-0 overflow-hidden rounded-2xl border-[2.5px] shadow-md ${
-            compact ? "max-w-[88px]" : ""
-          } ${
+          className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 shadow-md ${
             locked
               ? "border-neutral-400/70 bg-neutral-400/40"
-              : `border-white/30 bg-gradient-to-br ${ring} shadow-[0_8px_28px_rgba(13,31,60,0.18)]`
+              : `border-white/30 bg-gradient-to-br ${ring}`
           }`}
+          title={tooltip}
         >
           <div
-            className={`relative flex h-full w-full items-center justify-center rounded-[11px] ${
+            className={`flex h-full w-full items-center justify-center rounded-[9px] ${
               locked ? "bg-neutral-500/85" : iconBg
             }`}
           >
             <Icon
-              className={`h-[48%] w-[48%] min-h-5 min-w-5 sm:min-h-6 sm:min-w-6 ${
-                locked ? "text-neutral-200" : "text-white drop-shadow-sm"
-              }`}
+              className={`h-6 w-6 ${locked ? "text-neutral-200" : "text-white drop-shadow-sm"}`}
               strokeWidth={1.6}
               aria-hidden
             />
             {locked ? (
-              <span className="absolute inset-0 flex items-center justify-center rounded-[11px] bg-black/30 backdrop-blur-[1px]">
-                <HiLockClosed className="h-[32%] w-[32%] min-h-4 min-w-4 text-white drop-shadow" />
+              <span className="absolute inset-0 flex items-center justify-center rounded-[9px] bg-black/30">
+                <HiLockClosed className="h-4 w-4 text-white drop-shadow" />
               </span>
             ) : (
               <span
                 aria-hidden
-                className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-[9px] font-black text-white shadow"
+                className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-emerald-500 text-[8px] font-black text-white"
               >
                 ✓
               </span>
             )}
           </div>
         </div>
+        <span
+          className={`inline-flex rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${rarityBadgeClass(rarity)}`}
+        >
+          {rarity}
+        </span>
+        <p className="w-full text-[11px] font-bold leading-snug text-[#111]">
+          {ach.label}
+        </p>
+        <p className="w-full text-[10px] leading-snug text-neutral-600">
+          {ach.description}
+        </p>
+        <p
+          className={`text-[10px] font-semibold uppercase tracking-wide ${
+            locked ? "text-neutral-500" : "text-emerald-600"
+          }`}
+        >
+          {locked ? "Em progresso" : "Desbloqueada"}
+        </p>
       </div>
+    );
+  }
 
+  return (
+    <div
+      className="flex min-w-0 flex-col items-center gap-2 text-center"
+      title={tooltip}
+    >
+      <div
+        className={`relative mx-auto flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 shadow-md ${
+          locked
+            ? "border-neutral-400/70 bg-neutral-400/40"
+            : `border-white/30 bg-gradient-to-br ${ring}`
+        } ${locked ? "opacity-85" : ""}`}
+      >
+        <div
+          className={`flex h-full w-full items-center justify-center rounded-[9px] ${
+            locked ? "bg-neutral-500/85" : iconBg
+          }`}
+        >
+          <Icon
+            className={`h-7 w-7 ${locked ? "text-neutral-200" : "text-white drop-shadow-sm"}`}
+            strokeWidth={1.6}
+            aria-hidden
+          />
+          {locked ? (
+            <span className="absolute inset-0 flex items-center justify-center rounded-[9px] bg-black/25">
+              <HiLockClosed className="h-4 w-4 text-white drop-shadow" />
+            </span>
+          ) : (
+            <span
+              aria-hidden
+              className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-emerald-500 text-[8px] font-black text-white"
+            >
+              ✓
+            </span>
+          )}
+        </div>
+      </div>
       <span
-        className={`mt-2 inline-flex max-w-full rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase leading-tight tracking-wider sm:text-[9px] ${rarityBadgeClass(rarity)}`}
+        className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${rarityBadgeClass(rarity)}`}
       >
         {rarity}
       </span>
-
-      <p
-        className={`mt-1 line-clamp-2 w-full font-bold leading-snug text-[#111] ${
-          compact ? "text-[11px] sm:text-[12px]" : "text-[10px] sm:text-[11px] md:text-[12px]"
-        }`}
-      >
+      <p className="line-clamp-2 w-full text-xs font-bold leading-snug text-[#111]">
         {ach.label}
       </p>
-
-      {!locked ? (
-        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 sm:text-[11px]">
-          Desbloqueada
-        </p>
-      ) : (
-        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-500 sm:text-[11px]">
-          Em progresso
-        </p>
-      )}
+      <p
+        className={`text-[10px] font-semibold uppercase tracking-wide ${
+          locked ? "text-neutral-500" : "text-emerald-600"
+        }`}
+      >
+        {locked ? "Em progresso" : "Desbloqueada"}
+      </p>
     </div>
   );
 }
@@ -163,6 +284,21 @@ type AchievementsCardProps = {
 
 export function AchievementsCard({ className = "" }: AchievementsCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const { data: achievements = [], isLoading } = usePilotAchievements();
+  const { gridRef, columns, previewCount } = useAchievementPreviewGrid(
+    achievements.length
+  );
+
+  const groupedAchievements = useMemo(
+    () =>
+      CATEGORY_ORDER.map((category) => ({
+        category,
+        meta: ACHIEVEMENT_CATEGORY_META[category],
+        items: achievements.filter((ach) => ach.category === category),
+      })).filter((group) => group.items.length > 0),
+    [achievements]
+  );
+  const hasAchievements = achievements.length > 0;
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -178,32 +314,39 @@ export function AchievementsCard({ className = "" }: AchievementsCardProps) {
       <div
         className={`flex h-full min-h-0 flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-6 ${className}`}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-bold text-[#0d1f3c]">Conquistas</h3>
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <span className="rounded-full bg-[rgba(13,31,60,0.06)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-accent">
-              XP de piloto
-            </span>
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.12)] bg-white px-4 py-2 text-[12px] font-semibold text-accent shadow-sm transition hover:border-accent/30 hover:bg-neutral-50"
-            >
-              Ver todas as conquistas
-            </button>
-          </div>
+          <StudentCardActionButton
+            onClick={() => setModalOpen(true)}
+            disabled={!hasAchievements}
+            aria-disabled={!hasAchievements}
+            className={!hasAchievements ? "pointer-events-none opacity-50" : ""}
+          >
+            Ver todas
+          </StudentCardActionButton>
         </div>
 
-        <ul className="mt-6 grid min-h-0 flex-1 auto-rows-[minmax(0,1fr)] grid-cols-5 gap-x-2 gap-y-3 sm:gap-x-3 sm:gap-y-4 lg:gap-x-4">
-          {StudentAreaServiceMock.getAchievements().map((ach) => (
-            <li
-              key={ach.id}
-              className="flex h-full min-h-0 min-w-0 flex-col items-center text-center"
-            >
-              <AchievementBadgeItem ach={ach} />
-            </li>
-          ))}
-        </ul>
+        {isLoading ? (
+          <p className="mt-4 text-sm text-neutral-500 sm:mt-5">Carregando conquistas…</p>
+        ) : hasAchievements ? (
+          <ul
+            ref={gridRef}
+            className="mt-4 grid gap-4 sm:mt-5 sm:gap-5"
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+          >
+            {achievements.slice(0, previewCount).map((ach) => (
+              <li key={ach.id} className="min-w-0">
+                <AchievementBadgeItem ach={ach} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <StudentCardEmptyState
+            className="mt-4 sm:mt-5"
+            title="Nenhuma conquista ainda"
+            description="Complete aulas, evolua seus tempos e participe de baterias para desbloquear conquistas."
+          />
+        )}
       </div>
 
       {modalOpen ? (
@@ -216,7 +359,7 @@ export function AchievementsCard({ className = "" }: AchievementsCardProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="conquistas-modal-title"
-            className="flex max-h-[min(90vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.1)] bg-white shadow-2xl"
+            className="flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.1)] bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 md:px-6">
@@ -228,8 +371,8 @@ export function AchievementsCard({ className = "" }: AchievementsCardProps) {
                   Todas as conquistas
                 </h2>
                 <p className="mt-1 text-sm text-neutral-600">
-                  {StudentAreaServiceMock.getAchievements().filter((a) => a.unlocked).length} de{" "}
-                  {StudentAreaServiceMock.getAchievements().length} desbloqueadas
+                  {achievements.filter((a) => a.unlocked).length} de{" "}
+                  {achievements.length} desbloqueadas
                 </p>
               </div>
               <button
@@ -241,13 +384,27 @@ export function AchievementsCard({ className = "" }: AchievementsCardProps) {
               </button>
             </div>
 
-            <ul className="grid grid-cols-2 gap-6 overflow-y-auto px-5 py-6 sm:grid-cols-3 md:gap-8 md:px-6">
-              {StudentAreaServiceMock.getAchievements().map((ach) => (
-                <li key={ach.id}>
-                  <AchievementBadgeItem ach={ach} compact />
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-y-auto px-5 py-6 md:px-6">
+              <div className="flex flex-col gap-8">
+                {groupedAchievements.map(({ category, meta, items }) => (
+                  <section key={category} aria-labelledby={`cat-${category}`}>
+                    <h3
+                      id={`cat-${category}`}
+                      className="text-sm font-bold text-[#0d1f3c]"
+                    >
+                      <span aria-hidden>{meta.emoji}</span> {meta.label}
+                    </h3>
+                    <ul className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-3 md:gap-8">
+                      {items.map((ach) => (
+                        <li key={ach.id}>
+                          <AchievementBadgeItem ach={ach} variant="modal" />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

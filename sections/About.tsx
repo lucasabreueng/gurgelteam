@@ -1,4 +1,4 @@
-import { ButtonLink } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Container } from "@/components/ui/container";
 
 const bullets = [
@@ -40,22 +40,16 @@ export function About() {
 
           <div className="flex flex-col lg:col-span-8">
             <div className="flex flex-1 flex-col">
-              <div className="group max-w-none lg:max-w-[52rem]">
-                <h2 className="heading-gradient mb-6 text-pretty text-3xl font-semibold leading-[1.12] tracking-tight text-primary md:text-[42px] md:leading-[1.18] lg:text-[46px] lg:leading-[1.15] dark:text-white">
-                  Uma equipe criada para transformar paixão por velocidade em{" "}
-                  <span>experiência real de pista.</span>
-                </h2>
-              </div>
-              <p className="mb-10 max-w-3xl text-base leading-relaxed text-foreground">
-                A Gurgel Team nasceu da trajetória de Gurgel, campeão
-                brasiliense de kart em 1979, ano de inauguração do Kartódromo
-                Ayrton Senna. Após retornar ao kartismo em 2017, o box se tornou
-                referência em aulas de pilotagem, aluguel de karts
-                profissionais e introdução de novos pilotos ao automobilismo.
-              </p>
-              <div className="mt-auto">
-                <ButtonLink href="/#sobre">Conheça nossa história</ButtonLink>
-              </div>
+              <SectionHeading
+                title={
+                  <>
+                    Uma equipe criada para transformar paixão por velocidade em{" "}
+                    <span>experiência real de pista.</span>
+                  </>
+                }
+                description="A Gurgel Team nasceu da trajetória de Gurgel, campeão brasiliense de kart em 1979, ano de inauguração do Kartódromo Ayrton Senna. Após retornar ao kartismo em 2017, o box se tornou referência em aulas de pilotagem, aluguel de karts profissionais e introdução de novos pilotos ao automobilismo."
+                className="mb-0 max-w-3xl"
+              />
             </div>
           </div>
         </div>

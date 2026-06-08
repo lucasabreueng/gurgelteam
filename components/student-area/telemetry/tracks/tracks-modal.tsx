@@ -92,6 +92,7 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
       name: name || "Pista",
       city: city || "",
       center: { latitude: lat, longitude: lon },
+      map: { kind: "google" },
       lines: parsedLines,
       length: 890,
       createdAt: new Date().toISOString(),
@@ -108,13 +109,17 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
       ]
     : [];
 
-  const startCreate = () => {
-    setEditingId(null);
+  const resetForm = (lat: number, lon: number) => {
     setName("");
     setCity("");
-    setLatitude("");
-    setLongitude("");
-    setLineInputs(linesDraftToStrings(defaultLinesDraft(-15.8254576, -47.9743033)));
+    setLatitude(String(lat));
+    setLongitude(String(lon));
+    setLineInputs(linesDraftToStrings(defaultLinesDraft(lat, lon)));
+  };
+
+  const startCreate = () => {
+    setEditingId(null);
+    resetForm(-15.8254576, -47.9743033);
     setStep("info");
   };
 
@@ -129,8 +134,6 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
   };
 
   const goToLines = () => {
-    const lat = parseCoord(latitude);
-    const lon = parseCoord(longitude);
     if (!name.trim()) {
       setError("Informe o nome da pista.");
       return;
@@ -139,6 +142,8 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
       setError("Informe a cidade.");
       return;
     }
+    const lat = parseCoord(latitude);
+    const lon = parseCoord(longitude);
     if (lat == null || lon == null) {
       setError("Latitude e longitude inválidas.");
       return;
@@ -162,15 +167,20 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
   };
 
   const handleSave = async () => {
-    const lat = parseCoord(latitude);
-    const lon = parseCoord(longitude);
     const lines = stringsToLinesDraft(lineInputs);
-    if (lat == null || lon == null || !name.trim() || !city.trim()) {
+    if (!name.trim() || !city.trim()) {
       setError("Preencha nome, cidade e coordenadas.");
       return;
     }
     if (!lines) {
       setError("Verifique os pontos GPS das linhas S1, S2 e S3.");
+      return;
+    }
+
+    const lat = parseCoord(latitude);
+    const lon = parseCoord(longitude);
+    if (lat == null || lon == null) {
+      setError("Latitude e longitude inválidas.");
       return;
     }
 
@@ -184,6 +194,7 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
         name: name.trim(),
         city: city.trim(),
         center: { latitude: lat, longitude: lon },
+        map: { kind: "google" },
         lines,
         length: existing?.length ?? 890,
         createdAt: existing?.createdAt ?? now,
@@ -221,7 +232,7 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
 
   const description =
     step === "list"
-      ? "Cadastre pistas e configure o GPS."
+      ? "Cadastre pistas e configure o GPS no Google Maps."
       : step === "info"
         ? "Informe nome, cidade e coordenadas de referência da pista."
         : "S1 = largada/chegada. S2 e S3 definem os setores.";
@@ -266,6 +277,9 @@ export function TracksModal({ open, onClose, onChanged }: Props) {
             <Field label="Latitude" value={latitude} onChange={setLatitude} placeholder="-15.82545" />
             <Field label="Longitude" value={longitude} onChange={setLongitude} placeholder="-47.97430" />
           </div>
+          <p className="text-[12px] text-neutral-500">
+            Use o Google Maps (satélite) no próximo passo para conferir o traçado e as linhas de setor.
+          </p>
           {error ? <p className="text-[12px] font-medium text-red-600">{error}</p> : null}
           <div className="flex gap-2 pt-2">
             <button type="button" className={btnSecondary} onClick={() => setStep("list")}>
@@ -360,7 +374,7 @@ function ListContent({
       <div className="rounded-xl border border-dashed border-[rgba(17,17,17,0.15)] bg-neutral-50/80 px-6 py-10 text-center">
         <p className="text-[14px] font-semibold text-[#0d1f3c]">Nenhuma pista cadastrada</p>
         <p className="mt-2 text-[12px] text-neutral-600">
-          Cadastre a pista com nome, cidade e coordenadas. Depois configure as linhas S1, S2 e S3.
+          Cadastre a pista com nome, cidade e coordenadas. Depois configure as linhas S1, S2 e S3 no mapa.
         </p>
       </div>
     );

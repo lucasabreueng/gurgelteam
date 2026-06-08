@@ -6,15 +6,24 @@ import { useMemo, useState } from "react";
 import { HiEllipsisHorizontal, HiMagnifyingGlass } from "react-icons/hi2";
 
 import {
-  inventoryTableClass,
+  InventoryTableShell,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryThClass,
   inventoryThFirstClass,
 } from "@/components/admin/inventory/inventory-table-shared";
 import { filterFieldHeightClass } from "@/components/ui/filter-box";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  adminBadgeErrorClass,
+  adminBadgeSuccessClass,
+  adminEmptyStateClass,
+  adminInputClass,
+  adminTableActionButtonClass,
+} from "@/lib/design";
 import { SettingsDropdown } from "../../settings/settings-dropdown";
-import { settingsInputClass } from "../../settings/settings-section";
 import { CashFlowServiceMock } from "@/services/cashflow/cashFlowServiceMock";
 
 import { FinancialChartCard } from "../financial-chart-card";
@@ -32,9 +41,25 @@ function formatMovementValue(row: CashFlowStatementRow): {
   className: string;
 } {
   if (row.type === "entrada") {
-    return { label: row.entry, className: "text-emerald-700" };
+    return {
+      label: row.entry,
+      className: "text-[var(--ds-success-text)]",
+    };
   }
-  return { label: row.exit, className: "text-red-700" };
+  return {
+    label: row.exit,
+    className: "text-[var(--ds-error-text)]",
+  };
+}
+
+function MovementTypeBadge({ type }: { type: MovementType }) {
+  return (
+    <StatusBadge
+      className={type === "entrada" ? adminBadgeSuccessClass : adminBadgeErrorClass}
+    >
+      {type}
+    </StatusBadge>
+  );
 }
 
 export function CashFlowStatement({
@@ -89,11 +114,14 @@ export function CashFlowStatement({
     >
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <label className="relative sm:col-span-2 lg:col-span-1">
-          <HiMagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <HiMagnifyingGlass
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ds-text-muted)]"
+            aria-hidden
+          />
           <input
             type="search"
             placeholder="Buscar descrição..."
-            className={`${settingsInputClass} ${filterFieldHeightClass} w-full pl-9 text-[14px]`}
+            className={`${adminInputClass} ${filterFieldHeightClass} w-full pl-9 text-[14px]`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Buscar movimentação"
@@ -120,9 +148,12 @@ export function CashFlowStatement({
       </div>
 
       <div className="hidden lg:block">
-        <table className={`${inventoryTableClass} w-full table-fixed`}>
+        <InventoryTableShell
+          isEmpty={filtered.length === 0}
+          emptyMessage="Nenhuma movimentação encontrada."
+        >
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={`${inventoryThFirstClass} w-[100px]`}>Data</th>
               <th className={inventoryThClass}>Descrição</th>
               <th className={`${inventoryThClass} w-[120px]`}>Categoria</th>
@@ -137,63 +168,60 @@ export function CashFlowStatement({
             {filtered.map((row) => {
               const value = formatMovementValue(row);
               return (
-                <tr
-                  key={row.id}
-                  className="border-b border-[rgba(17,17,17,0.05)] last:border-0 hover:bg-[#fafbfc]/80"
-                >
+                <tr key={row.id} className={adminTableBodyRowClass}>
                   <td className={`${inventoryTdClass} whitespace-nowrap tabular-nums`}>
                     {row.date}
                   </td>
-                  <td className={`${inventoryTdDescClass} break-words`}>{row.description}</td>
+                  <td className={`${inventoryTdDescClass} break-words`}>
+                    {row.description}
+                  </td>
                   <td className={`${inventoryTdClass} break-words`}>{row.category}</td>
                   <td className={inventoryTdClass}>
-                    <span
-                      className={`text-[11px] font-bold uppercase ${
-                        row.type === "entrada" ? "text-emerald-700" : "text-red-700"
-                      }`}
-                    >
-                      {row.type}
-                    </span>
+                    <MovementTypeBadge type={row.type} />
                   </td>
-                  <td className={`${inventoryTdClass} break-words`}>{row.paymentMethod}</td>
+                  <td className={`${inventoryTdClass} break-words`}>
+                    {row.paymentMethod}
+                  </td>
                   <td
                     className={`${inventoryTdClass} text-right font-semibold tabular-nums ${value.className}`}
                   >
                     {value.label}
                   </td>
                   <td
-                    className={`${inventoryTdClass} text-right font-semibold tabular-nums text-[#0d1f3c]`}
+                    className={`${inventoryTdClass} text-right font-semibold tabular-nums text-[var(--ds-text-primary)]`}
                   >
                     {row.balance}
                   </td>
                   <td className={`${inventoryTdClass} relative`}>
                     <button
                       type="button"
-                      className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100"
+                      className={adminTableActionButtonClass}
                       aria-label="Ações"
-                      onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === row.id ? null : row.id)
+                      }
                     >
                       <HiEllipsisHorizontal className="h-4 w-4" />
                     </button>
                     {openMenuId === row.id ? (
-                      <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-xl border border-[rgba(17,17,17,0.1)] bg-white py-1 shadow-lg">
+                      <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-xl border border-[var(--ds-border)] bg-[var(--ds-bg-card)] py-1 shadow-[var(--ds-shadow-popover)]">
                         <button
                           type="button"
-                          className="block w-full px-3 py-2 text-left text-[12px] hover:bg-[#fafbfc]"
+                          className="block w-full px-3 py-2 text-left text-[12px] text-[var(--ds-text-secondary)] transition hover:bg-[var(--ds-bg-muted)]"
                           onClick={() => handleRowAction("Detalhes", row.description)}
                         >
                           Ver detalhes
                         </button>
                         <button
                           type="button"
-                          className="block w-full px-3 py-2 text-left text-[12px] hover:bg-[#fafbfc]"
+                          className="block w-full px-3 py-2 text-left text-[12px] text-[var(--ds-text-secondary)] transition hover:bg-[var(--ds-bg-muted)]"
                           onClick={() => handleRowAction("Edição", row.description)}
                         >
                           Editar
                         </button>
                         <button
                           type="button"
-                          className="block w-full px-3 py-2 text-left text-[12px] text-red-700 hover:bg-red-50"
+                          className="block w-full px-3 py-2 text-left text-[12px] text-[var(--ds-error-text)] transition hover:bg-[var(--ds-error-bg)]"
                           onClick={() => handleRowAction("Exclusão", row.description)}
                         >
                           Excluir
@@ -205,50 +233,46 @@ export function CashFlowStatement({
               );
             })}
           </tbody>
-        </table>
+        </InventoryTableShell>
       </div>
 
       <div className="space-y-2 lg:hidden">
         {filtered.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] px-4 py-8 text-center text-sm text-neutral-500">
-            Nenhuma movimentação encontrada.
-          </p>
+          <p className={adminEmptyStateClass}>Nenhuma movimentação encontrada.</p>
         ) : (
           filtered.map((row) => {
             const value = formatMovementValue(row);
             return (
               <article
                 key={row.id}
-                className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3"
+                className="rounded-xl border border-[var(--ds-border)] bg-[var(--ds-bg-card)] p-3 shadow-[var(--ds-shadow-card)]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold tabular-nums text-neutral-500">
+                    <p className="text-[11px] font-semibold tabular-nums text-[var(--ds-text-muted)]">
                       {row.date}
                     </p>
-                    <p className="mt-0.5 text-sm font-bold text-[#0d1f3c] break-words">
+                    <p className="mt-0.5 break-words text-sm font-bold text-[var(--ds-text-primary)]">
                       {row.description}
                     </p>
-                    <p className="mt-1 text-[11px] text-neutral-600">
+                    <p className="mt-1 text-[11px] text-[var(--ds-text-secondary)]">
                       {row.category} · {row.paymentMethod}
                     </p>
                   </div>
-                  <span
-                    className={`shrink-0 text-[10px] font-bold uppercase ${
-                      row.type === "entrada" ? "text-emerald-700" : "text-red-700"
-                    }`}
-                  >
-                    {row.type}
-                  </span>
+                  <MovementTypeBadge type={row.type} />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
                   <div>
-                    <p className="text-neutral-500">Valor</p>
-                    <p className={`font-bold tabular-nums ${value.className}`}>{value.label}</p>
+                    <p className="text-[var(--ds-text-muted)]">Valor</p>
+                    <p className={`font-bold tabular-nums ${value.className}`}>
+                      {value.label}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-neutral-500">Saldo</p>
-                    <p className="font-bold tabular-nums text-[#0d1f3c]">{row.balance}</p>
+                    <p className="text-[var(--ds-text-muted)]">Saldo</p>
+                    <p className="font-bold tabular-nums text-[var(--ds-text-primary)]">
+                      {row.balance}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-2 flex gap-2">

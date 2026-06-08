@@ -50,9 +50,9 @@ export function SupplierDetailsDrawer({ supplierId, onClose }: Props) {
       <aside
         role="dialog"
         aria-modal="true"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[var(--ds-bg-panel)] shadow-2xl"
       >
-        <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className="shrink-0 border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">

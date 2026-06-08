@@ -1,8 +1,6 @@
-import { ScheduleKartsRepositoryMock } from "@/repositories/schedule/ScheduleKartsRepositoryMock";
+import { createScheduleKartsService } from "@/services/schedule/scheduleKartsService";
 
-export const ScheduleKartsServiceMock = {
-  getKartSwapOptions: ScheduleKartsRepositoryMock.getKartSwapOptions,
-  getKartReservationAtSlot: ScheduleKartsRepositoryMock.getKartReservationAtSlot,
-};
+/** @deprecated Use getAppServices().scheduleKarts */
+export const ScheduleKartsServiceMock = createScheduleKartsService();
 
-export type { KartSwapOption } from "@/lib/contracts/schedule/karts";
+export type { KartSwapOption } from "@/services/schedule/scheduleKartsService";

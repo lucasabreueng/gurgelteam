@@ -2,12 +2,15 @@
 
 import type { MovementType } from "@/lib/contracts/inventory";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import { useInventoryMovements } from "@/lib/query/hooks/use-inventory-catalog";
 import { useMemo, useState } from "react";
 import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
 import { TableFiltersToolbar } from "@/components/ui/table-filters-toolbar";
 import { InventoryTablePagination } from "./inventory-table-pagination";
 import {
   InventoryTableShell,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -20,13 +23,20 @@ import {
   type MovementsFilterState,
 } from "./movements-filters";
 import { useInventoryTableState } from "./use-inventory-table-state";
+import {
+  adminBadgeErrorClass,
+  adminBadgeInfoClass,
+  adminBadgeNeutralClass,
+  adminBadgeSuccessClass,
+  adminBadgeWarningClass,
+} from "@/lib/design";
 
 const TYPE_STYLE: Record<MovementType, string> = {
-  entrada: "bg-emerald-50 text-emerald-800 ring-emerald-200/60",
-  saida: "bg-sky-50 text-sky-900 ring-sky-200/60",
-  ajuste: "bg-amber-50 text-amber-900 ring-amber-200/60",
-  perda: "bg-red-50 text-red-800 ring-red-200/60",
-  devolucao: "bg-violet-50 text-violet-900 ring-violet-200/60",
+  entrada: adminBadgeSuccessClass,
+  saida: adminBadgeInfoClass,
+  ajuste: adminBadgeWarningClass,
+  perda: adminBadgeErrorClass,
+  devolucao: adminBadgeNeutralClass,
 };
 
 const DEFAULT_FILTERS: MovementsFilterState = {
@@ -35,11 +45,28 @@ const DEFAULT_FILTERS: MovementsFilterState = {
 };
 
 export function InventoryMovements() {
+  const { data: rawMovements = [] } = useInventoryMovements();
   const [filters, setFilters] = useState<MovementsFilterState>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const rows = useMemo(() => {
-    let list = [...InventoryServiceMock.getMovements()];
+    let list = rawMovements.map((m) => {
+      if ("createdAt" in m) {
+        return {
+          id: m.id,
+          partCode: m.partCode,
+          partName: m.partName,
+          type: m.type as MovementType,
+          quantity:
+            m.type === "entrada" || m.type === "devolucao" ? m.qty : -m.qty,
+          kartNumber: null as number | null,
+          osNumber: null as string | null,
+          responsible: "—",
+          datetime: InventoryServiceMock.formatInventoryDate(m.createdAt),
+        };
+      }
+      return m;
+    });
     if (filters.typeFilter) list = list.filter((m) => m.type === filters.typeFilter);
     const q = filters.query.trim().toLowerCase();
     if (q) {
@@ -51,7 +78,7 @@ export function InventoryMovements() {
       );
     }
     return list;
-  }, [filters]);
+  }, [filters, rawMovements]);
 
   const {
     page,
@@ -100,7 +127,7 @@ export function InventoryMovements() {
         }
       >
         <thead>
-          <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+          <tr className={adminTableHeadRowClass}>
             <th className={inventoryThFirstClass}>Código</th>
             <th className={inventoryThClass}>Descrição</th>
             <th className={inventoryThClass}>Tipo</th>
@@ -115,7 +142,7 @@ export function InventoryMovements() {
           {paginatedItems.map((m) => (
             <tr
               key={m.id}
-              className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+              className={adminTableBodyRowClass}
             >
               <td className={inventoryTdFirstClass}>{m.partCode}</td>
               <td className={inventoryTdDescClass}>{m.partName}</td>

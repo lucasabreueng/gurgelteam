@@ -1,6 +1,6 @@
 "use client";
 
-import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
+import { useClientsList } from "@/lib/query/hooks/use-clients";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HiMagnifyingGlass, HiOutlineChevronDown } from "react-icons/hi2";
 
@@ -37,16 +37,17 @@ export function ClientSearchDropdown({
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLSpanElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { data: clients = [] } = useClientsList();
 
-  const selectedClient = ClientsServiceMock.getList().find((client) => client.id === value);
+  const selectedClient = clients.find((client) => client.id === value);
 
   const filteredClients = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ClientsServiceMock.getList();
-    return ClientsServiceMock.getList().filter((client) =>
+    if (!q) return clients;
+    return clients.filter((client) =>
       client.name.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, clients]);
 
   useEffect(() => {
     if (!open) {

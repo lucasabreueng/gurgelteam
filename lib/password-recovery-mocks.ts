@@ -17,6 +17,22 @@ export const MOCK_RECOVERY_CODE = "123456";
 export const RECOVERY_RESET_PATH = "/recuperar-senha/redefinir";
 
 export const RECOVERY_SESSION_KEY = "gurgel-recovery-verified";
+export const RECOVERY_TOKEN_SESSION_KEY = "gurgel-recovery-token";
+
+export function setRecoveryToken(token: string): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(RECOVERY_TOKEN_SESSION_KEY, token);
+}
+
+export function getRecoveryToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(RECOVERY_TOKEN_SESSION_KEY);
+}
+
+export function clearRecoveryToken(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RECOVERY_TOKEN_SESSION_KEY);
+}
 
 export function setRecoveryVerified(email: string): void {
   if (typeof window === "undefined") return;
@@ -31,6 +47,7 @@ export function getRecoveryVerified(): string | null {
 export function clearRecoveryVerified(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(RECOVERY_SESSION_KEY);
+  sessionStorage.removeItem(RECOVERY_TOKEN_SESSION_KEY);
 }
 
 export function isValidRecoveryIdentifier(value: string): boolean {

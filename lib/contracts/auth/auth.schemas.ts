@@ -9,22 +9,42 @@ import type {
 } from "./auth.types";
 
 export const loginSchema: z.ZodSchema<LoginDTO> = z.object({
-  identifier: z.string().min(3),
-  password: z.string().min(1),
+  identifier: z.string().min(3, "Informe o e-mail ou usuário."),
+  password: z.string().min(1, "Informe a senha."),
   remember: z.boolean(),
 });
 
-export const cadastroSchema: z.ZodSchema<CadastroDTO> = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  birthDate: z.string().min(1),
-  cpf: z.string().min(11),
-  email: z.string().email(),
-  password: z
-    .string()
-    .min(8)
-    .refine((v) => !v.includes(" "), "Senha não pode conter espaços."),
-});
+export const cadastroSchema: z.ZodSchema<CadastroDTO> = z
+  .object({
+    firstName: z.string().min(1, "Informe o nome."),
+    lastName: z.string().min(1, "Informe o sobrenome."),
+    birthDate: z.string().min(1, "Informe a data de nascimento."),
+    cpf: z.string().min(11, "Informe o CPF."),
+    email: z.string().email("Informe um e-mail válido."),
+    password: z
+      .string()
+      .min(8, "A senha deve ter no mínimo 8 caracteres.")
+      .refine((v) => !v.includes(" "), "Senha não pode conter espaços."),
+    acceptedPrivacy: z.boolean(),
+    acceptedTerms: z.boolean(),
+    acceptedImageUsage: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.acceptedPrivacy) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Aceite a Política de privacidade para continuar.",
+        path: ["acceptedPrivacy"],
+      });
+    }
+    if (!data.acceptedTerms) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Aceite os Termos de uso para continuar.",
+        path: ["acceptedTerms"],
+      });
+    }
+  });
 
 export const passwordRecoveryIdentifierSchema: z.ZodSchema<PasswordRecoveryIdentifierDTO> =
   z.object({

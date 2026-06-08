@@ -2,34 +2,83 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { useTelemetrySessionsList } from "@/lib/query/hooks/use-telemetry-sessions";
 import { DashboardServiceMock } from "@/services/dashboard/dashboardServiceMock";
+import {
+  adminCardClass,
+  adminCardMutedClass,
+  adminInsightPanelClass,
+  adminScoreChipClass,
+  adminSectionTitleClass,
+  adminStatTileClass,
+  adminSubsectionTitleClass,
+  adminTextValueClass,
+} from "@/lib/design";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
+import {
+  buildConsistencyPct,
+  buildEvolutionSeries,
+  buildInsight,
+  buildSectorDeltas,
+} from "@/services/telemetry/build-overview-from-sessions";
 
 export function TelemetryOverview() {
-  const evolutionSeries = DashboardServiceMock.getTelemetryEvolutionSeries();
-  const telemetryInsight = DashboardServiceMock.getTelemetryInsight();
-  const telemetrySectors = DashboardServiceMock.getTelemetrySectors();
+  const httpMode = getDataSourceMode() === "http";
+  const { data: apiSessions = [] } = useTelemetrySessionsList();
+
+  const evolutionSeries = useMemo(() => {
+    if (httpMode && apiSessions.length > 0) {
+      const built = buildEvolutionSeries(apiSessions);
+      if (built.length > 0) return built;
+    }
+    return DashboardServiceMock.getTelemetryEvolutionSeries();
+  }, [httpMode, apiSessions]);
+
+  const telemetryInsight = useMemo(() => {
+    if (httpMode && apiSessions.length > 0) {
+      return buildInsight(apiSessions);
+    }
+    return DashboardServiceMock.getTelemetryInsight();
+  }, [httpMode, apiSessions]);
+
+  const telemetrySectors = useMemo(() => {
+    if (httpMode && apiSessions.length > 0) {
+      return buildSectorDeltas(apiSessions[0]);
+    }
+    return DashboardServiceMock.getTelemetrySectors();
+  }, [httpMode, apiSessions]);
+
+  const consistencyPct = useMemo(() => {
+    if (httpMode && apiSessions.length > 0) {
+      const pct = buildConsistencyPct(apiSessions);
+      if (pct > 0) return pct;
+    }
+    return 89;
+  }, [httpMode, apiSessions]);
+
+  const chartTheme = useChartTheme();
 
   const chartOption = useMemo<EChartsOption>(() => {
     const cats = evolutionSeries.map((d) => d.week);
     const vals = evolutionSeries.map((d) => d.avg);
+    const minY =
+      vals.length > 0 ? Math.floor(Math.min(...vals) - 1) : 52;
     return {
       grid: { left: 48, right: 16, top: 24, bottom: 32 },
       xAxis: {
         type: "category",
         data: cats,
-        axisLine: { lineStyle: { color: "#e2e8f0" } },
-        axisLabel: { fontSize: 10, color: "#64748b" },
+        axisLabel: { fontSize: 10 },
       },
       yAxis: {
         type: "value",
-        min: 52,
+        min: minY,
         axisLine: { show: false },
-        splitLine: { lineStyle: { color: "rgba(148,163,184,0.2)" } },
         axisLabel: {
           fontSize: 10,
-          color: "#64748b",
           formatter: (v: number) => `${v.toFixed(1)}s`,
         },
       },
@@ -38,48 +87,50 @@ export function TelemetryOverview() {
           type: "line",
           smooth: 0.35,
           data: vals,
-          lineStyle: { width: 2.75, color: "#0d1f3c" },
-          itemStyle: { color: "#0d1f3c" },
-          areaStyle: { opacity: 0.08, color: "#0d1f3c" },
+          lineStyle: { width: 2.75, color: chartTheme.line },
+          itemStyle: { color: chartTheme.line },
+          areaStyle: { opacity: 0.2, color: chartTheme.area },
         },
       ],
       tooltip: { trigger: "axis" },
     };
-  }, [evolutionSeries]);
+  }, [evolutionSeries, chartTheme]);
 
   return (
-    <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-8">
+    <section className={`${adminCardClass} p-6 md:p-8`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-            Performance
-          </p>
-          <h3 className="mt-1 text-xl font-bold text-[#0d1f3c] md:text-2xl">
+          <p className={adminSectionTitleClass}>Performance</p>
+          <h3 className={`mt-1 text-xl font-bold md:text-2xl ${adminTextValueClass}`}>
             Telemetria & evolução da equipe
           </h3>
         </div>
-        <div className="rounded-xl bg-[#fafbfc] px-4 py-2 text-center ring-1 ring-[rgba(17,17,17,0.06)]">
-          <p className="text-[10px] font-bold uppercase text-neutral-500">
+        <div className={adminScoreChipClass}>
+          <p className="text-[10px] font-bold uppercase text-[var(--ds-text-muted)]">
             Consistência geral
           </p>
-          <p className="text-lg font-bold text-emerald-700">89%</p>
+          <p className="text-lg font-bold text-[var(--ds-success-text)]">
+            {consistencyPct}%
+          </p>
         </div>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(0,200px)_minmax(0,220px)]">
-        <div className="min-w-0 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4">
-          <p className="mb-3 text-[12px] font-semibold text-neutral-600">
+        <div className={`min-w-0 ${adminCardMutedClass}`}>
+          <p className={`mb-3 text-[12px] font-semibold ${adminSubsectionTitleClass}`}>
             Evolução média (últimas semanas)
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={chartOption}
             style={{ height: 220, width: "100%" }}
             opts={{ renderer: "svg" }}
           />
         </div>
 
-        <div className="flex flex-col rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4">
-          <p className="text-[12px] font-semibold text-neutral-600">Traçado · setores</p>
+        <div className={`flex flex-col ${adminCardMutedClass}`}>
+          <p className={`text-[12px] font-semibold ${adminSubsectionTitleClass}`}>
+            Traçado · setores
+          </p>
           <div className="relative mx-auto mt-4 flex flex-1 items-center justify-center py-2">
             <Image
               src="/images/tracado.svg"
@@ -93,7 +144,7 @@ export function TelemetryOverview() {
         </div>
 
         <div className="space-y-4">
-          <p className="text-[12px] font-semibold text-neutral-600">
+          <p className={`text-[12px] font-semibold ${adminSubsectionTitleClass}`}>
             Comparativo de setores
           </p>
           {telemetrySectors.map((s) => (
@@ -101,15 +152,19 @@ export function TelemetryOverview() {
               key={s.sector}
               className={`rounded-xl border px-4 py-3 ${
                 s.slow
-                  ? "border-[#c41e3a]/25 bg-red-50/50"
-                  : "border-[rgba(17,17,17,0.08)] bg-white"
+                  ? "border-[var(--ds-error-border)] bg-[var(--ds-error-bg)]"
+                  : `${adminStatTileClass} border-[var(--ds-border)]`
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-[#111]">{s.sector}</span>
+                <span className={`text-sm font-semibold ${adminTextValueClass}`}>
+                  {s.sector}
+                </span>
                 <span
                   className={`font-mono text-sm font-bold tabular-nums ${
-                    s.slow ? "text-[#c41e3a]" : "text-emerald-700"
+                    s.slow
+                      ? "text-[var(--ds-error-text)]"
+                      : "text-[var(--ds-success-text)]"
                   }`}
                 >
                   {s.delta}
@@ -120,11 +175,11 @@ export function TelemetryOverview() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-3 rounded-xl border border-accent/15 bg-accent/[0.04] px-5 py-4">
+      <div className={`${adminInsightPanelClass} px-5 py-4`}>
         <span className="mt-0.5 text-[11px] font-bold uppercase tracking-wider text-accent">
           Insight
         </span>
-        <p className="text-[14px] leading-relaxed text-[#0d1f3c]/90">
+        <p className="text-[14px] leading-relaxed text-[var(--ds-text-body)]">
           {telemetryInsight}
         </p>
       </div>

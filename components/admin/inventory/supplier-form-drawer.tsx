@@ -9,11 +9,12 @@ import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import {
-  addInventorySupplier,
   generateSupplierCode,
-  getInventorySupplierById,
-  updateInventorySupplier,
 } from "@/lib/inventory-suppliers-store";
+import {
+  useInventorySupplierById,
+  useInventorySupplierMutations,
+} from "./use-inventory-suppliers";
 import {
   DRAWER_FOOTER_INNER_CLASS,
   DRAWER_FOOTER_SHELL_CLASS,
@@ -54,7 +55,8 @@ export function SupplierFormDrawer({
   onSuccess,
 }: Props) {
   const isEdit = Boolean(supplierId);
-  const existing = supplierId ? getInventorySupplierById(supplierId) : null;
+  const existing = useInventorySupplierById(supplierId);
+  const { createMutation, updateMutation } = useInventorySupplierMutations();
   useDrawerBodyLock(open);
 
 
@@ -125,7 +127,7 @@ export function SupplierFormDrawer({
       .filter(Boolean),
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       onSuccess("Preencha o nome do fornecedor.");
       return;
@@ -138,20 +140,26 @@ export function SupplierFormDrawer({
 
     const input = { ...buildInput(), avgLeadDays: lead };
 
-    if (isEdit && supplierId) {
-      const updated = updateInventorySupplier(supplierId, input);
-      if (!updated) {
-        onSuccess("Fornecedor não encontrado.");
-        return;
+    try {
+      if (isEdit && supplierId) {
+        const updated = await updateMutation.mutateAsync({ id: supplierId, input });
+        if (!updated) {
+          onSuccess("Fornecedor não encontrado.");
+          return;
+        }
+        onSuccess(`Fornecedor ${updated.name} atualizado.`);
+      } else {
+        const created = await createMutation.mutateAsync(input);
+        if (!created) {
+          onSuccess("Não foi possível cadastrar o fornecedor.");
+          return;
+        }
+        onSuccess(`Fornecedor ${created.name} cadastrado.`);
       }
-      onSuccess(`Fornecedor ${updated.name} atualizado.`);
       onClose();
-      return;
+    } catch {
+      onSuccess("Erro ao salvar fornecedor. Tente novamente.");
     }
-
-    const created = addInventorySupplier(input);
-    onSuccess(`Fornecedor ${created.name} cadastrado.`);
-    onClose();
   };
 
   if (!open) return null;
@@ -167,9 +175,9 @@ export function SupplierFormDrawer({
       <aside
         role="dialog"
         aria-modal="true"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[var(--ds-bg-panel)] shadow-2xl"
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className="flex shrink-0 items-center justify-between border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <h2 className="text-lg font-bold text-[#0d1f3c]">
             {isEdit ? "Editar fornecedor" : "Cadastrar fornecedor"}
           </h2>

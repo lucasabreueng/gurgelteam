@@ -2,7 +2,8 @@
 
 import type { DrePeriodFilter } from "@/lib/admin-dre-mocks";
 import type { DreStructuredRow } from "@/lib/admin-dre-mocks";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { formatBrl } from "@/lib/admin-dre-mocks";
+import { useDreAccountEntries } from "@/lib/query/hooks/use-dre-account-entries";
 
 import { ScheduleActionModal } from "@/components/admin/schedule/schedule-action-modal";
 
@@ -14,11 +15,13 @@ type Props = {
 };
 
 export function DreAccountModal({ open, row, filter, onClose }: Props) {
-  if (!row) return null;
+  const { data: entries = [], isPending } = useDreAccountEntries(
+    row?.id,
+    filter,
+    open,
+  );
 
-  const entries = open
-    ? FinancialServiceMock.getDreAccountEntries(row.id, filter)
-    : [];
+  if (!row) return null;
 
   return (
     <ScheduleActionModal
@@ -26,10 +29,12 @@ export function DreAccountModal({ open, row, filter, onClose }: Props) {
       onClose={onClose}
       title={row.label}
       titleId="dre-account-modal-title"
-      description={`Total no período: ${FinancialServiceMock.formatDreBrl(row.currentValue)}`}
+      description={`Total no período: ${formatBrl(row.currentValue)}`}
       maxWidthClass="max-w-3xl"
     >
-      {entries.length === 0 ? (
+      {isPending ? (
+        <p className="text-sm text-neutral-500">Carregando lançamentos…</p>
+      ) : entries.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafbfc] px-4 py-8 text-center text-sm text-neutral-500">
           Nenhum lançamento encontrado para este período.
         </p>
@@ -59,7 +64,7 @@ export function DreAccountModal({ open, row, filter, onClose }: Props) {
                     entry.amount >= 0 ? "text-emerald-700" : "text-red-700"
                   }`}
                 >
-                  {FinancialServiceMock.formatDreBrl(entry.amount)}
+                  {formatBrl(entry.amount)}
                 </p>
               </div>
             </article>

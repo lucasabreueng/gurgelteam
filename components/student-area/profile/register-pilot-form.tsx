@@ -1,11 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
+import { HiEye, HiEyeSlash } from "react-icons/hi2";
 import { FieldError } from "@/components/cadastro/field-error";
-import { SettingsDatePicker } from "@/components/admin/settings/settings-date-picker";
+import { PasswordRulesTooltip } from "@/components/cadastro/password-rules-tooltip";
 import { SettingsDropdown } from "@/components/admin/settings/settings-dropdown";
+import {
+  brazilDateToIso,
+  formatBrazilDateInput,
+} from "@/lib/brazil-date-input";
 import type { RegisterPilotFieldErrors } from "@/lib/contracts/student/profile";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { useSuggestedUsername } from "@/lib/hooks/use-suggested-username";
+import { AuthServiceMock } from "@/services/auth/authServiceMock";
 import { StudentProfileServiceMock } from "@/services/student/studentProfileServiceMock";
+import { ProfileAvatarPicker } from "./profile-avatar-picker";
 import { profileInputClass } from "./profile-section";
 
 const labelClassName =
@@ -24,26 +33,81 @@ function touchField(
 
 type Props = {
   embedded?: boolean;
+  hideActions?: boolean;
+  formRef?: RefObject<HTMLFormElement | null>;
+  resetWhen?: boolean;
+  guardianProfileId?: string;
+  demoParam?: string | null;
+  onSubmitStateChange?: (state: {
+    loading: boolean;
+    usernameLoading: boolean;
+  }) => void;
   onSuccess?: () => void;
   onCancel?: () => void;
 };
 
+const INITIAL_FORM = {
+  firstName: "",
+  lastName: "",
+  relationship: "",
+  birthDate: "",
+  cpf: "",
+  city: "",
+  state: "DF",
+  phone: "",
+  password: "",
+  confirmPassword: "",
+  avatarUrl: "",
+};
+
 export function RegisterPilotForm({
   embedded = false,
+  hideActions = false,
+  formRef,
+  resetWhen,
+  guardianProfileId = "",
+  demoParam = null,
+  onSubmitStateChange,
   onSuccess,
   onCancel,
 }: Props) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [relationship, setRelationship] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [phone, setPhone] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState(INITIAL_FORM.firstName);
+  const [lastName, setLastName] = useState(INITIAL_FORM.lastName);
+  const [relationship, setRelationship] = useState(INITIAL_FORM.relationship);
+  const [birthDate, setBirthDate] = useState(INITIAL_FORM.birthDate);
+  const [cpf, setCpf] = useState(INITIAL_FORM.cpf);
+  const [city, setCity] = useState(INITIAL_FORM.city);
+  const [state, setState] = useState(INITIAL_FORM.state);
+  const [phone, setPhone] = useState(INITIAL_FORM.phone);
+  const [password, setPassword] = useState(INITIAL_FORM.password);
+  const [confirmPassword, setConfirmPassword] = useState(INITIAL_FORM.confirmPassword);
+  const [avatarUrl, setAvatarUrl] = useState(INITIAL_FORM.avatarUrl);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
+
+  useEffect(() => {
+    if (resetWhen === false) return;
+    setFirstName(INITIAL_FORM.firstName);
+    setLastName(INITIAL_FORM.lastName);
+    setRelationship(INITIAL_FORM.relationship);
+    setBirthDate(INITIAL_FORM.birthDate);
+    setCpf(INITIAL_FORM.cpf);
+    setCity(INITIAL_FORM.city);
+    setState(INITIAL_FORM.state);
+    setPhone(INITIAL_FORM.phone);
+    setPassword(INITIAL_FORM.password);
+    setConfirmPassword(INITIAL_FORM.confirmPassword);
+    setAvatarUrl(INITIAL_FORM.avatarUrl);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setLoading(false);
+    setSubmitted(false);
+    setTouched({});
+  }, [resetWhen]);
 
   const formValues = useMemo(
     () => ({
@@ -55,6 +119,9 @@ export function RegisterPilotForm({
       city,
       state,
       phone,
+      password,
+      confirmPassword,
+      avatarUrl,
     }),
     [
       firstName,
@@ -65,6 +132,9 @@ export function RegisterPilotForm({
       city,
       state,
       phone,
+      password,
+      confirmPassword,
+      avatarUrl,
     ]
   );
 
@@ -73,33 +143,77 @@ export function RegisterPilotForm({
     [formValues]
   );
 
-  const suggestedUsername = useMemo(
-    () => StudentProfileServiceMock.buildRegisterPilotUsername(firstName, lastName),
-    [firstName, lastName]
-  );
+  const namesComplete =
+    firstName.trim().length > 0 && lastName.trim().length > 0;
+
+  const { username: suggestedUsername, loading: usernameLoading } =
+    useSuggestedUsername(firstName, lastName, namesComplete);
+
+  const birthDateIso = useMemo(() => brazilDateToIso(birthDate), [birthDate]);
 
   const autoCategory = useMemo(
-    () => StudentProfileServiceMock.getAutoPilotCategory(birthDate),
-    [birthDate]
+    () =>
+      birthDateIso
+        ? StudentProfileServiceMock.getAutoPilotCategory(birthDateIso)
+        : null,
+    [birthDateIso]
   );
 
   const showError = (key: FieldKey) =>
     Boolean(submitted || touched[key]) && errors[key];
 
+  useEffect(() => {
+    onSubmitStateChange?.({ loading, usernameLoading });
+  }, [loading, usernameLoading, onSubmitStateChange]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setSubmitError(null);
+    if (usernameLoading || !suggestedUsername) return;
     if (StudentProfileServiceMock.hasRegisterPilotErrors(errors)) return;
+    if (!AuthServiceMock.isPasswordValid(password)) return;
 
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      onSuccess?.();
-    }, 700);
+    void getAppServices()
+      .studentProfile.registerLinkedPilot(
+        demoParam,
+        guardianProfileId,
+        formValues,
+        suggestedUsername,
+      )
+      .then(() => {
+        onSuccess?.();
+      })
+      .catch((err) => {
+        setSubmitError(
+          err instanceof Error
+            ? err.message
+            : "Não foi possível cadastrar o piloto.",
+        );
+      })
+      .finally(() => setLoading(false));
   };
 
   const form = (
-        <form className={embedded ? "space-y-5" : "mt-8 space-y-5"} onSubmit={handleSubmit} noValidate>
+        <form
+          ref={formRef}
+          id={hideActions ? "register-pilot-form" : undefined}
+          className={embedded ? "space-y-5" : "mt-8 space-y-5"}
+          onSubmit={handleSubmit}
+          noValidate
+        >
+          <div className="flex flex-col items-center">
+            <ProfileAvatarPicker
+              avatarUrl={avatarUrl}
+              name={[firstName, lastName].filter(Boolean).join(" ") || "Novo piloto"}
+              onChange={setAvatarUrl}
+              localOnly
+              size={88}
+            />
+            <p className="mt-2 text-[12px] text-neutral-500">Foto do piloto</p>
+          </div>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <span className={labelClassName}>Nome</span>
@@ -134,11 +248,91 @@ export function RegisterPilotForm({
               readOnly
               value={suggestedUsername}
               placeholder="nome.sobrenome"
+              aria-describedby="register-pilot-username-hint"
+              aria-busy={usernameLoading}
               className={`mt-2 ${profileInputClass} cursor-default bg-neutral-50 text-neutral-700`}
             />
-            <p className="mt-2 text-[12px] text-neutral-500">
-              Gerado automaticamente a partir do nome e sobrenome.
-            </p>
+            {!namesComplete || usernameLoading ? (
+              <p
+                id="register-pilot-username-hint"
+                className="mt-2 text-[12px] text-neutral-500"
+              >
+                {!namesComplete
+                  ? "Preencha nome e sobrenome para gerar o usuário."
+                  : "Verificando disponibilidade…"}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={labelClassName}>Senha de acesso</span>
+              <PasswordRulesTooltip />
+            </div>
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? "text" : "password"}
+                className={`${profileInputClass} pr-11`}
+                value={password}
+                onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
+                onBlur={() => touchField(setTouched, "password")}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? (
+                  <HiEyeSlash className="h-5 w-5" aria-hidden />
+                ) : (
+                  <HiEye className="h-5 w-5" aria-hidden />
+                )}
+              </button>
+            </div>
+            {showError("password") ? (
+              <FieldError message={errors.password} />
+            ) : submitted && password && !AuthServiceMock.isPasswordValid(password) ? (
+              <ul className="mt-2 space-y-1">
+                {AuthServiceMock.getFailedPasswordRuleLabels(password).map((msg) => (
+                  <li key={msg}>
+                    <FieldError message={msg} />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
+          <div>
+            <span className={labelClassName}>Confirmar senha</span>
+            <div className="relative mt-2">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                className={`${profileInputClass} pr-11`}
+                value={confirmPassword}
+                onChange={(e) =>
+                  setConfirmPassword(e.target.value.replace(/\s/g, ""))
+                }
+                onBlur={() => touchField(setTouched, "confirmPassword")}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showConfirmPassword ? (
+                  <HiEyeSlash className="h-5 w-5" aria-hidden />
+                ) : (
+                  <HiEye className="h-5 w-5" aria-hidden />
+                )}
+              </button>
+            </div>
+            {showError("confirmPassword") ? (
+              <FieldError message={errors.confirmPassword} />
+            ) : null}
           </div>
 
           <div>
@@ -161,21 +355,18 @@ export function RegisterPilotForm({
 
           <div>
             <span className={labelClassName}>Data de nascimento</span>
-            <div className="mt-2">
-              <SettingsDatePicker
-                aria-label="Data de nascimento do piloto"
-                value={birthDate}
-                onChange={(value) => {
-                  setBirthDate(value);
-                  touchField(setTouched, "birthDate");
-                }}
-                fromYear={new Date().getFullYear() - 20}
-                toYear={new Date().getFullYear()}
-                disableFuture
-                lowercaseLabel
-                placeholder="selecionar data"
-              />
-            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              className={`mt-2 ${profileInputClass}`}
+              value={birthDate}
+              onChange={(e) =>
+                setBirthDate(formatBrazilDateInput(e.target.value))
+              }
+              onBlur={() => touchField(setTouched, "birthDate")}
+              placeholder="dd/mm/aaaa"
+              maxLength={10}
+            />
             {showError("birthDate") ? (
               <FieldError message={errors.birthDate} />
             ) : null}
@@ -189,7 +380,7 @@ export function RegisterPilotForm({
               value={
                 autoCategory
                   ? StudentProfileServiceMock.getCategoryLabel(autoCategory.value)
-                  : birthDate
+                  : birthDateIso
                     ? "—"
                     : ""
               }
@@ -263,24 +454,28 @@ export function RegisterPilotForm({
             {showError("phone") ? <FieldError message={errors.phone} /> : null}
           </div>
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-xl bg-accent px-5 py-3.5 text-[12px] font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_rgba(13,31,60,0.22)] transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
-            >
-              {loading ? "Cadastrando…" : "Cadastrar piloto"}
-            </button>
-            {onCancel ? (
+          {submitError ? <FieldError message={submitError} /> : null}
+
+          {!hideActions ? (
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <button
-                type="button"
-                onClick={onCancel}
-                className="inline-flex items-center justify-center rounded-xl border border-[rgba(17,17,17,0.1)] px-5 py-3.5 text-[12px] font-semibold text-[#0d1f3c] transition hover:border-accent/25"
+                type="submit"
+                disabled={loading || usernameLoading}
+                className="rounded-xl bg-accent px-5 py-3.5 text-[12px] font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_rgba(13,31,60,0.22)] transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
               >
-                Cancelar
+                {loading ? "Cadastrando…" : "Cadastrar piloto"}
               </button>
-            ) : null}
-          </div>
+              {onCancel ? (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="inline-flex items-center justify-center rounded-xl border border-[rgba(17,17,17,0.1)] px-5 py-3.5 text-[12px] font-semibold text-[#0d1f3c] transition hover:border-accent/25"
+                >
+                  Cancelar
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </form>
   );
 
@@ -288,12 +483,10 @@ export function RegisterPilotForm({
     return (
       <div className="w-full">
         <p className="mb-6 text-[14px] leading-relaxed text-neutral-600">
-          Cadastre um piloto vinculado à sua conta de responsável. A categoria é
-          definida automaticamente pela data de nascimento.
+          Cadastre um piloto vinculado à sua conta. A categoria é definida
+          automaticamente pela data de nascimento (até 18 anos).
         </p>
-        <div className="rounded-2xl border border-[rgba(17,17,17,0.06)] bg-white p-5 md:p-6">
-          {form}
-        </div>
+        {form}
       </div>
     );
   }

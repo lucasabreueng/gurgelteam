@@ -1,15 +1,6 @@
-import { ScheduleBlocksRepositoryMock } from "@/repositories/schedule/ScheduleBlocksRepositoryMock";
+import { createScheduleBlocksService } from "@/services/schedule/scheduleBlocksService";
 
-export const ScheduleBlocksServiceMock = {
-  getAllScheduleSlotsForDate:
-    ScheduleBlocksRepositoryMock.getAllScheduleSlotsForDate,
-  listScheduleBlocks: ScheduleBlocksRepositoryMock.listScheduleBlocks,
-  getBlocksForDate: ScheduleBlocksRepositoryMock.getBlocksForDate,
-  getBlockedSlotIdsForDate: ScheduleBlocksRepositoryMock.getBlockedSlotIdsForDate,
-  isDateFullyBlocked: ScheduleBlocksRepositoryMock.isDateFullyBlocked,
-  saveScheduleBlock: ScheduleBlocksRepositoryMock.saveScheduleBlock,
-  removeScheduleBlock: ScheduleBlocksRepositoryMock.removeScheduleBlock,
-  clearBlocksForDate: ScheduleBlocksRepositoryMock.clearBlocksForDate,
-};
+/** @deprecated Use getAppServices().scheduleBlocks */
+export const ScheduleBlocksServiceMock = createScheduleBlocksService();
 
-export type { ScheduleBlockEntry } from "@/repositories/schedule/ScheduleBlocksRepositoryMock";
+export type { ScheduleBlockEntry } from "@/services/schedule/scheduleBlocksService";

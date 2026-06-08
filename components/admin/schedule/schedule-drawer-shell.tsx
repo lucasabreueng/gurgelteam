@@ -5,10 +5,11 @@ import { HiArrowLeft, HiXMark } from "react-icons/hi2";
 import type { ReactNode } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { DRAWER_FOOTER_INNER_CLASS, DRAWER_FOOTER_SHELL_CLASS } from "@/components/ui/drawer-footer";
+import { adminDrawerHeaderSimpleClass } from "@/lib/design";
 
 /** Largura padrão dos drawers da agenda admin. */
 export const SCHEDULE_DRAWER_PANEL_CLASS =
-  "app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:w-[min(100%,480px)] lg:max-w-[480px] lg:shrink-0";
+  "app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[var(--ds-bg-panel)] shadow-2xl lg:w-[min(100%,480px)] lg:max-w-[480px] lg:shrink-0";
 
 type Props = {
   open: boolean;
@@ -74,17 +75,17 @@ export function ScheduleDrawerShell({
         aria-labelledby={headingId}
         className={panelClassName}
       >
-        <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-4 py-4 md:px-5">
+        <header className={adminDrawerHeaderSimpleClass}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2
                 id={headingId}
-                className="text-xl font-bold text-[#0d1f3c]"
+                className="text-xl font-bold text-[var(--ds-text-primary)]"
               >
                 {title}
               </h2>
               {description ? (
-                <div className="mt-1 text-sm text-neutral-600">{description}</div>
+                <div className="mt-1 text-sm text-[var(--ds-text-secondary)]">{description}</div>
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -92,7 +93,7 @@ export function ScheduleDrawerShell({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100"
+                  className="rounded-lg p-2 text-[var(--ds-text-muted)] hover:bg-[var(--ds-bg-muted)]"
                   aria-label="Voltar"
                 >
                   <HiArrowLeft className="h-5 w-5" />
@@ -104,7 +105,7 @@ export function ScheduleDrawerShell({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100"
+                className="rounded-lg p-2 text-[var(--ds-text-muted)] hover:bg-[var(--ds-bg-muted)]"
                 aria-label="Fechar"
               >
                 <HiXMark className="h-5 w-5" />

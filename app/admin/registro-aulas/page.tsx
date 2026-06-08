@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LessonRegistrationPage } from "@/components/admin/lesson-registration/lesson-registration-page";
 
 export const metadata = {
@@ -7,5 +8,9 @@ export const metadata = {
 };
 
 export default function AdminRegistroAulasPage() {
-  return <LessonRegistrationPage />;
+  return (
+    <Suspense fallback={null}>
+      <LessonRegistrationPage />
+    </Suspense>
+  );
 }

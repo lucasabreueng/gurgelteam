@@ -1,4 +1,10 @@
 import type { StockLevel } from "@/lib/contracts/parts";
+import {
+  adminBadgeErrorClass,
+  adminBadgeSuccessClass,
+  adminBadgeWarningClass,
+} from "@/lib/design";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const CONFIG: Record<
   StockLevel,
@@ -6,29 +12,26 @@ const CONFIG: Record<
 > = {
   ok: {
     label: "Estoque normal",
-    dot: "bg-emerald-500",
-    className: "bg-emerald-50 text-emerald-800 ring-emerald-200/60",
+    dot: "bg-[var(--ds-success-text)]",
+    className: adminBadgeSuccessClass,
   },
   low: {
     label: "Estoque baixo",
-    dot: "bg-amber-400",
-    className: "bg-amber-50 text-amber-900 ring-amber-200/60",
+    dot: "bg-[var(--ds-warning-text)]",
+    className: adminBadgeWarningClass,
   },
   critical: {
     label: "Estoque crítico",
-    dot: "bg-red-500",
-    className: "bg-red-50 text-red-800 ring-red-200/60",
+    dot: "bg-[var(--ds-error-text)]",
+    className: adminBadgeErrorClass,
   },
 };
 
 export function StockStatusBadge({ level }: { level: StockLevel }) {
   const c = CONFIG[level];
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ${c.className}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden />
+    <StatusBadge className={c.className} dotClassName={c.dot}>
       {c.label}
-    </span>
+    </StatusBadge>
   );
 }

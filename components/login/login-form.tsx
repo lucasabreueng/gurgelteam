@@ -2,47 +2,83 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { HiEye, HiEyeSlash } from "react-icons/hi2";
+import { SettingsCheckbox } from "@/components/admin/settings/settings-checkbox";
 import { FieldError } from "@/components/cadastro/field-error";
+import { apiFetch } from "@/lib/api/http-client";
+import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
+import type { LoginResponse } from "@/lib/contracts/api/v1/auth.api.schemas";
+import { queryKeys } from "@/lib/query/keys";
+import { AuthRepositoryHttp } from "@/repositories/auth/AuthRepositoryHttp";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
-import { SocialLoginButton } from "./social-login-button";
 
 export function LoginForm() {
   const loginConfig = AuthServiceMock.getLoginConfig();
   const router = useRouter();
-  const [identifier, setIdentifier] = useState<string>(
-    loginConfig.defaultIdentifier,
-  );
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [identifierError, setIdentifierError] = useState<string | undefined>();
+  const [passwordError, setPasswordError] = useState<string | undefined>();
+  const [formError, setFormError] = useState<string | undefined>();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const loginErrors = AuthServiceMock.validateLoginForm({
       identifier,
       password,
       remember,
     });
+
+    setIdentifierError(loginErrors.identifier);
+    setPasswordError(loginErrors.password);
+    setFormError(undefined);
+
     if (loginErrors.identifier || loginErrors.password) {
-      setIdentifierError(loginErrors.identifier);
       return;
     }
 
-    setIdentifierError(undefined);
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      router.push("/piloto");
-    }, 600);
-  };
 
-  const handleSocial = (provider: string) => {
-    console.info(`[mock] Login social: ${provider}`);
-    router.push("/piloto");
+    const result = await apiFetch<LoginResponse>("/api/v1/auth/login", {
+      method: "POST",
+      credentials: "include",
+      body: JSON.stringify({ identifier, password, remember }),
+    });
+
+    setLoading(false);
+
+    if (result.success && result.data) {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.session() });
+      await queryClient.prefetchQuery({
+        queryKey: queryKeys.auth.session(),
+        queryFn: () => AuthRepositoryHttp.getSession(),
+      });
+
+      const nextPath = searchParams.get("next");
+      const session = queryClient.getQueryData<Awaited<
+        ReturnType<typeof AuthRepositoryHttp.getSession>
+      >>(queryKeys.auth.session());
+      const destination = resolvePostLoginPath(
+        result.data.user,
+        nextPath,
+        session?.modulePermissions,
+      );
+      router.push(destination);
+      return;
+    }
+
+    setFormError(
+      result.error?.message ??
+        result.message ??
+        "E-mail/usuário ou senha incorretos.",
+    );
   };
 
   return (
@@ -67,6 +103,7 @@ export function LoginForm() {
               onChange={(e) => {
                 setIdentifier(e.target.value);
                 if (identifierError) setIdentifierError(undefined);
+                if (formError) setFormError(undefined);
               }}
               placeholder="seu@email.com ou nome.sobrenome"
               className="mt-2 w-full rounded-xl border border-[rgba(17,17,17,0.12)] bg-[#fafbfc] px-4 py-3.5 text-[15px] text-[#111] outline-none transition placeholder:text-neutral-400 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15"
@@ -82,9 +119,12 @@ export function LoginForm() {
               <input
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError(undefined);
+                  if (formError) setFormError(undefined);
+                }}
                 placeholder="••••••••"
                 className="w-full rounded-xl border border-[rgba(17,17,17,0.12)] bg-[#fafbfc] py-3.5 pl-4 pr-12 text-[15px] text-[#111] outline-none transition placeholder:text-neutral-400 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15"
               />
@@ -101,20 +141,26 @@ export function LoginForm() {
                 )}
               </button>
             </div>
+            {passwordError ? <FieldError message={passwordError} /> : null}
           </label>
 
+          {formError ? <FieldError message={formError} /> : null}
+
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-2.5">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2.5">
+              <SettingsCheckbox
                 checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="h-4 w-4 rounded border-neutral-300 text-accent focus:ring-accent/30"
+                onChange={setRemember}
+                aria-label="Lembrar de mim"
               />
-              <span className="text-[13px] font-medium text-neutral-700">
+              <button
+                type="button"
+                onClick={() => setRemember((v) => !v)}
+                className="text-[13px] font-medium text-neutral-700"
+              >
                 Lembrar de mim
-              </span>
-            </label>
+              </button>
+            </div>
             <Link
               href={loginConfig.recoveryHref}
               className="text-[13px] font-semibold text-[#c41e3a] transition hover:underline"
@@ -131,22 +177,6 @@ export function LoginForm() {
             {loading ? "Entrando…" : "Entrar"}
           </button>
         </form>
-
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center" aria-hidden>
-            <div className="w-full border-t border-[rgba(17,17,17,0.08)]" />
-          </div>
-          <p className="relative mx-auto w-fit bg-white px-4 text-[12px] font-semibold uppercase tracking-wider text-neutral-500">
-            ou continue com
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <SocialLoginButton
-            provider="google"
-            onClick={() => handleSocial("google")}
-          />
-        </div>
 
         <p className="mt-8 text-center text-[14px] text-neutral-600">
           {loginConfig.signupPrompt}{" "}

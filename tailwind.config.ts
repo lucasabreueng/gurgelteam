@@ -6,6 +6,7 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./sections/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -19,6 +20,19 @@ const config: Config = {
         foreground: "var(--color-text)",
         accent: "var(--color-accent)",
         divider: "var(--color-divider)",
+        ds: {
+          page: "var(--ds-bg-page)",
+          panel: "var(--ds-bg-panel)",
+          card: "var(--ds-bg-card)",
+          muted: "var(--ds-bg-muted)",
+          input: "var(--ds-bg-input)",
+          elevated: "var(--ds-bg-elevated)",
+          border: "var(--ds-border)",
+          "text-primary": "var(--ds-text-primary)",
+          "text-body": "var(--ds-text-body)",
+          "text-secondary": "var(--ds-text-secondary)",
+          "text-muted": "var(--ds-text-muted)",
+        },
       },
       maxWidth: {
         container: "1300px",
@@ -28,10 +42,9 @@ const config: Config = {
         card: "20px",
       },
       backgroundImage: {
-        "accent-gradient":
-          "linear-gradient(100deg, var(--color-accent) 0%, #0a1630 50%, var(--color-accent) 100%)",
-        "accent-gradient-soft":
-          "linear-gradient(110deg, var(--color-accent) 0.26%, #0a1630 99.99%)",
+        /* Mantidos por compatibilidade — cor sólida, sem gradiente */
+        "accent-gradient": "none",
+        "accent-gradient-soft": "none",
       },
       keyframes: {
         "spin-slow": {

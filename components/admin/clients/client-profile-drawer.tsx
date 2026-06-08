@@ -1,53 +1,79 @@
 "use client";
 
-import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
-
-
+import { useQuery } from "@tanstack/react-query";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { queryKeys } from "@/lib/query/keys";
 import { useEffect } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
-
 import { ClassesHistoryTable } from "./classes-history-table";
 import { ClientProfileHeader } from "./client-profile-header";
 import { FeedbackHistoryTable } from "./feedback-history-table";
 import { FinancialSummary } from "./financial-summary";
-import { HealthIndicators } from "./health-indicators";
-import { PerformanceOverview } from "./performance-overview";
 import { ProfileQuickActionsFooter } from "./profile-quick-actions-footer";
 import {
   DRAWER_FOOTER_INNER_CLASS,
   DRAWER_FOOTER_SHELL_CLASS,
 } from "@/components/ui/drawer-footer";
+import {
+  adminBodyClass,
+  adminDrawerHeaderSimpleClass,
+  adminDrawerOverlayLightClass,
+  adminDrawerPanelFormClass,
+  adminDrawerTitleClass,
+} from "@/lib/design";
 
 type Props = {
   clientId: string | null;
   onClose: () => void;
+  onScheduleClass?: (clientId: string) => void;
+  onOpenRegistration?: (clientId: string) => void;
+  onGenerateCharge?: (clientId: string) => void;
+  onOpenTelemetry?: (clientId: string) => void;
 };
 
-export function ClientProfileDrawer({ clientId, onClose }: Props) {
-  const client = clientId ? ClientsServiceMock.getListItem(clientId) : null;
-  const profile = clientId ? ClientsServiceMock.getProfile(clientId) : null;
-  useDrawerBodyLock(Boolean(clientId));
+export function ClientProfileDrawer({
+  clientId,
+  onClose,
+  onScheduleClass,
+  onOpenRegistration,
+  onGenerateCharge,
+  onOpenTelemetry,
+}: Props) {
+  const clients = getAppServices().clients;
+  const open = Boolean(clientId);
 
+  const { data: client, isPending: clientLoading } = useQuery({
+    queryKey: [...queryKeys.clients.list(), "item", clientId] as const,
+    queryFn: () => clients.getListItem(clientId!),
+    enabled: open,
+  });
+  const { data: profile, isPending: profileLoading } = useQuery({
+    queryKey: [...queryKeys.clients.list(), "profile", clientId] as const,
+    queryFn: () => clients.getProfile(clientId!),
+    enabled: open && Boolean(client),
+  });
+
+  useDrawerBodyLock(open);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      };
-  }, [clientId, onClose]);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
-  if (!clientId || !client || !profile) return null;
+  if (!open) return null;
+
+  const loading = clientLoading || profileLoading || !client || !profile;
 
   return (
-    <div className="fixed inset-0 z-[200] flex justify-end">
+    <div className="fixed inset-0 z-[230] flex justify-end">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+        className={adminDrawerOverlayLightClass}
         aria-label="Fechar perfil"
         onClick={onClose}
       />
@@ -55,44 +81,58 @@ export function ClientProfileDrawer({ clientId, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="client-profile-title"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-[-12px_0_48px_rgba(13,31,60,0.2)]"
+        className={`${adminDrawerPanelFormClass} lg:max-w-[min(560px,92vw)]`}
       >
-        <header className="shrink-0 flex items-center justify-between gap-4 border-b border-[rgba(17,17,17,0.08)] bg-white/95 px-5 py-4 backdrop-blur-md">
-          <p
-            id="client-profile-title"
-            className="text-sm font-bold uppercase tracking-wider text-neutral-500"
-          >
-            Perfil do piloto
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.1)] text-[#0d1f3c] transition hover:bg-[#fafbfc]"
-            aria-label="Fechar"
-          >
-            <HiXMark className="h-5 w-5" />
-          </button>
+        <header className={adminDrawerHeaderSimpleClass}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 id="client-profile-title" className={adminDrawerTitleClass}>
+                Perfil do piloto
+              </h2>
+              {client ? (
+                <p className={`mt-1 truncate ${adminBodyClass}`}>{client.name}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl p-2 text-neutral-500 hover:bg-neutral-100"
+              aria-label="Fechar"
+            >
+              <HiXMark className="h-5 w-5" />
+            </button>
+          </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 md:px-6">
-          <div className="space-y-8">
-            <ClientProfileHeader client={client} />
-            <PerformanceOverview performance={profile.performance} />
-            <ClassesHistoryTable rows={profile.classesHistory} />
-            <FeedbackHistoryTable feedbacks={profile.feedbacks} />
-            <FinancialSummary financial={profile.financial} />
-            <HealthIndicators flags={profile.health} />
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {loading ? (
+            <div className="space-y-4" aria-busy="true" aria-label="Carregando perfil">
+              <div className="h-24 animate-pulse rounded-2xl bg-white/80" />
+              <div className="h-32 animate-pulse rounded-2xl bg-white/80" />
+              <div className="h-40 animate-pulse rounded-2xl bg-white/80" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <ClientProfileHeader client={client} />
+              <ClassesHistoryTable rows={profile.classesHistory} />
+              <FeedbackHistoryTable feedbacks={profile.feedbacks} />
+              <FinancialSummary financial={profile.financial} />
+            </div>
+          )}
         </div>
 
-        <footer className={DRAWER_FOOTER_SHELL_CLASS}>
-          <div className={DRAWER_FOOTER_INNER_CLASS}>
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Ações rápidas
-            </p>
-            <ProfileQuickActionsFooter />
-          </div>
-        </footer>
+        {!loading && clientId ? (
+          <footer className={DRAWER_FOOTER_SHELL_CLASS}>
+            <div className={DRAWER_FOOTER_INNER_CLASS}>
+              <ProfileQuickActionsFooter
+                onScheduleClass={() => onScheduleClass?.(clientId)}
+                onRegisterFeedback={() => onOpenRegistration?.(clientId)}
+                onSendResult={() => onOpenTelemetry?.(clientId)}
+                onGenerateCharge={() => onGenerateCharge?.(clientId)}
+              />
+            </div>
+          </footer>
+        ) : null}
       </aside>
     </div>
   );

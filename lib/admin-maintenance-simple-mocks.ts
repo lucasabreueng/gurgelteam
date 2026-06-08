@@ -1,12 +1,16 @@
 import type {
   InspectionItemKey,
-  KartOperationalStatus,
+  MaintenanceFleetStatus,
   MaintenanceActivity,
   MaintenanceFleetKart,
   MaintenanceSimpleKpi,
   MaintenanceSimpleFilterState,
   SimpleMaintenanceType,
 } from "@/lib/contracts/maintenance/simple";
+import {
+  buildCorrectiveMaintenanceSummary,
+  buildMaintenanceFleetKart,
+} from "@/lib/maintenance/build-maintenance-fleet-kart";
 import type {
   ChecklistHistoryRow,
   ChecklistListFilterState,
@@ -206,7 +210,7 @@ export const CHECKLIST_HISTORY: ChecklistHistoryRow[] = [
     date: "22 mai",
     kartId: "k02",
     kartNumber: 2,
-    type: "pre_campeonato",
+    type: "pre_evento",
     responsibleName: "André Mendes",
     finalStatus: "reprovado",
     failedCount: 2,
@@ -242,7 +246,7 @@ export const COMPLETE_CHECKLIST_RECORDS: CompleteChecklistRecord[] = [
     dateIso: "2026-05-22",
     responsibleId: "andre",
     responsibleName: "André Mendes",
-    type: "pre_campeonato",
+    type: "pre_evento",
     finalStatus: "reprovado",
     failedCount: 2,
     evaluations: [],
@@ -250,56 +254,102 @@ export const COMPLETE_CHECKLIST_RECORDS: CompleteChecklistRecord[] = [
 ];
 
 export const MAINTENANCE_SIMPLE_FLEET: MaintenanceFleetKart[] = [
-  {
+  buildMaintenanceFleetKart({
     id: "k01",
     number: 1,
     photo: "/images/gallery-1.jpg",
-    status: "operacional",
+    status: "disponivel",
+    engineHours: 12,
+    preventiveMaintenanceHours: {
+      oleo: 10,
+      corrente: 0,
+      coroa_pinhao: 0,
+      revisao_motor: 0,
+      rolamentos: 0,
+      cabo_acelerador: 0,
+    },
     lastInspection: "Hoje",
     lastMaintenance: "12 mai",
-    nextRevision: "15 jun",
     monthlyCostCents: 42000,
-  },
-  {
+  }),
+  buildMaintenanceFleetKart({
     id: "k02",
     number: 2,
     photo: "/images/gallery-2.jpg",
-    status: "operacional",
+    status: "disponivel",
+    engineHours: 38,
+    preventiveMaintenanceHours: {
+      oleo: 35,
+      corrente: 20,
+      coroa_pinhao: 30,
+      revisao_motor: 0,
+      rolamentos: 0,
+      cabo_acelerador: 20,
+    },
     lastInspection: "Ontem",
     lastMaintenance: "28 abr",
-    nextRevision: "20 jun",
     monthlyCostCents: 18500,
-  },
-  {
+  }),
+  buildMaintenanceFleetKart({
     id: "k03",
     number: 3,
     photo: "/images/gallery-3.jpg",
-    status: "atencao",
+    status: "disponivel",
+    engineHours: 41,
+    preventiveMaintenanceHours: {
+      oleo: 40,
+      corrente: 20,
+      coroa_pinhao: 30,
+      revisao_motor: 0,
+      rolamentos: 0,
+      cabo_acelerador: 20,
+    },
     lastInspection: "Hoje",
     lastMaintenance: "05 mai",
-    nextRevision: "02 jun",
     monthlyCostCents: 89000,
-  },
-  {
+    correctiveMaintenance: buildCorrectiveMaintenanceSummary({
+      openChecklistLabel: "Checklist — Revisão periódica",
+    }),
+  }),
+  buildMaintenanceFleetKart({
     id: "k04",
     number: 4,
     photo: "/images/gallery-4.jpg",
-    status: "operacional",
+    status: "disponivel",
+    engineHours: 22,
+    preventiveMaintenanceHours: {
+      oleo: 20,
+      corrente: 20,
+      coroa_pinhao: 0,
+      revisao_motor: 0,
+      rolamentos: 0,
+      cabo_acelerador: 0,
+    },
     lastInspection: "18 mai",
     lastMaintenance: "10 mai",
-    nextRevision: "10 jul",
     monthlyCostCents: 31200,
-  },
-  {
+  }),
+  buildMaintenanceFleetKart({
     id: "k05",
     number: 5,
     photo: "/images/gallery-5.jpg",
-    status: "em_manutencao",
+    status: "manutencao",
+    engineHours: 67,
+    preventiveMaintenanceHours: {
+      oleo: 65,
+      corrente: 60,
+      coroa_pinhao: 60,
+      revisao_motor: 50,
+      rolamentos: 40,
+      cabo_acelerador: 60,
+    },
     lastInspection: "16 mai",
     lastMaintenance: "Em andamento",
-    nextRevision: "—",
     monthlyCostCents: 156000,
-  },
+    correctiveMaintenance: buildCorrectiveMaintenanceSummary({
+      openOrderLabel: "Corretiva — Troca de corrente",
+    }),
+  }),
 ];
 
 export const MAINTENANCE_RECENT_ACTIVITY: MaintenanceActivity[] = [
@@ -369,12 +419,11 @@ export const MAINTENANCE_RECENT_ACTIVITY: MaintenanceActivity[] = [
 ];
 
 export const MAINTENANCE_FILTER_KART_STATUS: {
-  value: KartOperationalStatus | "";
+  value: MaintenanceFleetStatus | "";
   label: string;
 }[] = [
   { value: "", label: "Todos os status" },
-  { value: "operacional", label: "Operacional" },
-  { value: "atencao", label: "Atenção" },
+  { value: "disponivel", label: "Disponível" },
   { value: "em_manutencao", label: "Em manutenção" },
   { value: "indisponivel", label: "Indisponível" },
 ];

@@ -42,7 +42,7 @@ export function DrePeriodFilterBar({ filter, onChange }: Props) {
   return (
     <>
       <div
-        className={`${FINANCIAL_PERIOD_FILTER_BAR_CLASS} flex w-full flex-wrap justify-end gap-2`}
+        className={`${FINANCIAL_PERIOD_FILTER_BAR_CLASS} flex w-full flex-wrap justify-end gap-2 max-md:hidden`}
       >
         {DRE_PERIOD_OPTIONS.map((option) => (
           <button
@@ -64,6 +64,23 @@ export function DrePeriodFilterBar({ filter, onChange }: Props) {
         </button>
       </div>
 
+      <div className="flex w-full justify-end md:hidden">
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className={financialPeriodCustomButtonClass(filter.key === "custom")}
+          aria-label="Filtrar período do DRE"
+        >
+          <HiFunnel className="h-4 w-4" aria-hidden />
+          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider">
+            {filter.key === "custom"
+              ? "Período customizado"
+              : DRE_PERIOD_OPTIONS.find((o) => o.key === filter.key)?.label ??
+                "Período"}
+          </span>
+        </button>
+      </div>
+
       <ScheduleActionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -73,11 +90,27 @@ export function DrePeriodFilterBar({ filter, onChange }: Props) {
         maxWidthClass="max-w-md"
         contentOverflow="visible"
         footer={
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            <div className="grid grid-cols-2 gap-2 sm:hidden">
+              {DRE_PERIOD_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => {
+                    selectPreset(option.key);
+                    setModalOpen(false);
+                  }}
+                  className={financialPeriodPresetButtonClass(filter.key === option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="btn-outline-sm bg-white"
+              className="btn-outline-sm"
             >
               Cancelar
             </button>
@@ -89,12 +122,13 @@ export function DrePeriodFilterBar({ filter, onChange }: Props) {
             >
               Aplicar
             </button>
+            </div>
           </div>
         }
       >
         <div className="space-y-4">
           <label className="block space-y-2">
-            <span className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
               Data inicial
             </span>
             <SettingsDatePicker
@@ -105,7 +139,7 @@ export function DrePeriodFilterBar({ filter, onChange }: Props) {
             />
           </label>
           <label className="block space-y-2">
-            <span className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
               Data final
             </span>
             <SettingsDatePicker

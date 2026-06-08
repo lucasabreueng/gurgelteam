@@ -7,21 +7,20 @@ export type AdminNavKey =
   | "agenda"
   | "registroAulas"
   | "alunos"
-  | "instrutores"
+  | "equipe"
   | "karts"
   | "manutencao"
   | "estoque"
   | "telemetria"
-  | "campeonatos"
   | "financeiro"
-  | "relatorios"
   | "configuracoes";
 
 export const ADMIN_NAV: { key: AdminNavKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "agenda", label: "Agenda" },
   { key: "registroAulas", label: "Registro de aulas" },
-  { key: "alunos", label: "Alunos" },
+  { key: "alunos", label: "Clientes" },
+  { key: "equipe", label: "Equipe" },
   { key: "karts", label: "Karts" },
   { key: "manutencao", label: "Manutenção" },
   { key: "estoque", label: "Estoque" },
@@ -282,16 +281,6 @@ export const KART_FLEET: KartUnit[] = [
   },
 ];
 
-export const CHAMPIONSHIP = {
-  event: "Copa Gurgel Team · Etapa 3",
-  stage: "Etapa 3 de 6",
-  registrationsOpen: true,
-  enrolled: 24,
-  capacity: 32,
-  countdown: "12 dias",
-  nextDate: "14 Jun 2025",
-};
-
 export const FINANCIAL = {
   monthlyRevenue: "R$ 48.500",
   ticketAvg: "R$ 285",
@@ -310,7 +299,6 @@ export const ADMIN_QUICK_ACTIONS: AdminQuickAction[] = [
   { key: "aluno", label: "Novo aluno", subtitle: "Cadastro rápido" },
   { key: "agenda", label: "Agendar aula", subtitle: "Grade operacional" },
   { key: "treino", label: "Abrir treino", subtitle: "Sessão ao vivo" },
-  { key: "camp", label: "Criar campeonato", subtitle: "Novo evento" },
-  { key: "feedback", label: "Registrar feedback", subtitle: "Instrutor → aluno" },
+  { key: "feedback", label: "Registrar feedback", subtitle: "Equipe → piloto" },
   { key: "tel", label: "Abrir telemetria", subtitle: "Análise de voltas" },
 ];

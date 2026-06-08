@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { AccountRole } from "@/lib/contracts/student/profile";
+import { resolveClientAvatarUrl } from "@/lib/client-avatar";
 
 export type SwitcherOption = {
   id: string;
@@ -51,7 +52,7 @@ export function ProfileSwitcher({ options, activeId, onSelect }: Props) {
                 }`}
               >
                 <Image
-                  src={opt.avatarUrl}
+                  src={resolveClientAvatarUrl(opt.avatarUrl)}
                   alt=""
                   fill
                   className="object-cover"

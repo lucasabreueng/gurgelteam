@@ -5,7 +5,6 @@ export type NavItemKey =
   | "agenda"
   | "evolucao"
   | "feedbacks"
-  | "plano"
   | "telemetria"
   | "resultados"
   | "materiais"
@@ -14,29 +13,21 @@ export type NavItemKey =
 
 export const STUDENT_NAV: { key: NavItemKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "agenda", label: "Agenda" },
-  { key: "evolucao", label: "Evolução" },
-  { key: "feedbacks", label: "Feedbacks" },
-  { key: "plano", label: "Plano de treino" },
+  { key: "agenda", label: "Reservar" },
   { key: "telemetria", label: "Telemetria" },
-  { key: "resultados", label: "Resultados" },
-  { key: "materiais", label: "Materiais" },
-  { key: "conquistas", label: "Conquistas" },
-  { key: "ranking", label: "Ranking interno" },
 ];
 
-/** Rotas do menu lateral (dashboard usa âncoras na página /piloto) */
+/** Rotas do menu lateral da área do piloto */
 export const STUDENT_NAV_HREF: Record<NavItemKey, string> = {
-  dashboard: "/piloto#section-dashboard",
-  agenda: "/piloto#section-agenda",
-  evolucao: "/piloto#section-evolucao",
-  feedbacks: "/piloto#section-feedbacks",
-  plano: "/piloto#section-plano",
+  dashboard: "/piloto",
+  agenda: "/piloto/reservar",
+  evolucao: "/piloto",
+  feedbacks: "/piloto",
   telemetria: "/piloto/telemetria",
-  resultados: "/piloto#section-resultados",
-  materiais: "/piloto#section-materiais",
-  conquistas: "/piloto#section-conquistas",
-  ranking: "/piloto#section-resultados",
+  resultados: "/piloto",
+  materiais: "/piloto",
+  conquistas: "/piloto",
+  ranking: "/piloto",
 };
 
 export const STUDENT_PROFILE = {
@@ -153,8 +144,8 @@ export const NEXT_ACTIVITIES: TimelineItem[] = [
 ];
 
 export const FEEDBACK = {
-  instructorName: "Gurgel",
-  instructorPhoto: "/images/team-3.png",
+  authorName: "Gurgel Team",
+  authorPhoto: "/images/team-3.png",
   dateLabel: "12 de Maio de 2025",
   commentary:
     "Sua trajetória no S3 apresentou uma evolução muito consistente desde a última sessão. A aproximação da curva está mais limpa, você conseguiu manter o kart mais estável até o apexe e o fechamento do traçado demonstra muito mais confiança e controle na saída. A aplicação de aceleração também ficou mais progressiva, reduzindo pequenas correções no volante e melhorando a transferência de velocidade para a reta seguinte.",
@@ -188,7 +179,7 @@ export const DEVELOPMENT_BY_TAB: Record<DevTabKey, DevelopmentTabPayload> = {
   foco: {
     title: "Estratégia e Performance",
     description:
-      "Check-in da sua próxima fase técnica com o instrutor responsável na pista da Gurgel Team.",
+      "Check-in da sua próxima fase técnica com a equipe Gurgel Team na pista.",
     progressPercent: 60,
     progressLabel: "Progresso do foco atual",
     checklist: [
@@ -196,7 +187,7 @@ export const DEVELOPMENT_BY_TAB: Record<DevTabKey, DevelopmentTabPayload> = {
       { id: "c2", label: "Estratégia de corrida", done: false },
       { id: "c3", label: "Defesa e ultrapassagem", done: false },
       { id: "c4", label: "Simulação de classificação", done: false },
-      { id: "c5", label: "Preparação para campeonatos", done: false },
+      { id: "c5", label: "Preparação para eventos", done: false },
     ],
   },
   proximos: {
@@ -624,18 +615,132 @@ export function telemetrySharedYExtent(
   return { min: minV, max: maxV };
 }
 
+export type AchievementCategory =
+  | "participacao"
+  | "evolucao"
+  | "desempenho"
+  | "consistencia";
+
+export const ACHIEVEMENT_CATEGORY_META: Record<
+  AchievementCategory,
+  { emoji: string; label: string }
+> = {
+  participacao: { emoji: "🏁", label: "Participação" },
+  evolucao: { emoji: "📈", label: "Evolução" },
+  desempenho: { emoji: "⚡", label: "Desempenho" },
+  consistencia: { emoji: "🎯", label: "Consistência" },
+};
+
 export type Achievement = {
   id: string;
   label: string;
+  description: string;
+  category: AchievementCategory;
   unlocked: boolean;
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: "primeira_aula", label: "Primeira aula", unlocked: true },
-  { id: "sub55", label: "Sub 55s", unlocked: true },
-  { id: "aulas5", label: "5 aulas", unlocked: false },
-  { id: "podio", label: "Pódio", unlocked: false },
-  { id: "consistencia", label: "Consistência", unlocked: false },
+  {
+    id: "primeira_bandeirada",
+    label: "Primeira Bandeirada",
+    description: "Complete sua primeira aula ou treino.",
+    category: "participacao",
+    unlocked: true,
+  },
+  {
+    id: "piloto_frequente",
+    label: "Piloto Frequente",
+    description: "Participe de 5 sessões.",
+    category: "participacao",
+    unlocked: true,
+  },
+  {
+    id: "veterano_pista",
+    label: "Veterano da Pista",
+    description: "Participe de 25 sessões.",
+    category: "participacao",
+    unlocked: false,
+  },
+  {
+    id: "sempre_presente",
+    label: "Sempre Presente",
+    description: "Compareça a 10 agendamentos consecutivos sem faltas.",
+    category: "participacao",
+    unlocked: false,
+  },
+  {
+    id: "em_evolucao",
+    label: "Em Evolução",
+    description:
+      "Reduza seu melhor tempo em 1 segundo em relação ao primeiro treino.",
+    category: "evolucao",
+    unlocked: true,
+  },
+  {
+    id: "ajuste_fino",
+    label: "Ajuste Fino",
+    description: "Melhore seu melhor tempo em 3 sessões consecutivas.",
+    category: "evolucao",
+    unlocked: false,
+  },
+  {
+    id: "aluno_aplicado",
+    label: "Aluno Aplicado",
+    description: "Complete todas as etapas do programa de treinamento.",
+    category: "evolucao",
+    unlocked: false,
+  },
+  {
+    id: "telemetria_na_veia",
+    label: "Telemetria na Veia",
+    description: "Analise seus dados de desempenho em 10 sessões diferentes.",
+    category: "evolucao",
+    unlocked: false,
+  },
+  {
+    id: "volta_rapida",
+    label: "Volta Rápida",
+    description: "Registre a melhor volta de uma bateria.",
+    category: "desempenho",
+    unlocked: true,
+  },
+  {
+    id: "top_3",
+    label: "Top 3",
+    description: "Finalize uma bateria entre os três primeiros.",
+    category: "desempenho",
+    unlocked: false,
+  },
+  {
+    id: "vitoria_pista",
+    label: "Vitória na Pista",
+    description: "Vença uma bateria.",
+    category: "desempenho",
+    unlocked: false,
+  },
+  {
+    id: "mestre_consistencia",
+    label: "Mestre da Consistência",
+    description:
+      "Faça 10 voltas consecutivas com variação inferior a 0,3s.",
+    category: "desempenho",
+    unlocked: false,
+  },
+  {
+    id: "ritmo_competidor",
+    label: "Ritmo de Competidor",
+    description: "Complete uma sessão inteira sem incidentes registrados.",
+    category: "consistencia",
+    unlocked: false,
+  },
+  {
+    id: "foco_total",
+    label: "Foco Total",
+    description:
+      "Participe de 3 meses consecutivos com pelo menos uma sessão por mês.",
+    category: "consistencia",
+    unlocked: false,
+  },
 ];
 
 /** Volta a volta (demo) — modal de detalhe do treino */
@@ -808,14 +913,13 @@ export type QuickAction = {
 };
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { key: "agenda", label: "Agendar aula", subtitle: "Escolha data e turma", href: "/reserva" },
+  { key: "agenda", label: "Agendar aula", subtitle: "Escolha data e horário", href: "/piloto/reservar" },
   { key: "pacote", label: "Comprar pacote", subtitle: "125cc ou F400" },
   {
     key: "coletivo",
     label: "Treino coletivo",
     subtitle: "Sessões em grupo",
   },
-  { key: "campeonato", label: "Campeonatos", subtitle: "Datas e categorias" },
   { key: "equipa", label: "Falar com a equipa", subtitle: "WhatsApp rápido" },
 ];
 
@@ -826,11 +930,4 @@ export const SIDEBAR_PLAN = {
   expiry: "Renova dia 06 de Dez de 2025",
   progressPct: 40,
   cta: "Ver detalhes",
-} as const;
-
-export const SIDEBAR_COMPETE = {
-  title: "Quer competir?",
-  description:
-    "Participe de campeonatos internos e externos. Inscreva-se com a sua equipe!",
-  cta: "Ver campeonatos",
 } as const;

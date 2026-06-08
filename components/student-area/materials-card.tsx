@@ -1,33 +1,56 @@
 "use client";
 
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import { HiMiniPlayCircle } from "react-icons/hi2";
 import { HiOutlineDocumentArrowDown } from "react-icons/hi2";
 
+import { StudentCardActionButton } from "./student-card-action-button";
+import { StudentCardEmptyState } from "./student-card-empty-state";
 
 export function MaterialsCard() {
+  const { data: home } = usePilotHome();
+  const materials = home?.videoMaterials ?? [];
+  const hasMaterials = materials.length > 0;
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const openItem = StudentAreaServiceMock.getVideoMaterials().find((v) => v.id === openId);
+  const openItem = materials.find((v) => v.id === openId);
 
   const playVideo = useCallback((id: string) => {
     setLibraryOpen(false);
     setOpenId(id);
   }, []);
 
-  const scrollByDir = useCallback((dir: -1 | 1) => {
+  const scrollToIndex = useCallback((index: number) => {
     const el = scrollerRef.current;
     if (!el) return;
     const card = el.querySelector<HTMLElement>("[data-video-card]");
-    const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.75;
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
+    const step = card ? card.offsetWidth + 12 : el.clientWidth * 0.82;
+    el.scrollTo({ left: step * index, behavior: "smooth" });
+    setActiveIndex(index);
   }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const card = el.querySelector<HTMLElement>("[data-video-card]");
+      if (!card) return;
+      const step = card.offsetWidth + 12;
+      if (step <= 0) return;
+      const index = Math.round(el.scrollLeft / step);
+      setActiveIndex(Math.max(0, Math.min(materials.length - 1, index)));
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [materials.length]);
 
   useEffect(() => {
     if (!libraryOpen && !openId) return;
@@ -43,40 +66,25 @@ export function MaterialsCard() {
   return (
     <>
       <div className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(17,17,17,0.06)] pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-xl font-bold text-[#0d1f3c]">Vídeos e materiais</h3>
-          <button
-            type="button"
+          <StudentCardActionButton
             onClick={() => setLibraryOpen(true)}
-            className="inline-flex shrink-0 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.12)] bg-white px-4 py-2 text-[13px] font-semibold text-accent shadow-sm transition hover:border-accent/30 hover:bg-neutral-50"
+            disabled={!hasMaterials}
+            aria-disabled={!hasMaterials}
+            className={!hasMaterials ? "pointer-events-none opacity-50" : ""}
           >
             Ver biblioteca
-          </button>
+          </StudentCardActionButton>
         </div>
 
-        <div className="relative mt-6">
-          <button
-            type="button"
-            aria-label="Anterior"
-            onClick={() => scrollByDir(-1)}
-            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(17,17,17,0.1)] bg-white text-[#0d1f3c] shadow-md transition hover:bg-neutral-50 lg:hidden"
-          >
-            <HiChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            type="button"
-            aria-label="Seguinte"
-            onClick={() => scrollByDir(1)}
-            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(17,17,17,0.1)] bg-white text-[#0d1f3c] shadow-md transition hover:bg-neutral-50 lg:hidden"
-          >
-            <HiChevronRight className="h-6 w-6" />
-          </button>
-
+        {hasMaterials ? (
+          <div className="mt-6">
           <div
             ref={scrollerRef}
-            className="app-scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-11 pb-1 sm:px-14 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-x-visible lg:px-0"
+            className="app-scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-x-visible"
           >
-            {StudentAreaServiceMock.getVideoMaterials().map((it) => (
+            {materials.map((it) => (
               <div
                 key={it.id}
                 data-video-card
@@ -137,7 +145,38 @@ export function MaterialsCard() {
               </div>
             ))}
           </div>
+
+          {materials.length > 1 ? (
+            <div
+              className="mt-4 flex items-center justify-center gap-1.5 lg:hidden"
+              role="tablist"
+              aria-label="Slides de vídeos"
+            >
+              {materials.map((it, index) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeIndex === index}
+                  aria-label={`Slide ${index + 1}`}
+                  onClick={() => scrollToIndex(index)}
+                  className={`h-2 rounded-full transition ${
+                    activeIndex === index
+                      ? "w-5 bg-accent"
+                      : "w-2 bg-neutral-300 hover:bg-neutral-400"
+                  }`}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
+        ) : (
+          <StudentCardEmptyState
+            className="mt-6"
+            title="Nenhum material disponível"
+            description="Vídeos, PDFs e conteúdos de treino publicados pela equipe aparecerão aqui."
+          />
+        )}
       </div>
 
       {libraryOpen ? (
@@ -162,7 +201,7 @@ export function MaterialsCard() {
                   Biblioteca de vídeos e materiais
                 </h2>
                 <p className="mt-1 text-sm text-neutral-600">
-                  {StudentAreaServiceMock.getVideoMaterials().length} itens disponíveis
+                  {materials.length} itens disponíveis
                 </p>
               </div>
               <button
@@ -173,67 +212,76 @@ export function MaterialsCard() {
                 Fechar
               </button>
             </div>
-            <ul className="grid grid-cols-1 gap-4 overflow-y-auto p-5 sm:grid-cols-2 lg:grid-cols-3 md:p-6">
-              {StudentAreaServiceMock.getVideoMaterials().map((it) => (
-                <li
-                  key={it.id}
-                  className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-3 shadow-sm"
-                >
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-200">
-                    <Image
-                      src={it.thumbnail}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="280px"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                    {it.tag ? (
-                      <span className="absolute left-2 top-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white shadow">
-                        {it.tag}
-                      </span>
-                    ) : null}
-                    <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
-                      {it.duration}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => playVideo(it.id)}
-                      className="absolute inset-0 flex items-center justify-center transition hover:bg-black/15"
-                      aria-label={`Reproduzir ${it.title}`}
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-6">
+              {hasMaterials ? (
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {materials.map((it) => (
+                    <li
+                      key={it.id}
+                      className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-3 shadow-sm"
                     >
-                      <HiMiniPlayCircle className="h-12 w-12 text-white drop-shadow-lg" />
-                    </button>
-                  </div>
-                  <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-[13px] font-semibold leading-snug text-[#111]">
-                    {it.title}
-                  </p>
-                  <div className="mt-2 flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => playVideo(it.id)}
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-accent hover:text-white"
-                    >
-                      <HiMiniPlayCircle className="text-base" aria-hidden />
-                      Assistir
-                    </button>
-                    <a
-                      href={it.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-accent transition hover:bg-neutral-50"
-                    >
-                      <HiOutlineDocumentArrowDown className="text-base" aria-hidden />
-                      PDF
-                    </a>
-                  </div>
-                  <p className="mt-1 text-center text-[9px] leading-tight text-neutral-500">
-                    {it.pdfLabel}
-                  </p>
-                </li>
-              ))}
-            </ul>
+                      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-200">
+                        <Image
+                          src={it.thumbnail}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="280px"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                        {it.tag ? (
+                          <span className="absolute left-2 top-2 inline-flex rounded-full bg-accent px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white shadow">
+                            {it.tag}
+                          </span>
+                        ) : null}
+                        <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                          {it.duration}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => playVideo(it.id)}
+                          className="absolute inset-0 flex items-center justify-center transition hover:bg-black/15"
+                          aria-label={`Reproduzir ${it.title}`}
+                        >
+                          <HiMiniPlayCircle className="h-12 w-12 text-white drop-shadow-lg" />
+                        </button>
+                      </div>
+                      <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-[13px] font-semibold leading-snug text-[#111]">
+                        {it.title}
+                      </p>
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => playVideo(it.id)}
+                          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-accent hover:text-white"
+                        >
+                          <HiMiniPlayCircle className="text-base" aria-hidden />
+                          Assistir
+                        </button>
+                        <a
+                          href={it.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-accent transition hover:bg-neutral-50"
+                        >
+                          <HiOutlineDocumentArrowDown className="text-base" aria-hidden />
+                          PDF
+                        </a>
+                      </div>
+                      <p className="mt-1 text-center text-[9px] leading-tight text-neutral-500">
+                        {it.pdfLabel}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <StudentCardEmptyState
+                  title="Biblioteca vazia"
+                  description="Novos conteúdos serão adicionados pela equipe Gurgel Team."
+                />
+              )}
+            </div>
           </div>
         </div>
       ) : null}

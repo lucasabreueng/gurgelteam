@@ -2,7 +2,7 @@
 
 import type { FinancialTabKey } from "@/lib/contracts/finance/finance.types";
 import { queryKeys } from "@/lib/query/keys";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 import { useQuery } from "@tanstack/react-query";
 import type { IconType } from "react-icons/lib";
@@ -36,12 +36,11 @@ type Props = {
 export function FinancialOverviewTab({ onTabChange }: Props) {
   const { data: financialKpis = [] } = useQuery({
     queryKey: queryKeys.finance.overviewKpis(),
-    queryFn: () => FinancialServiceMock.getOverviewKpis(),
+    queryFn: () => getAppServices().finance.getOverviewKpis(),
   });
 
   return (
     <div className="admin-page-stack">
-      {/* 1. KPIs Financeiros */}
       <section aria-labelledby="executive-financial-kpis" className="min-w-0">
         <h2 id="executive-financial-kpis" className="sr-only">
           KPIs financeiros
@@ -51,15 +50,14 @@ export function FinancialOverviewTab({ onTabChange }: Props) {
           icons={FINANCIAL_KPI_ICONS}
           defaultIcon={HiArrowTrendingUp}
           desktopClassName="admin-page-grid grid grid-cols-2 xl:grid-cols-5"
+          showDeltaBadge={false}
         />
       </section>
 
-      {/* 2. Evolução do Negócio */}
       <section aria-labelledby="business-evolution">
         <BusinessEvolutionChart />
       </section>
 
-      {/* 3. Origem das Receitas + Próximos Vencimentos */}
       <section className="admin-page-grid grid lg:grid-cols-2">
         <RevenueOriginChart />
         <UpcomingPayables onTabChange={onTabChange} />

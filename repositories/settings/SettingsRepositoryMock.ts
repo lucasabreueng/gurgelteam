@@ -1,4 +1,5 @@
 import * as settingsMocks from "@/lib/admin-settings-mocks";
+import * as termsMocks from "@/lib/admin-settings-terms-mocks";
 
 export const SettingsRepositoryMock = {
   getTabs: () => settingsMocks.SETTINGS_TABS,
@@ -38,4 +39,18 @@ export const SettingsRepositoryMock = {
   getAuditLog: () => settingsMocks.AUDIT_LOG,
   createSettingsKart: settingsMocks.createSettingsKart,
   nextSettingsKartNumber: settingsMocks.nextSettingsKartNumber,
+  getTermsRegistry: () => termsMocks.SETTINGS_TERMS_REGISTRY,
+  getDreAccounts: () => termsMocks.DRE_ACCOUNT_TERMS,
+  getFinancialCategories: () => termsMocks.FINANCIAL_CATEGORY_TERMS,
+  getInventoryPartCategories: () => termsMocks.INVENTORY_PART_CATEGORY_TERMS,
+  getRegisteredMotorTerms: () => termsMocks.REGISTERED_MOTOR_TERMS,
+  getRegisteredChassisTerms: () => termsMocks.REGISTERED_CHASSIS_TERMS,
+  createDreAccountLine: termsMocks.createDreAccountLine,
+  buildDreSections: termsMocks.buildDreSections,
+  insertDreLineInGroup: termsMocks.insertDreLineInGroup,
+  createFinancialCategory: termsMocks.createFinancialCategory,
+  createInventoryPartCategory: termsMocks.createInventoryPartCategory,
+  createRegisteredMotor: termsMocks.createRegisteredMotor,
+  createRegisteredChassis: termsMocks.createRegisteredChassis,
+  dreAccountKindLabel: termsMocks.dreAccountKindLabel,
 };

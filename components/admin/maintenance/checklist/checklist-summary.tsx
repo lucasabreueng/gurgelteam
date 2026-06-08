@@ -1,12 +1,12 @@
-import { ChecklistServiceMock } from "@/services/maintenance/checklistServiceMock";
 import type { OverallInspectionStatus } from "@/lib/contracts/maintenance";
-
+import { OVERALL_STATUS_LABELS } from "@/lib/admin-checklist-mocks";
 
 type Props = {
   ok: number;
   warn: number;
   fail: number;
   overall: OverallInspectionStatus;
+  overallStatusLabels?: Record<OverallInspectionStatus, string>;
 };
 
 const overallStyle: Record<OverallInspectionStatus, string> = {
@@ -15,7 +15,13 @@ const overallStyle: Record<OverallInspectionStatus, string> = {
   bloqueado: "bg-red-500 text-white",
 };
 
-export function ChecklistSummary({ ok, warn, fail, overall }: Props) {
+export function ChecklistSummary({
+  ok,
+  warn,
+  fail,
+  overall,
+  overallStatusLabels = OVERALL_STATUS_LABELS,
+}: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#0d1f3c] px-3 py-2.5 text-white">
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
@@ -41,7 +47,7 @@ export function ChecklistSummary({ ok, warn, fail, overall }: Props) {
       <span
         className={`shrink-0 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${overallStyle[overall]}`}
       >
-        {ChecklistServiceMock.getOverallStatusLabels()[overall]}
+        {overallStatusLabels[overall]}
       </span>
     </div>
   );

@@ -2,7 +2,8 @@
 
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import type { ReceivableStatus } from "@/lib/contracts/finance/finance.types";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useFinanceMeta } from "@/lib/query/hooks/use-finance-meta";
+import { FinancialRepositoryMock } from "@/repositories/finance/FinancialRepositoryMock";
 import {
   FilterBox,
   countActiveFilters,
@@ -39,6 +40,7 @@ export function PayableFilters({
   onClear,
   layout = "inline",
 }: Props) {
+  const { data: meta } = useFinanceMeta();
   const isStacked = layout === "stacked";
   const fieldWrap = isStacked ? "w-full" : "w-full min-w-[11rem] lg:max-w-[12rem] lg:flex-1";
   const active = filtersActive([
@@ -48,6 +50,10 @@ export function PayableFilters({
     filters.category,
   ]);
 
+  const statusOptions =
+    meta?.receivableFilterOptions ??
+    FinancialRepositoryMock.getReceivableStatusFilterOptions();
+
   const methodOptions = [
     { value: "", label: "Pagamento" },
     ...PAYABLE_METHODS.map((m) => ({ value: m, label: m })),
@@ -55,10 +61,12 @@ export function PayableFilters({
 
   const categoryOptions = [
     { value: "", label: "Categoria" },
-    ...FinancialServiceMock.getPayableCategories().map((c) => ({
-      value: c,
-      label: c,
-    })),
+    ...(meta?.payableCategories ?? FinancialRepositoryMock.getPayableCategories()).map(
+      (c) => ({
+        value: c,
+        label: c,
+      }),
+    ),
   ];
 
   const fields = (
@@ -80,7 +88,7 @@ export function PayableFilters({
       <div className={fieldWrap}>
         <SettingsDropdown
           aria-label="Status"
-          options={FinancialServiceMock.getReceivableFilterOptions().map((o) => ({
+          options={statusOptions.map((o) => ({
             value: o.value,
             label: o.label,
           }))}

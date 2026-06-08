@@ -1,10 +1,13 @@
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+"use client";
 
 import { PackageCreditsCard } from "../package-credits-card";
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
 
 export function PackagesTab() {
-  const expiring = FinancialServiceMock.getPackageCredits().filter(
-    (p) => p.status === "expirando" || p.lessonsTotal - p.lessonsUsed <= 2
+  const { data } = useFinanceInsights();
+  const packages = data?.packageCredits ?? [];
+  const expiring = packages.filter(
+    (p) => p.status === "expirando" || p.lessonsTotal - p.lessonsUsed <= 2,
   );
 
   return (
@@ -36,4 +39,3 @@ export function PackagesTab() {
     </div>
   );
 }
-

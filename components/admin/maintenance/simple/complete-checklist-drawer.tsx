@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { queryKeys } from "@/lib/query/keys";
 import type { MaintenanceFleetKart } from "@/lib/contracts/maintenance/simple";
 import type { MaintenanceDraftFromInspection } from "@/lib/contracts/maintenance/simple";
 import type {
@@ -25,6 +28,7 @@ import { SettingsField } from "@/components/admin/settings/settings-section";
 import { ChecklistEvaluationAccordion } from "./checklist-evaluation-accordion";
 import { ChecklistFinalStatusBadge } from "./checklist-final-status-badge";
 import { ChecklistSummaryPanel } from "./checklist-summary-panel";
+import { setKartStatusByNumber } from "@/lib/karts-runtime-store";
 
 const CHECKLIST_STEP_LABELS = ["Informações", "Avaliação", "Resultado"] as const;
 
@@ -65,6 +69,7 @@ export function CompleteChecklistDrawer({
   onSuccess,
   onRequestMaintenances,
 }: Props) {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [kartId, setKartId] = useState("");
   const [date, setDate] = useState(todayIsoDate);
@@ -144,7 +149,35 @@ export function CompleteChecklistDrawer({
     }));
   };
 
-  const finishChecklist = (createMaintenances: boolean) => {
+  const finishChecklist = async (createMaintenances: boolean) => {
+    const kart = karts.find((k) => k.id === kartId);
+    const responsibleName =
+      responsibles.find((r) => r.id === responsible)?.name ?? responsible;
+
+    try {
+      await getAppServices().inspection.createInspection({
+        kartId,
+        checklistType,
+        payload: { date, responsible, evaluations, checklistType },
+        overallStatus: finalStatus,
+        signedBy: responsibleName,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.maintenance.all,
+      });
+    } catch {
+      onSuccess("Erro ao salvar checklist.");
+      return;
+    }
+
+    if (kart) {
+      if (finalStatus === "reprovado") {
+        setKartStatusByNumber(kart.number, "manutencao");
+      } else {
+        setKartStatusByNumber(kart.number, "disponivel");
+      }
+    }
+
     onSuccess(
       `Checklist completo do ${kartLabel} registrado — ${CHECKLIST_FINAL_STATUS_LABELS[finalStatus]}.`,
     );
@@ -169,7 +202,7 @@ export function CompleteChecklistDrawer({
       setConfirmMaintenance(true);
       return;
     }
-    finishChecklist(false);
+    void finishChecklist(false);
   };
 
   const kartOptions = [
@@ -336,7 +369,7 @@ export function CompleteChecklistDrawer({
         open={open}
         onClose={onClose}
         title="Novo checklist completo"
-        subtitle="Avaliação técnica detalhada para revisões, auditorias e pré-campeonato."
+        subtitle="Avaliação técnica detalhada para revisões, auditorias e pré-evento."
         currentStep={step}
         stepLabels={CHECKLIST_STEP_LABELS}
         fullWidthSteps
@@ -360,11 +393,11 @@ export function CompleteChecklistDrawer({
         cancelLabel="Não, só salvar checklist"
         onConfirm={() => {
           setConfirmMaintenance(false);
-          finishChecklist(true);
+          void finishChecklist(true);
         }}
         onCancel={() => {
           setConfirmMaintenance(false);
-          finishChecklist(false);
+          void finishChecklist(false);
         }}
       />
     </>

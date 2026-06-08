@@ -11,7 +11,7 @@ export type LessonSessionDTO = {
   avatar: string;
   category: string;
   typeLabel: string;
-  instructorName: string;
+  registeredByName: string;
   kartNumber: number;
   status: LessonStatus;
   objective?: string;

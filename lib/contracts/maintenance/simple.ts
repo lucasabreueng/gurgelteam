@@ -1,10 +1,31 @@
 /** Modelo simplificado — Manutenção Gurgel Team (box de kart). */
 
-export type KartOperationalStatus =
-  | "operacional"
-  | "atencao"
-  | "em_manutencao"
-  | "indisponivel";
+import type { SimpleMaintenanceStatus } from "../enums";
+import type { PreventiveMaintenanceSummary } from "@/lib/maintenance/preventive-maintenance";
+
+export type { SimpleMaintenanceStatus } from "../enums";
+
+/** Status exibidos na tabela de karts da manutenção. */
+export const MAINTENANCE_FLEET_STATUSES = [
+  "disponivel",
+  "em_manutencao",
+  "indisponivel",
+] as const;
+
+export type MaintenanceFleetStatus =
+  (typeof MAINTENANCE_FLEET_STATUSES)[number];
+
+export type CorrectiveMaintenanceStatus =
+  | "none"
+  | "checklist_aberto"
+  | "em_andamento"
+  | "pendente";
+
+export type CorrectiveMaintenanceSummary = {
+  status: CorrectiveMaintenanceStatus;
+  label: string;
+  orderId?: string;
+};
 
 export type InspectionItemKey =
   | "pneus"
@@ -19,8 +40,6 @@ export type InspectionItemRating = "bom" | "atencao" | "necessita_manutencao";
 export type MaintenanceCategory = InspectionItemKey | "outros";
 
 export type SimpleMaintenanceType = "preventiva" | "corretiva";
-
-export type SimpleMaintenanceStatus = "pendente" | "em_andamento" | "concluida";
 
 export type MaintenanceSimpleKpi = {
   id: string;
@@ -37,10 +56,12 @@ export type MaintenanceFleetKart = {
   id: string;
   number: number;
   photo: string;
-  status: KartOperationalStatus;
+  status: MaintenanceFleetStatus;
+  engineHours: number;
   lastInspection: string;
   lastMaintenance: string;
-  nextRevision: string;
+  preventiveMaintenance: PreventiveMaintenanceSummary;
+  correctiveMaintenance: CorrectiveMaintenanceSummary;
   monthlyCostCents: number;
 };
 
@@ -92,7 +113,7 @@ export type MaintenanceDraftFromInspection = {
 };
 
 export type MaintenanceSimpleFilterState = {
-  kartStatus: KartOperationalStatus | "";
+  kartStatus: MaintenanceFleetStatus | "";
   maintenanceType: SimpleMaintenanceType | "";
   period: "7" | "30" | "90" | "";
   kartId: string;
@@ -107,9 +128,11 @@ export const INSPECTION_ITEM_LABELS: Record<InspectionItemKey, string> = {
   direcao: "Direção",
 };
 
-export const KART_STATUS_LABELS: Record<KartOperationalStatus, string> = {
-  operacional: "Operacional",
-  atencao: "Atenção",
+export const MAINTENANCE_FLEET_STATUS_LABELS: Record<
+  MaintenanceFleetStatus,
+  string
+> = {
+  disponivel: "Disponível",
   em_manutencao: "Em manutenção",
   indisponivel: "Indisponível",
 };

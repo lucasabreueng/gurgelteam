@@ -1,24 +1,24 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { FinancialTabKey } from "@/lib/contracts/finance/finance.types";
 import type { DrePeriodFilter } from "@/lib/admin-dre-mocks";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { queryKeys } from "@/lib/query/keys";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
 import { AdminShell } from "./admin-shell";
 import { FinancialHeader } from "./financial/financial-header";
 import { FinancialTabs } from "./financial/financial-tabs";
 import type { CashFlowPeriodFilter } from "@/lib/contracts/cashflow";
 import { CashFlowPeriodFilterBar } from "./financial/cash-flow/cash-flow-period-filter";
 import { DrePeriodFilterBar } from "./financial/dre/dre-period-filter";
+import { AdminTabPanelSkeleton } from "./admin-page-skeletons";
 
-const TabLoading = () => (
-  <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-8 text-sm font-medium text-neutral-500">
-    Carregando…
-  </div>
-);
+const TabLoading = () => <AdminTabPanelSkeleton />;
 
 const FinancialOverviewTab = dynamic(
   () =>
@@ -96,10 +96,14 @@ const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
 
 export function FinancialPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<FinancialTabKey>("overview");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [revenueDrawerOpen, setRevenueDrawerOpen] = useState(false);
   const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
+  const [revenuePrefillClientId, setRevenuePrefillClientId] = useState<string>();
+  const [revenuePrefillScheduleId, setRevenuePrefillScheduleId] = useState<string>();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [dreFilter, setDreFilter] = useState<DrePeriodFilter>({ key: "current-month" });
   const [cashFlowFilter, setCashFlowFilter] = useState<CashFlowPeriodFilter>({
@@ -109,6 +113,7 @@ export function FinancialPage() {
   const [payablesFiltersOpen, setPayablesFiltersOpen] = useState(false);
   const [receivableFilterCount, setReceivableFilterCount] = useState(0);
   const [payableFilterCount, setPayableFilterCount] = useState(0);
+  const { canEdit } = useModuleAccess("financeiro");
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -118,10 +123,36 @@ export function FinancialPage() {
     [router],
   );
 
-  const handleAction = useCallback((message: string) => {
-    setFeedback(message);
-    window.setTimeout(() => setFeedback(null), 5000);
-  }, []);
+  const handleAction = useCallback(
+    (message: string) => {
+      setFeedback(message);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.finance.all });
+      window.setTimeout(() => setFeedback(null), 5000);
+    },
+    [queryClient],
+  );
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as FinancialTabKey | null;
+    if (
+      tab &&
+      ["overview", "receivables", "payables", "cashflow", "dre"].includes(tab)
+    ) {
+      setActiveTab(tab);
+    } else if (searchParams.get("tab") === "reports") {
+      setActiveTab("overview");
+    }
+
+    const clientId = searchParams.get("clientId");
+    const scheduleEventId = searchParams.get("scheduleEvent");
+    if (clientId || scheduleEventId) {
+      setActiveTab("receivables");
+      setRevenuePrefillClientId(clientId ?? undefined);
+      setRevenuePrefillScheduleId(scheduleEventId ?? undefined);
+      setRevenueDrawerOpen(true);
+      router.replace("/admin/financeiro", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const tabContent = () => {
     switch (activeTab) {
@@ -156,9 +187,10 @@ export function FinancialPage() {
     }
   };
 
-  const tabMeta = FinancialServiceMock.getTabMeta(activeTab);
+  const tabMeta = getAppServices().finance.getTabMeta(activeTab);
   const showHeaderActions =
-    activeTab === "overview" || activeTab === "receivables" || activeTab === "payables";
+    canEdit &&
+    (activeTab === "overview" || activeTab === "receivables" || activeTab === "payables");
 
   const headerFilterCount =
     activeTab === "receivables"
@@ -234,8 +266,14 @@ export function FinancialPage() {
       {revenueDrawerOpen ? (
         <NewRevenueDrawer
           open={revenueDrawerOpen}
-          onClose={() => setRevenueDrawerOpen(false)}
+          onClose={() => {
+            setRevenueDrawerOpen(false);
+            setRevenuePrefillClientId(undefined);
+            setRevenuePrefillScheduleId(undefined);
+          }}
           onSuccess={handleAction}
+          initialClientId={revenuePrefillClientId}
+          initialScheduleId={revenuePrefillScheduleId}
         />
       ) : null}
 

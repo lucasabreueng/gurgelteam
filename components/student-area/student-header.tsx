@@ -1,13 +1,16 @@
 "use client";
 
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
 
-import Image from "next/image";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
+import { LogoutLink } from "@/components/auth/logout-link";
 import { useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import {
   HiOutlineBell,
+  HiOutlineCalendar,
   HiOutlineMagnifyingGlass,
   HiOutlineUserCircle,
   HiArrowRightOnRectangle,
@@ -15,6 +18,10 @@ import {
 
 
 export function StudentHeader() {
+  const { data: home } = usePilotHome();
+  const profile = home?.profile;
+  const nextClass = home?.nextClass;
+  const displayName = profile?.firstName ?? "Piloto";
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,16 +59,24 @@ export function StudentHeader() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 lg:justify-end">
-        <span className="hidden items-center gap-2 rounded-full border border-[rgba(13,31,60,0.12)] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#0d1f3c] sm:inline-flex">
-          Próxima aula · {StudentAreaServiceMock.getNextClass().dateLabel}
-        </span>
-        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-          Nível {StudentAreaServiceMock.getHeroLevel().title}
-        </span>
+      <div className="flex flex-wrap items-center justify-end gap-2 lg:gap-3">
+        <Link
+          href="/piloto/reservar"
+          className="flex h-11 items-center gap-2 rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-3 text-[#0d1f3c] transition hover:border-accent/25"
+          title={
+            nextClass?.dateLabel
+              ? `Próxima aula · ${nextClass.dateLabel}${nextClass.timeRange ? ` · ${nextClass.timeRange}` : ""}`
+              : "Reservar horário"
+          }
+        >
+          <HiOutlineCalendar className="h-5 w-5 shrink-0 text-neutral-500" aria-hidden />
+          <span className="max-w-[min(100vw-12rem,200px)] truncate text-[12px] font-semibold sm:max-w-[220px]">
+            {nextClass?.dateLabel ?? "Reservar horário"}
+          </span>
+        </Link>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
             className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.08)] bg-white text-[#0d1f3c] transition hover:border-accent/25"
@@ -79,20 +94,18 @@ export function StudentHeader() {
               className="flex items-center gap-2 rounded-xl border border-[rgba(17,17,17,0.08)] bg-white py-1.5 pl-1.5 pr-3 transition hover:border-accent/25"
               onClick={() => setOpen((o) => !o)}
             >
-              <span className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-white">
-                <Image
-                  src={StudentAreaServiceMock.getStudentProfile().avatarFallback}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="36px"
-                />
-              </span>
+              <UserAvatar
+                src={home?.avatarUrl}
+                name={displayName}
+                size={36}
+                roundedClass="rounded-full"
+                className="ring-2 ring-white"
+              />
               <div className="hidden min-w-0 sm:block">
                 <p className="truncate text-[13px] font-semibold text-[#111]">
-                  {StudentAreaServiceMock.getStudentProfile().firstName.split(" ")[0]}
+                  {profile?.firstName.split(" ")[0] ?? "Piloto"}
                 </p>
-                <p className="text-[11px] text-neutral-500">{StudentAreaServiceMock.getStudentProfile().tag}</p>
+                <p className="text-[11px] text-neutral-500">{profile?.tag}</p>
               </div>
               <FaChevronDown
                 className={`hidden text-xs text-neutral-500 transition-transform sm:inline ${
@@ -115,7 +128,7 @@ export function StudentHeader() {
                   <HiOutlineUserCircle className="text-lg text-[#0d1f3c]" aria-hidden />
                   Meu perfil
                 </Link>
-                <Link
+                <LogoutLink
                   role="menuitem"
                   href="/"
                   className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700/90 transition hover:bg-red-50"
@@ -123,7 +136,7 @@ export function StudentHeader() {
                 >
                   <HiArrowRightOnRectangle className="text-lg" aria-hidden />
                   Sair
-                </Link>
+                </LogoutLink>
               </div>
             ) : null}
           </div>

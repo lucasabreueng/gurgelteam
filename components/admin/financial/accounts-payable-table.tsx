@@ -14,6 +14,8 @@ import { useInventoryTableState } from "../inventory/use-inventory-table-state";
 import {
   InventoryTableShell,
   TableIconButton,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -120,7 +122,7 @@ export function AccountsPayableTable({
           }
         >
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={inventoryThFirstClass}>Fornecedor</th>
               <th className={inventoryThClass}>Valor</th>
               <th className={inventoryThClass}>Vencimento</th>
@@ -134,7 +136,7 @@ export function AccountsPayableTable({
             {paginatedItems.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-[rgba(17,17,17,0.04)] transition hover:bg-[#fafbfc]/80"
+                className={adminTableBodyRowClass}
               >
                 <td className={`${inventoryTdFirstClass} font-semibold text-[#0d1f3c]`}>
                   {row.supplierName}

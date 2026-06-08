@@ -1,12 +1,16 @@
 "use client";
 
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { queryKeys } from "@/lib/query/keys";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useEffect, useMemo, useState } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
 import { getInventoryParts } from "@/lib/inventory-parts-store";
+import { useInventorySuppliers } from "./use-inventory-suppliers";
 import { SettingsDropdown } from "../settings/settings-dropdown";
 import {
   INVENTORY_KART_OPTIONS,
@@ -68,9 +72,9 @@ function DrawerShell({
       <aside
         role="dialog"
         aria-modal="true"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[var(--ds-bg-panel)] shadow-2xl"
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className="flex shrink-0 items-center justify-between border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <h2 className="text-lg font-bold text-[#0d1f3c]">{title}</h2>
           <button
             type="button"
@@ -109,6 +113,8 @@ export function InventoryEntryDrawer({
   onSuccess,
 }: Omit<EntryExitProps, "mode">) {
   const parts = useInventoryParts();
+  const queryClient = useQueryClient();
+  const inventory = getAppServices().inventory;
   const [partId, setPartId] = useState("");
   const [qty, setQty] = useState("1");
   const [nfRef, setNfRef] = useState("");
@@ -125,15 +131,28 @@ export function InventoryEntryDrawer({
       title="Registrar entrada"
       onClose={onClose}
       submitLabel="Confirmar entrada"
-      onSubmit={() => {
-        const parts = getInventoryParts();
+      onSubmit={async () => {
         const part = parts.find((p) => p.id === partId);
-        const nfLabel =
-          InventoryServiceMock.getNfReferences().find((n) => n.value === nfRef)?.label ?? nfRef;
-        onSuccess(
-          `Entrada registrada: ${qty} un. de ${part?.name ?? "peça"} · ${nfLabel || "sem NF"} (mock). Estoque atualizado.`,
-        );
-        onClose();
+        const q = Number.parseInt(qty, 10);
+        if (!partId || !Number.isFinite(q) || q < 1) {
+          onSuccess("Informe peça e quantidade válidas.");
+          return;
+        }
+        try {
+          await inventory.createMovement({
+            inventoryPartId: partId,
+            type: "entrada",
+            qty: q,
+            notes: nfRef || undefined,
+          });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+          onSuccess(
+            `Entrada registrada: ${q} un. de ${part?.name ?? "peça"}.`,
+          );
+          onClose();
+        } catch {
+          onSuccess("Erro ao registrar entrada.");
+        }
       }}
     >
       <div className="space-y-4">
@@ -186,6 +205,8 @@ export function InventoryExitDrawer({
   onSuccess,
 }: Omit<EntryExitProps, "mode">) {
   const parts = useInventoryParts();
+  const queryClient = useQueryClient();
+  const inventory = getAppServices().inventory;
   const [partId, setPartId] = useState("");
   const [qty, setQty] = useState("1");
   const [os, setOs] = useState("");
@@ -203,16 +224,26 @@ export function InventoryExitDrawer({
       title="Registrar saída"
       onClose={onClose}
       submitLabel="Confirmar saída"
-      onSubmit={() => {
-        const parts = getInventoryParts();
+      onSubmit={async () => {
         const part = parts.find((p) => p.id === partId);
-        const kartLabel = kart
-          ? `Kart ${String(kart).padStart(2, "0")}`
-          : "—";
-        onSuccess(
-          `Saída registrada: ${qty} un. de ${part?.name ?? "peça"} · ${kartLabel} · ${os || "—"}. Estoque baixado (mock).`,
-        );
-        onClose();
+        const q = Number.parseInt(qty, 10);
+        if (!partId || !Number.isFinite(q) || q < 1) {
+          onSuccess("Informe peça e quantidade válidas.");
+          return;
+        }
+        try {
+          await inventory.createMovement({
+            inventoryPartId: partId,
+            type: "saida",
+            qty: q,
+            notes: os ? `OS ${os}` : undefined,
+          });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+          onSuccess(`Saída registrada: ${q} un. de ${part?.name ?? "peça"}.`);
+          onClose();
+        } catch {
+          onSuccess("Erro ao registrar saída.");
+        }
       }}
     >
       <div className="space-y-4">
@@ -274,19 +305,27 @@ export function InventoryPurchaseDrawer({
   prefillPart?: string;
 }) {
   const parts = useInventoryParts();
+  const suppliers = useInventorySuppliers();
+  const queryClient = useQueryClient();
+  const inventory = getAppServices().inventory;
   const [partId, setPartId] = useState("");
-  const [supplierId, setSupplierId] = useState(
-    InventoryServiceMock.getStaticSuppliers()[0]?.id ?? "",
-  );
+  const [supplierId, setSupplierId] = useState("");
+  const [qty, setQty] = useState("5");
 
   const supplierOptions = useMemo(
     () =>
-      InventoryServiceMock.getStaticSuppliers().map((s) => ({
+      suppliers.map((s) => ({
         value: s.id,
         label: s.name,
       })),
-    [],
+    [suppliers],
   );
+
+  useEffect(() => {
+    if (open && suppliers[0] && !supplierId) {
+      setSupplierId(suppliers[0].id);
+    }
+  }, [open, suppliers, supplierId]);
 
   useEffect(() => {
     if (!open) return;
@@ -305,11 +344,25 @@ export function InventoryPurchaseDrawer({
       title="Solicitar compra"
       onClose={onClose}
       submitLabel="Enviar solicitação"
-      onSubmit={() => {
-        const parts = getInventoryParts();
+      onSubmit={async () => {
         const part = parts.find((p) => p.id === partId);
-        onSuccess(`Compra solicitada: ${part?.name ?? "peça"} (mock).`);
-        onClose();
+        const q = Number.parseInt(qty, 10);
+        if (!partId || !supplierId || !Number.isFinite(q) || q < 1) {
+          onSuccess("Informe peça, fornecedor e quantidade válidos.");
+          return;
+        }
+        try {
+          await inventory.createPurchaseOrder({
+            inventoryPartId: partId,
+            supplierId,
+            qty: q,
+          });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+          onSuccess(`Compra solicitada: ${part?.name ?? "peça"}.`);
+          onClose();
+        } catch {
+          onSuccess("Erro ao solicitar compra.");
+        }
       }}
     >
       <div className="space-y-4">
@@ -336,7 +389,13 @@ export function InventoryPurchaseDrawer({
           <span className="mb-1 block font-semibold text-[#0d1f3c]">
             Quantidade
           </span>
-          <input type="number" min={1} defaultValue={5} className={inputClass} />
+          <input
+            type="number"
+            min={1}
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            className={inputClass}
+          />
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-semibold text-[#0d1f3c]">

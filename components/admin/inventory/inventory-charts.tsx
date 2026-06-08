@@ -1,18 +1,32 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
+import { useInventoryCharts } from "@/lib/query/hooks/use-inventory-charts";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 import { FinancialChartCard } from "../financial/financial-chart-card";
 
-const weeklyConsumption = InventoryServiceMock.getWeeklyConsumption();
-const consumptionByCategory = InventoryServiceMock.getConsumptionByCategory();
-const monthlyMovements = InventoryServiceMock.getMonthlyMovements();
-const topUsedParts = InventoryServiceMock.getTopUsedParts();
-const costByCategory = InventoryServiceMock.getCostByCategory();
+function useChartData() {
+  const { data } = useInventoryCharts();
+  return {
+    weeklyConsumption:
+      data?.weeklyConsumption ?? InventoryServiceMock.getWeeklyConsumption(),
+    consumptionByCategory:
+      data?.consumptionByCategory ??
+      InventoryServiceMock.getConsumptionByCategory(),
+    monthlyMovements:
+      data?.monthlyMovements ?? InventoryServiceMock.getMonthlyMovements(),
+    topUsedParts: data?.topUsedParts ?? InventoryServiceMock.getTopUsedParts(),
+    costByCategory:
+      data?.costByCategory ?? InventoryServiceMock.getCostByCategory(),
+  };
+}
 
 export function ConsumptionChart() {
+  const chartTheme = useChartTheme();
+  const { weeklyConsumption } = useChartData();
   const option: EChartsOption = useMemo(
     () => ({
       grid: { left: 40, right: 16, top: 24, bottom: 28 },
@@ -20,32 +34,29 @@ export function ConsumptionChart() {
       xAxis: {
         type: "category",
         data: weeklyConsumption.map((d) => d.day),
-        axisLine: { lineStyle: { color: "rgba(17,17,17,0.12)" } },
       },
-      yAxis: {
-        type: "value",
-        splitLine: { lineStyle: { color: "rgba(17,17,17,0.06)" } },
-      },
+      yAxis: { type: "value" },
       series: [
         {
           type: "bar",
           data: weeklyConsumption.map((d) => d.value),
-          itemStyle: { color: "#0d1f3c", borderRadius: [6, 6, 0, 0] },
+          itemStyle: { color: chartTheme.line, borderRadius: [6, 6, 0, 0] },
           barWidth: "50%",
         },
       ],
     }),
-    []
+    [weeklyConsumption, chartTheme],
   );
 
   return (
     <FinancialChartCard title="Consumo da semana" subtitle="Peças utilizadas por dia">
-      <ReactECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }
 
 export function MovementChart() {
+  const { monthlyMovements } = useChartData();
   const option: EChartsOption = useMemo(
     () => ({
       grid: { left: 40, right: 16, top: 24, bottom: 28 },
@@ -74,17 +85,19 @@ export function MovementChart() {
         },
       ],
     }),
-    []
+    [monthlyMovements],
   );
 
   return (
     <FinancialChartCard title="Movimentações mensais" subtitle="Entradas vs saídas">
-      <ReactECharts option={option} style={{ height: 240 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 240 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }
 
 export function CategoryConsumptionChart() {
+  const chartTheme = useChartTheme();
+  const { consumptionByCategory } = useChartData();
   const option: EChartsOption = useMemo(
     () => ({
       tooltip: { trigger: "item" },
@@ -97,22 +110,28 @@ export function CategoryConsumptionChart() {
             value: d.value,
           })),
           label: { fontSize: 11 },
-          itemStyle: { borderRadius: 4, borderColor: "#fff", borderWidth: 2 },
-          color: ["#0d1f3c", "#1e3a5f", "#c41e3a", "#059669", "#d97706"],
+          itemStyle: {
+            borderRadius: 4,
+            borderColor: chartTheme.pieBorder,
+            borderWidth: 2,
+          },
+          color: [...chartTheme.palette, "#059669", "#d97706"],
         },
       ],
     }),
-    []
+    [consumptionByCategory, chartTheme],
   );
 
   return (
     <FinancialChartCard title="Consumo por categoria" subtitle="Distribuição no mês">
-      <ReactECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }
 
 export function TopUsedPartsChart() {
+  const chartTheme = useChartTheme();
+  const { topUsedParts } = useChartData();
   const option: EChartsOption = useMemo(
     () => ({
       grid: { left: 120, right: 24, top: 8, bottom: 8 },
@@ -127,22 +146,24 @@ export function TopUsedPartsChart() {
         {
           type: "bar",
           data: topUsedParts.map((d) => d.count).reverse(),
-          itemStyle: { color: "#0d1f3c", borderRadius: [0, 6, 6, 0] },
+          itemStyle: { color: chartTheme.line, borderRadius: [0, 6, 6, 0] },
           barWidth: 14,
         },
       ],
     }),
-    []
+    [topUsedParts, chartTheme],
   );
 
   return (
     <FinancialChartCard title="Peças mais utilizadas" subtitle="Top 5 do mês">
-      <ReactECharts option={option} style={{ height: 200 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 200 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }
 
 export function CostByCategoryChart() {
+  const chartTheme = useChartTheme();
+  const { costByCategory } = useChartData();
   const option: EChartsOption = useMemo(
     () => ({
       grid: { left: 48, right: 16, top: 24, bottom: 28 },
@@ -164,16 +185,16 @@ export function CostByCategoryChart() {
         {
           type: "bar",
           data: costByCategory.map((d) => d.value),
-          itemStyle: { color: "#0d1f3c", borderRadius: [6, 6, 0, 0] },
+          itemStyle: { color: chartTheme.line, borderRadius: [6, 6, 0, 0] },
         },
       ],
     }),
-    []
+    [costByCategory, chartTheme],
   );
 
   return (
     <FinancialChartCard title="Custo por categoria" subtitle="Integração financeira">
-      <ReactECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }

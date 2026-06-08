@@ -1,7 +1,7 @@
 "use client";
 
 import type { ScheduleEvent } from "@/lib/contracts/schedule";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
 type Props = {
@@ -15,9 +15,10 @@ export function DayReservationsSummary({
   events,
   onEventClick,
 }: Props) {
-  const slots = ScheduleServiceMock.groupDayEventsBySlot(events, selectedDate);
-  const summary = ScheduleServiceMock.getDaySummary(selectedDate);
-  const title = ScheduleServiceMock.formatDateLower(selectedDate);
+  const schedule = getAppServices().schedule;
+  const slots = schedule.groupDayEventsBySlot(events, selectedDate);
+  const summary = schedule.getDaySummary(selectedDate);
+  const title = schedule.formatDateLower(selectedDate);
 
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-sm">

@@ -1,19 +1,20 @@
 /** Tipos e labels da agenda — superfície de contrato (dados via ScheduleServiceMock). */
 export type {
-  ScheduleViewKey,
-  UpcomingDaySummary,
-  TimelineRow,
-  AvailableKartItem,
-  AvailableInstructorItem,
-  OperationalSidebarAlert,
-  MonthCalendarCell,
   ScheduleEventType,
   ScheduleEventStatus,
   PaymentStatus,
   KartScheduleStatus,
+} from "../enums";
+
+export type {
+  ScheduleViewKey,
+  UpcomingDaySummary,
+  TimelineRow,
+  AvailableKartItem,
+  OperationalSidebarAlert,
+  MonthCalendarCell,
   ScheduleKpi,
   ScheduleEvent,
-  ScheduleInstructor,
   KartScheduleRow,
   ScheduleConflict,
   ScheduleInsight,

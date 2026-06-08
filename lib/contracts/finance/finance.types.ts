@@ -1,4 +1,6 @@
-export type ReceivableStatus = "pago" | "pendente" | "vencido" | "parcial";
+import type { ReceivableStatus } from "../enums";
+
+export type { ReceivableStatus } from "../enums";
 
 export type FinancialTabKey =
   | "overview"

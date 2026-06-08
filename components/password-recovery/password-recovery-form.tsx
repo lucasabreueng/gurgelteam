@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FieldError } from "@/components/cadastro/field-error";
+import { apiFetch } from "@/lib/api/http-client";
+import { v1ApiPaths } from "@/lib/api/v1-api-paths";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
 import { OtpInput } from "./otp-input";
 import { useResendCooldown } from "./use-resend-cooldown";
@@ -47,7 +49,7 @@ export function PasswordRecoveryForm() {
     setCodeError(undefined);
   };
 
-  const handleIdentifierSubmit = (e: React.FormEvent) => {
+  const handleIdentifierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = identifier.trim();
     const error = AuthServiceMock.validateRecoveryIdentifierForm({
@@ -58,30 +60,59 @@ export function PasswordRecoveryForm() {
       return;
     }
 
-    const resolved = AuthServiceMock.resolveRecoveryAccount(trimmed);
-    if (!resolved) {
-      setIdentifierError("E-mail ou usuário não encontrado em nossa base.");
+    setIdentifierError(undefined);
+    setLoading(true);
+
+    const result = await apiFetch<{ sent: true }>(
+      v1ApiPaths.auth.passwordRecovery,
+      {
+        method: "POST",
+        body: JSON.stringify({ identifier: trimmed }),
+      },
+    );
+
+    setLoading(false);
+
+    if (result.success) {
+      const resolved =
+        AuthServiceMock.resolveRecoveryAccount(trimmed) ??
+        ({ email: trimmed.includes("@") ? trimmed : "" } as { email: string });
+      sendRecoveryEmail(resolved.email || trimmed);
       return;
     }
 
-    setIdentifierError(undefined);
-    setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+    if (result.error?.httpStatus === 503) {
+      const resolved = AuthServiceMock.resolveRecoveryAccount(trimmed);
+      if (!resolved) {
+        setIdentifierError("E-mail ou usuário não encontrado em nossa base.");
+        return;
+      }
       sendRecoveryEmail(resolved.email);
-    }, 500);
+      return;
+    }
+
+    setIdentifierError(
+      result.error?.message ?? "Não foi possível enviar o código.",
+    );
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend || !recoveryEmail) return;
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+    const result = await apiFetch<{ sent: true }>(
+      v1ApiPaths.auth.passwordRecovery,
+      {
+        method: "POST",
+        body: JSON.stringify({ identifier: recoveryEmail }),
+      },
+    );
+    setLoading(false);
+    if (result.success || result.error?.httpStatus === 503) {
       sendRecoveryEmail(recoveryEmail);
-    }, 400);
+    }
   };
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const codeValidationError = AuthServiceMock.validateRecoveryCodeForm({
       code,
@@ -93,11 +124,35 @@ export function PasswordRecoveryForm() {
 
     setCodeError(undefined);
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+
+    const result = await apiFetch<{ token: string }>(
+      v1ApiPaths.auth.passwordRecoveryVerify,
+      {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      },
+    );
+
+    setLoading(false);
+
+    if (result.success && result.data?.token) {
       AuthServiceMock.setRecoveryVerified(recoveryEmail);
+      AuthServiceMock.setRecoveryToken(result.data.token);
       router.push(AuthServiceMock.getRecoveryResetPath());
-    }, 500);
+      return;
+    }
+
+    if (result.error?.httpStatus === 503) {
+      if (AuthServiceMock.isValidRecoveryCode(code)) {
+        AuthServiceMock.setRecoveryVerified(recoveryEmail);
+        router.push(AuthServiceMock.getRecoveryResetPath());
+      } else {
+        setCodeError("Código inválido ou expirado.");
+      }
+      return;
+    }
+
+    setCodeError(result.error?.message ?? "Código inválido ou expirado.");
   };
 
   if (step === "code") {

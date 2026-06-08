@@ -23,10 +23,10 @@ export function TechnicalSignature({ responsible }: Props) {
         </div>
         <div className="rounded-lg bg-[#fafbfc] px-3 py-2">
           <dt className="text-[10px] font-bold uppercase text-neutral-500">
-            Instrutor
+            Supervisor operacional
           </dt>
           <dd className="text-sm font-bold">
-            {NewMaintenanceServiceMock.getSignature().instructor}
+            {NewMaintenanceServiceMock.getSignature().supervisor}
           </dd>
         </div>
         <div className="rounded-lg bg-[#fafbfc] px-3 py-2">

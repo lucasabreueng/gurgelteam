@@ -7,11 +7,16 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { NavItemKey } from "@/lib/contracts/student-area";
+import { getDataSourceMode } from "@/lib/data-source/mode";
 import { useAdminPanelDocument } from "@/lib/hooks/use-admin-panel-document";
 import { useAdminPanelPageScrollReset } from "@/lib/hooks/use-admin-panel-page-scroll-reset";
 import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
+import { usePilotPermissions } from "@/lib/query/hooks/use-admin-permissions";
+import { useLegalComplianceGuard } from "@/lib/hooks/use-legal-compliance-guard";
 import { MobileHeaderBar } from "@/components/shell/mobile-header-bar";
+import { AdminTabPanelSkeleton } from "@/components/admin/admin-page-skeletons";
 import { Sidebar } from "./sidebar";
 import { StudentHeader } from "./student-header";
 
@@ -31,6 +36,7 @@ type Props = {
   stackClassName?: string;
   shellContentClassName?: string;
   disableTabletShell?: boolean;
+  skipAccessGuard?: boolean;
 };
 
 export function StudentShell({
@@ -44,9 +50,49 @@ export function StudentShell({
   stackClassName = "",
   shellContentClassName = "",
   disableTabletShell = false,
+  skipAccessGuard = false,
 }: Props) {
   useAdminPanelDocument();
-  const mainRef = useAdminPanelPageScrollReset(activeNav);
+  const router = useRouter();
+  const isHttpMode = getDataSourceMode() === "http";
+  const { canAccessArea, canViewNav, isPending: permissionsPending, isSessionError } =
+    usePilotPermissions();
+  const { isPending: legalCompliancePending } = useLegalComplianceGuard(
+    !skipAccessGuard,
+  );
+  const areaDenied =
+    isHttpMode &&
+    !skipAccessGuard &&
+    !permissionsPending &&
+    !isSessionError &&
+    !canAccessArea();
+  const navDenied =
+    isHttpMode &&
+    !skipAccessGuard &&
+    !permissionsPending &&
+    !isSessionError &&
+    activeNav != null &&
+    !canViewNav(activeNav);
+
+  useEffect(() => {
+    if (!isHttpMode || skipAccessGuard || permissionsPending) return;
+    if (isSessionError) {
+      router.replace("/login?next=/piloto");
+      return;
+    }
+    if (!areaDenied && !navDenied) return;
+    router.replace("/403");
+  }, [
+    areaDenied,
+    isHttpMode,
+    isSessionError,
+    navDenied,
+    permissionsPending,
+    router,
+    skipAccessGuard,
+  ]);
+
+  const mainRef = useAdminPanelPageScrollReset(activeNav ?? "dashboard");
   const { tabletLandscape } = useAdminPanelTabletLayout();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -118,7 +164,7 @@ export function StudentShell({
 
   return (
     <div
-      className={`admin-area-page student-area-page bg-[#f3f5f9] text-[#111] ${shellGridClass}`.trim()}
+      className={`admin-area-page student-area-page admin-panel-shell ${shellGridClass}`.trim()}
       style={shellStyle}
     >
       <div className="admin-shell-sidebar-slot lg:col-start-1 lg:min-w-0">
@@ -153,7 +199,7 @@ export function StudentShell({
           {!tabletShell ? (
             <header
               ref={headerRef}
-              className="border-b border-[rgba(17,17,17,0.08)] bg-white"
+              className="admin-panel-chrome--card"
             >
               <div className="admin-page-gutter py-3 max-lg:py-2.5">
                 {!sidebarCollapsed ? (
@@ -173,7 +219,7 @@ export function StudentShell({
           {pageHeader ? (
             <div
               ref={pageHeaderRef}
-              className="border-b border-[rgba(17,17,17,0.08)] bg-[#f3f5f9]"
+              className="admin-panel-chrome"
             >
               <div className="admin-page-gutter admin-page-header-chrome">
                 {pageHeader}
@@ -182,7 +228,7 @@ export function StudentShell({
           ) : null}
 
           {fixedSubHeader ? (
-            <div className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <div className="admin-panel-chrome--muted">
               {fixedSubHeader}
             </div>
           ) : null}
@@ -197,7 +243,13 @@ export function StudentShell({
           } ${mainClassName}`}
         >
           <div className={`admin-page-stack ${stackClassName}`.trim()}>
-            {children}
+            {isHttpMode &&
+            !skipAccessGuard &&
+            (permissionsPending || legalCompliancePending) ? (
+              <AdminTabPanelSkeleton />
+            ) : areaDenied || navDenied ? null : (
+              children
+            )}
           </div>
         </main>
       </div>

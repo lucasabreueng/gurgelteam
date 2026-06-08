@@ -24,6 +24,7 @@ import {
   setStoredTelemetrySessionId,
   TELEMETRY_NO_SESSION,
 } from "@/lib/telemetry-active-session";
+import { isApiSessionId, toApiSessionStorageId } from "@/lib/telemetry-api-session";
 
 type TelemetryWorkspaceValue = {
   activeSessionId: string;
@@ -142,7 +143,15 @@ export function TelemetryWorkspaceProvider({ children }: { children: ReactNode }
 
   const selectSession = useCallback(
     (session: TelemetryPilotSession) => {
-      setActiveSessionId(session.id);
+      let id = session.id;
+      if (
+        !isApiSessionId(id) &&
+        !id.startsWith("proc-") &&
+        /^[0-9a-f-]{36}$/i.test(id)
+      ) {
+        id = toApiSessionStorageId(id);
+      }
+      setActiveSessionId(id);
     },
     [setActiveSessionId],
   );

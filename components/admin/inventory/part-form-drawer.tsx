@@ -15,12 +15,12 @@ import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import Image from "next/image";
 import { HiXMark } from "react-icons/hi2";
 
+import { generatePartCode } from "@/lib/inventory-parts-store";
 import {
-  addInventoryPart,
-  generatePartCode,
-  getInventoryPartById,
-  updateInventoryPart,
-} from "@/lib/inventory-parts-store";
+  useInventoryPartById,
+  useInventoryPartMutations,
+} from "./use-inventory-parts";
+import { useInventorySuppliers } from "./use-inventory-suppliers";
 import { SettingsDropdown } from "../settings/settings-dropdown";
 import {
   formatUnitCostBlur,
@@ -47,7 +47,9 @@ export function PartFormDrawer({
   onSuccess,
 }: Props) {
   const isEdit = Boolean(partId);
-  const existing = partId ? getInventoryPartById(partId) : null;
+  const existing = useInventoryPartById(partId);
+  const suppliers = useInventorySuppliers();
+  const { createMutation, updateMutation } = useInventoryPartMutations();
   const fileInputRef = useRef<HTMLInputElement>(null);
   useDrawerBodyLock(open);
 
@@ -125,7 +127,7 @@ export function PartFormDrawer({
     return undefined;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim() || !category) {
       onSuccess("Preencha descrição e categoria.");
       return;
@@ -149,21 +151,35 @@ export function PartFormDrawer({
       image: resolveImagePayload(),
     };
 
-    if (isEdit && partId) {
-      const updated = updateInventoryPart(partId, payload);
-      if (!updated) {
-        onSuccess("Peça não encontrada.");
-        return;
+    try {
+      if (isEdit && partId) {
+        const updated = await updateMutation.mutateAsync({ id: partId, input: payload });
+        if (!updated) {
+          onSuccess("Peça não encontrada.");
+          return;
+        }
+        onSuccess(`Peça ${updated.name} atualizada.`);
+      } else {
+        const supplierId = existing?.supplierId ?? suppliers[0]?.id;
+        if (!supplierId) {
+          onSuccess("Cadastre um fornecedor antes de incluir peças.");
+          return;
+        }
+        const created = await createMutation.mutateAsync({
+          ...payload,
+          supplierId,
+          image: imagePreview ?? undefined,
+        });
+        if (!created) {
+          onSuccess("Não foi possível cadastrar a peça.");
+          return;
+        }
+        onSuccess(`Peça ${created.name} cadastrada (${created.code}).`);
       }
-      onSuccess(`Peça ${updated.name} atualizada.`);
-    } else {
-      const created = addInventoryPart({
-        ...payload,
-        image: imagePreview ?? undefined,
-      });
-      onSuccess(`Peça ${created.name} cadastrada (${created.code}).`);
+      onClose();
+    } catch {
+      onSuccess("Erro ao salvar peça. Tente novamente.");
     }
-    onClose();
   };
 
   if (!open) return null;
@@ -179,9 +195,9 @@ export function PartFormDrawer({
       <aside
         role="dialog"
         aria-modal="true"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,480px)] flex-col bg-[var(--ds-bg-panel)] shadow-2xl"
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className="flex shrink-0 items-center justify-between border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <h2 className="text-lg font-bold text-[#0d1f3c]">
             {isEdit ? "Editar peça" : "Cadastrar peça"}
           </h2>

@@ -2,6 +2,10 @@
 
 import { HiOutlineCloudArrowUp, HiOutlineFolderOpen } from "react-icons/hi2";
 import { useTelemetryTabletLayout } from "@/lib/hooks/use-telemetry-tablet-layout";
+import {
+  telemetryEmptyCardClass,
+  telemetryOutlineBtnClass,
+} from "@/lib/design";
 
 type Props = {
   onOpenSessions?: () => void;
@@ -13,14 +17,14 @@ export function TelemetryEmptyState({ onOpenSessions, onOpenLoad }: Props) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="max-w-md rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white px-8 py-10 shadow-[0_2px_12px_rgba(13,31,60,0.06)]">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+      <div className={telemetryEmptyCardClass}>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
           Telemetria
         </p>
-        <h2 className="mt-2 text-xl font-bold text-[#0d1f3c]">
+        <h2 className="mt-2 text-xl font-bold text-[var(--ds-text-primary)]">
           Nenhuma telemetria selecionada
         </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-neutral-600">
+        <p className="mt-2 text-[13px] leading-relaxed text-[var(--ds-text-secondary)]">
           Abra uma sessão do histórico ou carregue um arquivo para visualizar
           voltas, setores e gráficos.
         </p>
@@ -39,7 +43,7 @@ export function TelemetryEmptyState({ onOpenSessions, onOpenLoad }: Props) {
             <button
               type="button"
               onClick={onOpenLoad}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[rgba(17,17,17,0.12)] bg-white px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-50"
+              className={`${telemetryOutlineBtnClass} inline-flex items-center justify-center gap-2 px-5 py-2.5`}
             >
               <HiOutlineCloudArrowUp className="h-4 w-4" aria-hidden />
               Carregar telemetria

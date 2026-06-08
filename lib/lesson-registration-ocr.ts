@@ -15,6 +15,10 @@ export class TimingSheetOcrError extends Error {
   }
 }
 
+function ocrEndpoint(): string {
+  return "/api/v1/lessons/ocr";
+}
+
 /** Envia a foto para OCR no servidor (OpenAI) e retorna as voltas extraídas. */
 export async function runTimingSheetOcr(
   file: File,
@@ -22,24 +26,32 @@ export async function runTimingSheetOcr(
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/admin/lesson-registration/ocr", {
+  const res = await fetch(ocrEndpoint(), {
     method: "POST",
     body: formData,
+    credentials: "include",
   });
 
   const body = (await res.json().catch(() => ({}))) as {
-    error?: string;
+    success?: boolean;
+    error?: { message?: string };
+    data?: { laps?: LapRow[] };
     laps?: LapRow[];
   };
 
   if (!res.ok) {
-    throw new TimingSheetOcrError(
-      body.error ?? "Não foi possível ler a cronometragem.",
-      res.status,
-    );
+    const message =
+      typeof body.error === "object" && body.error?.message
+        ? body.error.message
+        : typeof body.error === "string"
+          ? body.error
+          : "Não foi possível ler a cronometragem.";
+    throw new TimingSheetOcrError(message, res.status);
   }
 
-  if (!body.laps?.length) {
+  const laps = body.data?.laps ?? body.laps;
+
+  if (!laps?.length) {
     throw new TimingSheetOcrError(
       "Nenhum tempo foi encontrado na imagem.",
       res.status,
@@ -48,7 +60,7 @@ export async function runTimingSheetOcr(
 
   return {
     imageUrl: "",
-    laps: body.laps,
+    laps,
   };
 }
 

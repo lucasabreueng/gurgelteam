@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { useScheduleMeta } from "@/lib/query/hooks/use-schedule";
-import { NewClassServiceMock } from "@/services/schedule/newClassServiceMock";
 import { AvailableKartsPanel } from "./available-karts-panel";
 import { OperationalAlertsSidebar } from "./operational-alerts-sidebar";
 import { CompactMonthNavigator } from "./compact-month-navigator";
@@ -19,7 +19,7 @@ export function OperationalSidebar({
   className = "",
 }: Props) {
   const { data: meta } = useScheduleMeta();
-  const instructor = NewClassServiceMock.getInstructor();
+  const operational = getAppServices().newClass.getOperational();
   return (
     <aside className={`space-y-4 ${className}`}>
       <CompactMonthNavigator
@@ -30,8 +30,8 @@ export function OperationalSidebar({
         <div className="flex items-center gap-3">
           <div className="relative h-12 w-12 overflow-hidden rounded-xl ring-2 ring-white/20">
             <Image
-              src={instructor.avatar}
-              alt={instructor.name}
+              src={operational.avatar}
+              alt={operational.name}
               fill
               className="object-cover"
               sizes="48px"
@@ -39,11 +39,11 @@ export function OperationalSidebar({
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase text-white/50">
-              Instrutor
+              Gurgel Team
             </p>
-            <p className="text-lg font-black">{instructor.name}</p>
+            <p className="text-lg font-black">{operational.name}</p>
             <p className="text-[10px] text-white/70">
-              {instructor.dayOccupancy}% ocupação hoje
+              {operational.dayOccupancy}% ocupação hoje
             </p>
           </div>
         </div>

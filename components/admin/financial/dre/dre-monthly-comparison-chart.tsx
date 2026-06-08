@@ -3,7 +3,7 @@
 import type { DreMonthlyComparison } from "@/lib/admin-dre-mocks";
 import { formatDrePeriodLabel } from "@/lib/admin-dre-mocks";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
 
@@ -72,7 +72,7 @@ export function DreMonthlyComparisonChart({ data, periodLabel }: Props) {
           : "Resultado econômico do período (R$ mil)"
       }
     >
-      <ReactECharts
+      <ThemedECharts
         option={option}
         style={{ height: 280 }}
         opts={{ renderer: "svg" }}

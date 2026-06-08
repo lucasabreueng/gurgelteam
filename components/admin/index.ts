@@ -8,7 +8,6 @@ export { OperationalAgenda } from "./operational-agenda";
 export { StudentsOverview } from "./students-overview";
 export { TelemetryOverview } from "./telemetry-overview";
 export { KartStatusGrid } from "./kart-status-grid";
-export { ChampionshipCard } from "./championship-card";
 export { FinancialOverview } from "./financial-overview";
 export { QuickActions } from "./quick-actions";
 export { ClientsPage } from "./clients-page";

@@ -1,11 +1,12 @@
 /** Central de Registro de Aulas — dados derivados da agenda */
 
+import { resolveStudentIdByName } from "./clients-runtime-store";
 import {
-  SCHEDULE_EVENTS,
   SCHEDULE_TODAY,
   formatEventCategory,
   type ScheduleEvent,
 } from "./admin-schedule-mocks";
+import { getMergedScheduleEvents } from "./schedule-runtime-store";
 
 export type LessonSessionStatus =
   | "aguardando"
@@ -31,7 +32,7 @@ export type LessonSession = {
   avatar: string;
   category: string;
   typeLabel: string;
-  instructorName: string;
+  registeredByName: string;
   kartNumber: number;
   status: LessonSessionStatus;
   objective?: string;
@@ -91,13 +92,17 @@ const AVATARS = [
   "/images/team-6.png",
 ];
 
-const STUDENT_IDS: Record<string, string> = {
+const SEEDED_STUDENT_IDS: Record<string, string> = {
   "Lucas Mendes": "c1",
   "Ana Ribeiro": "c2",
   "Pedro Alves": "c3",
   "João Silva": "c5",
   "Marina Souza": "c6",
 };
+
+function resolveStudentId(studentName: string): string | undefined {
+  return resolveStudentIdByName(studentName) ?? SEEDED_STUDENT_IDS[studentName];
+}
 
 function addDays(iso: string, days: number): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -113,7 +118,7 @@ function mapScheduleStatus(
   if (event.status === "finalizado") return "pendente_registro";
   if (event.status === "em_andamento") return "em_andamento";
   if (event.status === "confirmado") {
-    if (event.date === SCHEDULE_TODAY && event.start <= "12:00") {
+    if (event.date <= SCHEDULE_TODAY) {
       return "pendente_registro";
     }
     return "aguardando";
@@ -139,11 +144,11 @@ function buildSession(
     start: event.start,
     end: event.end,
     studentName: event.student,
-    studentId: STUDENT_IDS[event.student],
+    studentId: resolveStudentId(event.student),
     avatar: AVATARS[index % AVATARS.length],
     category: formatEventCategory(event.category),
     typeLabel: event.typeLabel,
-    instructorName: event.instructorName,
+    registeredByName: "Gurgel Team",
     kartNumber: event.kartNumber,
     status: mapScheduleStatus(event, statusOverride),
     objective: event.objective,
@@ -157,11 +162,13 @@ const STATUS_OVERRIDES: Record<string, LessonSessionStatus> = {
   e5: "em_andamento",
 };
 
-export function getLessonSessionsFromSchedule(): LessonSession[] {
-  const e3 = SCHEDULE_EVENTS.find((e) => e.id === "e3");
-  const e2b = SCHEDULE_EVENTS.find((e) => e.id === "e2b");
+export function buildLessonSessionsFromEvents(
+  events: ScheduleEvent[],
+): LessonSession[] {
+  const e3 = events.find((e) => e.id === "e3");
+  const e2b = events.find((e) => e.id === "e2b");
   const extra: ScheduleEvent[] = [];
-  if (e3) {
+  if (e3 && !events.some((e) => e.id === "e3-tomorrow")) {
     extra.push({
       ...e3,
       id: "e3-tomorrow",
@@ -171,7 +178,7 @@ export function getLessonSessionsFromSchedule(): LessonSession[] {
       status: "confirmado",
     });
   }
-  if (e2b) {
+  if (e2b && !events.some((e) => e.id === "e2b-week")) {
     extra.push({
       ...e2b,
       id: "e2b-week",
@@ -182,7 +189,7 @@ export function getLessonSessionsFromSchedule(): LessonSession[] {
     });
   }
 
-  const all = [...SCHEDULE_EVENTS, ...extra];
+  const all = [...events, ...extra];
 
   return all
     .filter(isRegisterableEvent)
@@ -193,6 +200,10 @@ export function getLessonSessionsFromSchedule(): LessonSession[] {
       (a, b) =>
         a.date.localeCompare(b.date) || a.start.localeCompare(b.start),
     );
+}
+
+export function getLessonSessionsFromSchedule(): LessonSession[] {
+  return buildLessonSessionsFromEvents(getMergedScheduleEvents());
 }
 
 export const LESSON_SESSIONS = getLessonSessionsFromSchedule();

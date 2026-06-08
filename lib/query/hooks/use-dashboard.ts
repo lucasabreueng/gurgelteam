@@ -4,16 +4,26 @@ import { useQuery } from "@tanstack/react-query";
 import { getAppServices } from "@/lib/data-source/app-services";
 import { queryKeys } from "@/lib/query/keys";
 
-export function useDashboardKpis() {
+function useDashboardSummary() {
   return useQuery({
-    queryKey: queryKeys.dashboard.kpis(),
-    queryFn: () => getAppServices().dashboard.getDashboardKpis(),
+    queryKey: queryKeys.dashboard.summary(),
+    queryFn: () => getAppServices().dashboard.getDashboardSummary(),
+    retry: false,
   });
 }
 
+export function useDashboardKpis() {
+  const query = useDashboardSummary();
+  return {
+    ...query,
+    data: query.data?.kpis ?? [],
+  };
+}
+
 export function useOperationalAgenda() {
-  return useQuery({
-    queryKey: queryKeys.dashboard.agenda(),
-    queryFn: () => getAppServices().dashboard.getOperationalAgenda(),
-  });
+  const query = useDashboardSummary();
+  return {
+    ...query,
+    data: query.data?.operationalAgenda ?? [],
+  };
 }

@@ -1,8 +1,9 @@
 # PROJECT_CONTEXT — Gurgel Team
 
-> **Última atualização:** 2026-05-28  
+> **Última atualização:** 2026-06-01  
+> **Handoff:** [`MIGRATION_STATUS.md`](MIGRATION_STATUS.md)  
 > **Fonte:** código existente em `gurgel-team-site` (pasta `GURGEL API`)  
-> **Legenda:** `[CONFIRMADO]` = evidência direta no código · `[INFERIDO]` = dedução a partir de estrutura/mocks, sem backend real
+> **Legenda:** `[CONFIRMADO]` = evidência direta no código · `[INFERIDO]` = dedução/planejado
 
 ---
 
@@ -13,8 +14,8 @@
 | Nome npm | `gurgel-team-site` v1.0.0 |
 | Tipo | Frontend Next.js 15 (App Router) — site institucional + painéis operacionais |
 | Domínio de negócio | Kartódromo / escola de pilotagem **Gurgel Team** `[CONFIRMADO]` — referências em `lib/admin-settings-mocks.ts`, landing em `sections/` |
-| Backend | **Não implementado** `[CONFIRMADO]` — dados via mocks; agenda parcialmente em modo HTTP bridge |
-| README raiz | Placeholder (`"# gurgelteam"`) `[CONFIRMADO]` |
+| Backend | **Implementado (P0)** `[CONFIRMADO]` — Route Handlers `/api/v1/*` + Prisma + PostgreSQL (Supabase). Modo `mock` ainda disponível. |
+| README raiz | Setup + links docs `[CONFIRMADO]` |
 
 Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **frontend completo** preparado para integração futura com API/backend via camadas `contracts → repositories → services`.
 
@@ -40,7 +41,7 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 | Visitante / prospect | Landing, reserva pública | `/`, `/reserva` |
 | Piloto / aluno | Área do piloto | `/piloto/*`, `lib/student-area-mocks.ts` |
 | Responsável legal | Cadastro vinculado, perfil menor | `lib/cadastro-mocks.ts`, `ClientGuardian` |
-| Instrutor | Admin (agenda, registro) | `RoleKey: instrutor` em settings |
+| Staff operacional | Admin (agenda, registro) | `RoleKey` operacional em settings |
 | Recepção | Admin (agenda, clientes) | `RoleKey: recepcao` |
 | Financeiro | Admin financeiro | `RoleKey: financeiro` |
 | Mecânico | Manutenção, estoque, karts | mock de papel "Mecânico" em settings |
@@ -75,14 +76,14 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 | Fluxo | Rota | Status |
 |-------|------|--------|
 | Dashboard executivo | `/admin` | Mock |
-| Agenda operacional | `/admin/agenda` | Mock + **HTTP bridge** |
-| Registro de aulas (manual/OCR/telemetria) | `/admin/registro-aulas` | Parcial — OCR via API OpenAI |
+| Agenda operacional | `/admin/agenda` | **HTTP P0 completo** — eventos, bloqueios, remarcação, nova aula, grade |
+| Registro de aulas (manual/OCR/telemetria) | `/admin/registro-aulas` | Parcial — API v1; UI parcialmente mock |
 | CRM clientes/alunos | `/admin/clientes` | Mock |
 | Frota de karts | `/admin/karts` | Mock |
 | Manutenção (OS, checklist, inspeção) | `/admin/manutencao` | Mock |
 | Estoque (peças, fornecedores, compras) | `/admin/estoque` | Mock + stores locais |
 | Financeiro (overview, receber, pagar, fluxo, DRE) | `/admin/financeiro` | Mock |
-| Configurações | `/admin/configuracoes` | Mock |
+| Configurações | `/admin/configuracoes` | Grade semanal HTTP; demais abas mock |
 | Telemetria admin | `/admin/telemetria/*` | Parcial |
 
 ### 4.4 Fluxos transversais
@@ -99,7 +100,7 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 | Módulo | Nav key | Rota | Componentes | Service |
 |--------|---------|------|-------------|---------|
 | Dashboard | `dashboard` | `/admin` | `admin-dashboard-page.tsx` | `DashboardServiceMock` |
-| Agenda | `agenda` | `/admin/agenda` | `schedule/*` (45 arquivos) | `scheduleService` (mock/HTTP) |
+| Agenda | `agenda` | `/admin/agenda` | `schedule/*` | `schedule`, `scheduleBlocks`, `scheduleReschedule`, `newClass`, `weekSchedule` (mock/HTTP) |
 | Registro de aulas | `registroAulas` | `/admin/registro-aulas` | `lesson-registration/*` | `LessonServiceMock` |
 | Clientes | `alunos` | `/admin/clientes` | `clients/*` (27 arquivos) | `ClientsServiceMock` |
 | Karts | `karts` | `/admin/karts` | `karts/*` (11 arquivos) | `KartsServiceMock` |
@@ -107,7 +108,7 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 | Estoque | `estoque` | `/admin/estoque` | `inventory/*` (33 arquivos) | `InventoryServiceMock` |
 | Financeiro | `financeiro` | `/admin/financeiro` | `financial/*` (54 arquivos) | `FinancialServiceMock`, `CashFlowServiceMock` |
 | Telemetria | `telemetria` | `/admin/telemetria` | `telemetry/*` | `TelemetryServiceMock` |
-| Configurações | `configuracoes` | `/admin/configuracoes` | `settings/*` (22 arquivos) | `SettingsServiceMock` |
+| Configurações | `configuracoes` | `/admin/configuracoes` | `settings/*` | `SettingsServiceMock` + `weekSchedule` (HTTP) |
 | Área piloto | — | `/piloto/*` | `student-area/*` | `StudentAreaServiceMock`, etc. |
 | Auth | — | `/login`, `/cadastro`, etc. | `login/*`, `cadastro/*` | `AuthServiceMock` |
 | Landing | — | `/` | `sections/*` (11 seções) | — |
@@ -123,16 +124,14 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 
 | Módulo | Nav key | Evidência |
 |--------|---------|-----------|
-| Instrutores | `instrutores` | `ModuleKey` em `admin-settings-mocks.ts`, sidebar mock |
-| Campeonatos | `campeonatos` | `ModuleKey`, `championship-card.tsx` no dashboard |
 | Relatórios operacionais | `relatorios` | `ModuleKey`; relatórios financeiros existem, módulo dedicado não |
 
-`[INFERIDO]` — próximos passos arquiteturais documentados em `CHECKPOINT.md` e `FRONTEND_ARCHITECTURE_REPORT.md`:
+`[INFERIDO]` — próximos passos documentados em `MIGRATION_STATUS.md`:
 
-- HTTP para bloqueios/remarcação/nova aula da agenda
-- HTTP para demais domínios (clientes, financeiro, …)
-- Backend real substituindo handlers em `app/api/admin/schedule/*`
-- Auth/sessão real (middleware, JWT/cookies)
+- Wire UI registro de aulas → HTTP
+- Config — datas específicas / exceções de grade
+- HTTP financeiro, estoque, manutenção, dashboard, piloto
+- Proxy rotas legadas `/api/admin/*` → v1
 
 ---
 
@@ -171,19 +170,33 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 /manutencao                 Manutenção do sistema
 ```
 
-### 7.2 API Routes (`app/api/**/route.ts`) — 5 rotas
+### 7.2 API Routes
 
-| Método | Rota | Função |
-|--------|------|--------|
-| GET | `/api/admin/schedule/events` | Lista eventos |
-| GET | `/api/admin/schedule/events/[eventId]` | Detalhe de evento |
-| GET | `/api/admin/schedule/upcoming-days` | Próximos dias |
-| GET | `/api/admin/schedule/meta` | Metadados da agenda |
-| POST | `/api/admin/lesson-registration/ocr` | OCR OpenAI de cronometragem |
+**v1 (produção):** ~35 rotas em `app/api/v1/**/route.ts`
+
+| Grupo | Exemplos |
+|-------|----------|
+| Auth | `POST /api/v1/auth/login`, `GET /api/v1/auth/session`, password-recovery |
+| Agenda | `GET/POST /api/v1/schedule/events`, `blocks`, `slots`, `week`, `meta`, `upcoming-days` |
+| Agenda mutações | `POST .../cancel`, `.../reschedule`, `.../swap-kart` |
+| Clientes | `GET/POST /api/v1/clients`, `/:id`, guardians, stats, timeline |
+| Karts | `GET /api/v1/karts`, `/:id/status`, assign-client |
+| Aulas | `GET/POST /api/v1/lessons/sessions`, start, register, ocr |
+| Referência | `GET /api/v1/reference/catalog` |
+| Infra | `GET /api/v1/supabase/health` |
+
+**Legado (migrar):**
+
+| Método | Rota |
+|--------|------|
+| GET | `/api/admin/schedule/events`, `events/[id]`, `upcoming-days`, `meta` |
+| POST | `/api/admin/lesson-registration/ocr` |
+
+Ver inventário completo: `MIGRATION_STATUS.md` §5.
 
 ### 7.3 Observações de roteamento
 
-- **Sem `middleware.ts`** `[CONFIRMADO]` — rotas admin/piloto não protegidas server-side
+- **`middleware.ts`** `[CONFIRMADO]` — guard `/admin/*` e `/piloto/*` quando `ENABLE_ROUTE_GUARD=true`
 - Páginas 401/403/500/sessão-expirada são estáticas, preparadas para guards futuros
 - Layouts especiais: `app/piloto/telemetria/layout.tsx`, `app/admin/telemetria/layout.tsx`
 
@@ -203,20 +216,29 @@ Apesar do nome da pasta do repositório (`GURGEL API`), o projeto é um **fronte
 | Datas | date-fns, react-day-picker | 4.1 / 10.0 |
 | Ícones | react-icons (hi2) | 5.4.0 |
 | Carousel | Swiper | 11.2.1 |
-| Export | xlsx | 0.18.5 |
+| Export | exceljs | — |
 | Telemetria GoPro | gopro-telemetry, gpmf-extract | vendor esbuild |
 | Linguagem | TypeScript (strict) | 5.7.2 |
+| ORM | Prisma | 6.x |
+| DB | PostgreSQL (Supabase) | — |
+| Auth client | @supabase/supabase-js, @supabase/ssr | — |
+
 | Lint | ESLint + eslint-config-next | 8.57 / 15.1 |
 
 ### Variáveis de ambiente (`.env.example`)
 
 | Variável | Valores | Uso |
 |----------|---------|-----|
+| `DATABASE_URL` | PostgreSQL pooler | Prisma runtime |
+| `DIRECT_URL` | PostgreSQL direct | Migrations/seed |
+| `SESSION_SECRET` | string longa | Cookie sessão |
 | `NEXT_PUBLIC_DATA_SOURCE` | `mock` (padrão) \| `http` | Modo de dados |
-| `NEXT_PUBLIC_API_URL` | URL ou vazio | Base API externa; vazio = `/api/...` local |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | — | Mapas telemetria |
+| `NEXT_PUBLIC_API_URL` | URL ou vazio | Base API externa |
+| `ENABLE_ROUTE_GUARD` | `true` \| `false` | Proteção rotas |
+| `NEXT_PUBLIC_SUPABASE_URL` | — | Supabase client |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | — | Supabase anon key |
+| `SEED_DEFAULT_PASSWORD` | default `Gurgel@123` | Seed usuários |
 | `OPENAI_API_KEY` | — | OCR cronometragem |
-| `OPENAI_OCR_MODEL` | default `gpt-4o` | Modelo OCR |
 
 ---
 
@@ -277,11 +299,15 @@ Documentos na raiz (referência histórica, preferir `/docs`):
 
 ---
 
-## 11. Estado de prontidão para backend
+## 11. Estado de prontidão
 
-**Resposta: NÃO** `[CONFIRMADO]` — `FRONTEND_AUDIT.md`
+**Fase 6 em andamento** `[CONFIRMADO]` — ver `MIGRATION_STATUS.md`
 
-- Dados majoritariamente mock
-- Regras de negócio no frontend sem validação server-side
-- Auth/sessão não implementada
-- Contratos parciais (DTOs existem; persistência não)
+| Área | Status |
+|------|--------|
+| Auth + sessão | ✅ Implementado |
+| Schema + migrations | ✅ Aplicável |
+| Agenda P0 HTTP | ✅ Concluído |
+| Grade semanal | ✅ Persistida |
+| Demais domínios | ❌ Mock |
+| Design system | ⚠️ Fragmentado |

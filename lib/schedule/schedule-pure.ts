@@ -16,3 +16,4 @@ export {
   filterScheduleEvents,
   getEventDetail,
 } from "@/lib/admin-schedule-mocks";
+export { buildDayTimelineFromSlots } from "@/lib/schedule/build-day-timeline";

@@ -1,5 +1,4 @@
 import type {
-  AvailableInstructorItem,
   AvailableKartItem,
   OperationalSidebarAlert,
   ScheduleConflict,
@@ -18,16 +17,13 @@ export type ScheduleMetaDTO = {
   viewTabs: { key: ScheduleViewKey; label: string }[];
   kpis: ScheduleKpi[];
   availableKartsNow: AvailableKartItem[];
-  availableInstructorsNow: AvailableInstructorItem[];
   operationalSidebarAlerts: OperationalSidebarAlert[];
   quickActions: { id: string; label: string; action: string }[];
-  instructors: { id: string; name: string; avatar?: string }[];
   kartScheduleRows: unknown[];
   conflicts: ScheduleConflict[];
   insights: ScheduleInsight[];
   eventTypeOptions: { value: string; label: string }[];
   eventStatusOptions: { value: string; label: string }[];
-  instructorFilterOptions: { value: string; label: string }[];
   categoryFilterOptions: { value: string; label: string }[];
   eventTypeLabels: Record<string, string>;
   eventStatusLabels: Record<string, string>;

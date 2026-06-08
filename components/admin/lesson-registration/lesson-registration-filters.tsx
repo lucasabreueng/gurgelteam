@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/filter-box";
 import { SettingsDatePicker } from "../settings/settings-date-picker";
 import { SettingsDropdown } from "../settings/settings-dropdown";
+import { adminCardClass } from "@/lib/design";
 import { settingsInputClass } from "../settings/settings-section";
 
 const STATUS_OPTIONS: {
@@ -59,7 +60,7 @@ export function LessonRegistrationFilters({
     <>
       <div className={isStacked ? "relative w-full" : "relative min-w-[200px] flex-[2] xl:min-w-[240px]"}>
         <HiMagnifyingGlass
-          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--ds-text-muted)]"
           aria-hidden
         />
         <input
@@ -114,7 +115,7 @@ export function LessonRegistrationFilters({
 
   if (isStacked) {
     return (
-      <div className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
+      <div className={`${adminCardClass} p-4`}>
         <div className="flex flex-col gap-4">{fields}</div>
       </div>
     );

@@ -52,7 +52,7 @@ export const FinancialRepositoryMock = {
   getPaymentServiceOptions: () => financialMocks.PAYMENT_SERVICE_OPTIONS,
 
   getAccountsReceivable(): AccountReceivableDTO[] {
-    return financialMocks.ACCOUNTS_RECEIVABLE.map(toReceivableDTO);
+    return financialMocks.getMergedAccountsReceivable().map(toReceivableDTO);
   },
 
   getAccountsPayable(): AccountPayableDTO[] {
@@ -61,7 +61,7 @@ export const FinancialRepositoryMock = {
 
   filterReceivables(filters: ReceivableQueryDTO): AccountReceivableDTO[] {
     const filtered = financialMocks.filterAccountsReceivable(
-      financialMocks.ACCOUNTS_RECEIVABLE,
+      financialMocks.getMergedAccountsReceivable(),
       filters,
     );
     return filtered.map(toReceivableDTO);

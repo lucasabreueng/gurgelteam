@@ -24,7 +24,7 @@ export function Preloader() {
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-accent-gradient-soft transition-opacity duration-500"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-accent transition-opacity duration-500"
       aria-hidden
     >
       <div className="relative mx-auto my-10 h-[100px] w-[100px] rounded-full">

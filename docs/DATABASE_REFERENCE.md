@@ -1,8 +1,9 @@
 # DATABASE_REFERENCE — Gurgel Team
 
-> **Última atualização:** 2026-05-28  
-> **Aviso crítico:** **Não existe banco de dados implementado** `[CONFIRMADO]`. Sem Prisma, Drizzle, SQL ou migrations.  
-> Este documento descreve o **modelo lógico de dados** inferido dos contratos (`lib/contracts/`) e mocks (`lib/*-mocks.ts`) como referência para implementação futura do backend.  
+> **Última atualização:** 2026-06-01  
+> **Schema Prisma:** `prisma/schema.prisma` (v1). **Migrations aplicáveis** — `npm run db:migrate`. Seed: `npm run db:seed`.  
+> **Runtime:** modo `http` persiste domínios P0; modo `mock` usa stores/mocks in-memory.  
+> **Handoff:** [`MIGRATION_STATUS.md`](MIGRATION_STATUS.md)  
 > **Legenda:** `[CONFIRMADO]` = tipo/campo explícito no código · `[INFERIDO]` = relacionamento deduzido · `[PLANEJADO]` = necessário mas não modelado
 
 ---
@@ -11,11 +12,14 @@
 
 | Aspecto | Estado atual |
 |---------|--------------|
-| ORM / DB | Ausente |
-| Persistência | Mocks in-memory + 5 stores locais |
-| Contratos | `lib/contracts/` — DTOs TypeScript + Zod parcial |
-| IDs | Strings mock (ex.: `"c1"`, `"i1"`) — não UUID |
-| Timestamps | Opcionais em DTOs (`createdAt?`, `updatedAt?`) |
+| ORM / DB | Prisma + PostgreSQL (Supabase); migration `20260528140000_init` |
+| Schema | `prisma/schema.prisma` — 30+ modelos |
+| Persistência runtime | Modo `http`: P0 via Prisma; modo `mock`: mocks + stores locais |
+| Grade semanal | Tabela `week_schedule_slots` — seed + CRUD via API |
+| Storage blobs | `docs/STORAGE_STRATEGY.md` (S3-compatible; não implementado) |
+| Contratos | `lib/contracts/` — DTOs + Zod v1 |
+| IDs mock | Strings (ex.: `"c1"`) — DB usa UUID; `resolve-reference-ids.ts` na persistência |
+| Timestamps | Opcionais em DTOs; obrigatórios no schema Prisma |
 
 ### Stores locais (não-banco)
 
@@ -26,6 +30,35 @@
 | Fornecedores | `lib/inventory-suppliers-store.ts` | Memória |
 | Sessões telemetria | `lib/telemetry-engine/storage/session-store.ts` | Browser |
 | Pistas usuário | `lib/telemetry-engine/tracks/user-track-store.ts` | Browser |
+
+### Modelos Prisma (`prisma/schema.prisma`)
+
+| Domínio | Modelos |
+|---------|---------|
+| Identidade | `User`, `Session`, `PasswordReset`, `Consent` |
+| Piloto | `Client`, `Guardian`, `GuardianLink`, `KartCategory`, `ClientCategory`, `SkillLevel` |
+| Operacional | `ScheduleEvent`, `ScheduleBlock`, `LessonSession` |
+| Frota | `Kart` |
+| Manutenção | `MaintenanceOrder`, `MaintenancePartUse` |
+| Estoque | `Supplier`, `InventoryPart`, `StockMovement`, `PurchaseOrder`, `PurchaseOrderLine` |
+| Financeiro | `AccountReceivable`, `AccountPayable`, `Payment`, `PackageCredit` |
+| Telemetria | `TelemetrySession`, `TelemetryLap` |
+| Config | `OrganizationSettings`, `WeekScheduleSlot` |
+| Sistema | `ModulePermission`, `AuditLog`, `ReportRun` |
+
+**P2 (fora do schema v1 — ver §1.1 abaixo):** `achievements`, `video_materials`, `dre_entries`, `cash_flow_entries`, checklists completos (`complete_checklists`), inspeções como tabela dedicada, `tracks` dedicados.
+
+### 1.1 Entidades adiadas (decisão Fase 3)
+
+| Entidade | Motivo | Abordagem Fase 5 |
+|----------|--------|------------------|
+| `dre_entries` / DRE hierárquico | Mock agrega em memória; estrutura profunda | Query agregada + cache JSON ou tabelas `dre_lines` na Fase 5+ |
+| `cash_flow_entries` | Idem fluxo de caixa | Derivar de `payments` + `accounts_payable` |
+| `complete_checklists` | UI rica; schema v1 usa `MaintenanceOrder` simplificado | JSON em `maintenance_orders` ou tabela P2 |
+| `simple_inspections` | Formulário mock separado | Mesclar em OS ou tabela `inspections` P2 |
+| `achievements` / rankings | Gamificação piloto | P2 — sem bloqueio operacional P0 |
+| `video_materials` | Mídia streaming | P2 + `STORAGE_STRATEGY.md` |
+| `tracks` (pistas) | Telemetria usa `trackId` string + browser store | Tabela `tracks` quando telemetria persistir |
 
 ---
 
@@ -42,7 +75,6 @@ erDiagram
     CLIENT }o--|| SKILL_LEVEL : "at level"
     CLIENT }o--o{ KART_CATEGORY : "allowed in"
     
-    SCHEDULE_EVENT }o--|| INSTRUCTOR : taught_by
     SCHEDULE_EVENT }o--o| KART : uses
     SCHEDULE_EVENT ||--o| LESSON_SESSION : generates
     
@@ -81,7 +113,7 @@ erDiagram
 | cpf | string | ✓ | 11 dígitos |
 | birthDate | string (ISO) | ✓ | |
 | passwordHash | string | ✓ | `[PLANEJADO]` — mock não valida senha |
-| role | RoleKey | ✓ | admin, instrutor, recepcao, financeiro |
+| role | RoleKey | ✓ | admin, recepcao, financeiro, mecanico |
 | remember | boolean | — | Login DTO only |
 
 **Relacionamentos:**
@@ -196,7 +228,7 @@ erDiagram
 | status | ScheduleEventStatus | ✓ | 8 status |
 | studentId | string | — | FK → CLIENT |
 | studentName | string | — | Denormalizado |
-| instructorId | string | — | FK → INSTRUCTOR |
+| registradoPor | string | — | FK → USER (staff que registrou/avaliou) |
 | kartId | string | — | FK → KART |
 | kartNumber | number | — | Denormalizado |
 | categoryId | string | — | |
@@ -204,7 +236,7 @@ erDiagram
 | notes | string | — | |
 | maxStudents | number | — | Treinos em grupo |
 
-**ScheduleEventType:** aula_individual, aula_grupo, treino_livre, treino_avancado, telemetria, campeonato, manutencao, reserva_kart, bloqueio_pista
+**ScheduleEventType:** aula_individual, aula_grupo, treino_livre, treino_avancado, telemetria, manutencao, reserva_kart, bloqueio_pista
 
 ---
 
@@ -238,7 +270,7 @@ erDiagram
 | avatar | string | — |
 | category | string | ✓ |
 | typeLabel | string | ✓ |
-| instructorName | string | ✓ |
+| registradoPorNome | string | ✓ | Denormalizado (avaliador técnico) |
 | kartNumber | number | ✓ |
 | status | LessonStatus | ✓ |
 | objective | string | — |
@@ -299,7 +331,7 @@ erDiagram
 |-------|------|
 | id | string |
 | kartId | string |
-| type | pre/post/revisao/campeonato |
+| type | pre/post/revisao/evento |
 | items | ChecklistItem[] |
 | result | liberado/restrito/bloqueado |
 | performedBy | string |
@@ -529,8 +561,7 @@ erDiagram
 |--------|--------|--------|
 | schedule_events | (date, start) | Timeline/calendário |
 | schedule_events | (student_id, date) | Histórico aluno |
-| schedule_events | (instructor_id, date, start) | Conflito instrutor |
-| schedule_events | (kart_id, date, start) | Disponibilidade kart |
+| schedule_events | (kart_id, date, start) | Disponibilidade kart / conflito recurso |
 | lesson_sessions | (schedule_event_id) | 1:1 lookup |
 | lesson_sessions | (status, date) | Filtro registro aulas |
 | clients | (status) | Filtro CRM |
@@ -555,7 +586,6 @@ erDiagram
 | stock ≥ 0 | inventory_parts | CHECK |
 | Saída peça ≤ stock | stock_movements | TRIGGER |
 | Evento não sobrepõe kart no mesmo slot | schedule_events | UNIQUE / TRIGGER |
-| Evento não sobrepõe instrutor | schedule_events | TRIGGER |
 | lesson_session.schedule_event_id único | lesson_sessions | UNIQUE |
 | Kart client exige client_id | karts | CHECK |
 | Consent required before 1ª sessão | consents, lesson_sessions | TRIGGER |

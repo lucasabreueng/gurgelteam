@@ -341,7 +341,7 @@ Encontrados amplamente em `lib/*mocks*.ts`, incluindo:
 
 ## 8.10 Registro de aulas
 - sessoes originadas da agenda
-- dados de aula (instrutor, kart, aluno, objetivo, feedback)
+- dados de aula (registradoPor, kart, aluno, objetivo, feedback)
 - voltas/setores/tempos
 - origem de cronometragem (manual, OCR, telemetria)
 - status de registro/finalizacao

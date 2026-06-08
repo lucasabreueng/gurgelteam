@@ -1,4 +1,7 @@
+"use client";
+
 import { HiPlus } from "react-icons/hi2";
+import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
 import { TableFiltersButton } from "@/components/ui/table-filters-button";
 import { AdminPageHeader } from "../admin-page-header";
 
@@ -13,6 +16,8 @@ export function KartsHeader({
   onOpenFilters,
   activeFilterCount = 0,
 }: Props) {
+  const { tabletLandscape } = useAdminPanelTabletLayout();
+
   return (
     <AdminPageHeader
       title="Karts"
@@ -22,17 +27,17 @@ export function KartsHeader({
           <TableFiltersButton
             onClick={() => onOpenFilters?.()}
             activeFilterCount={activeFilterCount}
+            iconOnlyPortrait
           />
-          <button type="button" onClick={onNewKart} className="btn-primary-sm lg:hidden">
-            <HiPlus className="h-4 w-4 shrink-0" aria-hidden />
-            Novo kart
-          </button>
-          <button type="button" onClick={onNewKart} className="btn-primary-md hidden lg:inline-flex">
-            <HiPlus className="h-4 w-4" aria-hidden />
-            Novo kart
-          </button>
+          {onNewKart ? (
+            <button type="button" onClick={onNewKart} className="btn-primary-sm">
+              <HiPlus className="h-4 w-4 shrink-0" aria-hidden />
+              {tabletLandscape ? "Novo" : "Novo kart"}
+            </button>
+          ) : null}
         </>
       }
+      actionsClassName="admin-page-header-actions--tablet-compact"
     />
   );
 }

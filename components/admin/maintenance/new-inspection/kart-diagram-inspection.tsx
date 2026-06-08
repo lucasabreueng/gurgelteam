@@ -1,6 +1,6 @@
 "use client";
 
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
 
 import type {
   DiagramZoneKey,
@@ -31,6 +31,7 @@ const PROBLEM_SUGGESTIONS: Record<DiagramZoneKey, string[]> = {
 };
 
 export function KartDiagramInspection() {
+  const { data: template, isLoading } = useInspectionTemplate();
   const [view, setView] = useState<DiagramZoneKey>("lat_esq");
   const [marks, setMarks] = useState<InspectionDiagramMark[]>([]);
   const [pendingZone, setPendingZone] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export function KartDiagramInspection() {
     setPendingZone(null);
   };
 
-  const zones = InspectionServiceMock.getDiagramZones()[view];
+  const zones = template?.diagramZones[view] ?? [];
 
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
@@ -57,6 +58,10 @@ export function KartDiagramInspection() {
       <p className="mt-1 text-xs text-neutral-500">
         Toque na área e registre o problema
       </p>
+      {isLoading ? (
+        <div className="mt-4 h-48 animate-pulse rounded-2xl bg-[#fafbfc]" />
+      ) : (
+        <>
       <div className="mt-3 flex flex-wrap gap-1 rounded-lg bg-[#fafbfc] p-1">
         {VIEWS.map((v) => (
           <button
@@ -155,6 +160,8 @@ export function KartDiagramInspection() {
           ))}
         </ul>
       ) : null}
+        </>
+      )}
     </section>
   );
 }

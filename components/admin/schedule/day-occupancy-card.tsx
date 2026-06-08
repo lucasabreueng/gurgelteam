@@ -1,7 +1,7 @@
 "use client";
 
 import type { UpcomingDaySummary } from "@/lib/contracts/schedule";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 type Props = {
   day: UpcomingDaySummary;
@@ -17,7 +17,7 @@ function weekdayShortUpper(date: string): string {
 }
 
 export function DayOccupancyCard({ day, selected, onSelect }: Props) {
-  const weekdayLong = ScheduleServiceMock.getWeekdayLongUpper(day.date);
+  const weekdayLong = getAppServices().schedule.getWeekdayLongUpper(day.date);
   const weekdayShort = weekdayShortUpper(day.date);
   const barWidth =
     day.bookingCount > 0 ? Math.max(day.occupancyPercent, 4) : 0;

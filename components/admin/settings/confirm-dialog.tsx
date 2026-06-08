@@ -9,8 +9,10 @@ type Props = {
   confirmLabel?: string;
   cancelLabel?: string;
   hideCancel?: boolean;
+  secondaryConfirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  onSecondaryConfirm?: () => void;
 };
 
 export function ConfirmDialog({
@@ -20,8 +22,10 @@ export function ConfirmDialog({
   confirmLabel = "Excluir",
   cancelLabel = "Cancelar",
   hideCancel = false,
+  secondaryConfirmLabel,
   onConfirm,
   onCancel,
+  onSecondaryConfirm,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -56,7 +60,7 @@ export function ConfirmDialog({
         </h2>
         <p
           id="confirm-dialog-desc"
-          className="mt-3 text-sm leading-relaxed text-neutral-600"
+          className="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-600"
         >
           {message}
         </p>
@@ -68,6 +72,15 @@ export function ConfirmDialog({
               className="rounded-xl border border-[rgba(13,31,60,0.2)] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-[#fafbfc]"
             >
               {cancelLabel}
+            </button>
+          ) : null}
+          {secondaryConfirmLabel && onSecondaryConfirm ? (
+            <button
+              type="button"
+              onClick={onSecondaryConfirm}
+              className="rounded-xl border border-[rgba(13,31,60,0.2)] bg-[#fafbfc] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-white"
+            >
+              {secondaryConfirmLabel}
             </button>
           ) : null}
           <button

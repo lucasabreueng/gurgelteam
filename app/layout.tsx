@@ -35,7 +35,7 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${sora.variable} font-sans`}>
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('theme-preference');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-color-mode',t);}catch(e){}})();`}
+          {`(function(){try{var p=localStorage.getItem('theme-preference');var m=window.matchMedia('(prefers-color-scheme: dark)');var r=p==='dark'||p==='light'?p:(m.matches?'dark':'light');document.documentElement.setAttribute('data-color-mode',r);}catch(e){}})();`}
         </Script>
         <Script id="app-vh-init" strategy="beforeInteractive">
           {`(function(){try{var d=document.documentElement;d.style.setProperty('--app-vh',(window.innerHeight*0.01)+'px');}catch(e){}})();`}

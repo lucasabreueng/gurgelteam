@@ -1,138 +1,116 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HiXMark } from "react-icons/hi2";
 
 import type { DocumentTemplate } from "@/lib/contracts/settings";
-
 import {
-  SettingsField,
-  settingsInputClass,
-  settingsTextareaClass,
-} from "./settings-section";
+  documentContentIsEmpty,
+  plainContentToEditorHtml,
+  sanitizeDocumentHtml,
+} from "@/lib/legal/document-content";
+import { adminLabelClass } from "@/lib/design/classes";
+
+import { RichTextEditor } from "./rich-text-editor";
 
 type Props = {
   open: boolean;
   document: DocumentTemplate | null;
   onConfirm: (patch: Partial<DocumentTemplate>) => void;
-  onCancel: () => void;
+  onClose: () => void;
 };
 
 export function DocumentEditDialog({
   open,
-  document,
+  document: doc,
   onConfirm,
-  onCancel,
+  onClose,
 }: Props) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
-  const [status, setStatus] = useState<DocumentTemplate["status"]>("rascunho");
 
   useEffect(() => {
-    if (!open || !document) return;
-    setTitle(document.title);
-    setDescription(document.description);
-    setContent(document.content);
-    setStatus(document.status);
-  }, [open, document]);
+    if (!open || !doc) return;
+    setContent(plainContentToEditorHtml(doc.content));
+  }, [open, doc]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape") onClose();
     };
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
 
-  if (!open || !document) return null;
+  if (!open || !doc) return null;
+
+  const isEmpty = documentContentIsEmpty(content);
 
   return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-[240] flex items-center justify-center bg-black/55 p-4"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 z-[240] flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+        aria-label="Fechar"
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="document-edit-title"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[rgba(17,17,17,0.1)] bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="relative flex max-h-[min(90vh,820px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-2xl"
       >
-        <h2
-          id="document-edit-title"
-          className="text-lg font-bold text-[#0d1f3c]"
-        >
-          Editar documento
-        </h2>
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[rgba(17,17,17,0.08)] px-5 py-4">
+          <div>
+            <h2
+              id="document-edit-title"
+              className="text-lg font-bold text-[#0d1f3c]"
+            >
+              Editar documento
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-[#0d1f3c]">
+              {doc.title}
+            </p>
+            <p className="mt-0.5 text-sm text-neutral-600">{doc.description}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-neutral-500 hover:bg-neutral-100"
+            aria-label="Fechar"
+          >
+            <HiXMark className="h-5 w-5" />
+          </button>
+        </header>
 
-        <div className="mt-5 space-y-4">
-          <SettingsField label="Título">
-            <input
-              className={settingsInputClass}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </SettingsField>
-          <SettingsField label="Descrição">
-            <input
-              className={settingsInputClass}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </SettingsField>
-          <SettingsField label="Conteúdo">
-            <textarea
-              className={settingsTextareaClass}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-          </SettingsField>
-          <SettingsField label="Status">
-            <div className="flex gap-2">
-              {(["publicado", "rascunho"] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStatus(s)}
-                  className={`rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider ${
-                    status === s
-                      ? "bg-[#0d1f3c] text-white"
-                      : "bg-white ring-1 ring-[rgba(17,17,17,0.1)] text-neutral-600"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </SettingsField>
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-5 py-4">
+          <label className={adminLabelClass}>Conteúdo</label>
+          <RichTextEditor
+            fillHeight
+            value={content}
+            onChange={setContent}
+            minHeight={240}
+          />
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] px-5 py-4">
           <button
             type="button"
-            onClick={onCancel}
-            className="rounded-xl border border-[rgba(13,31,60,0.2)] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-[#fafbfc]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={!title.trim()}
+            disabled={isEmpty}
             onClick={() =>
               onConfirm({
-                title: title.trim(),
-                description: description.trim(),
-                content: content.trim(),
-                status,
+                content: sanitizeDocumentHtml(content),
               })
             }
-            className="rounded-xl bg-[#0d1f3c] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[#0d1f3c] px-4 py-3 text-[13px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Salvar
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

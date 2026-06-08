@@ -17,3 +17,12 @@ export function useKartsKpis() {
     queryFn: () => getAppServices().karts.getKpis(),
   });
 }
+
+export function useKartDetail(kartId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.karts.detail(kartId ?? ""),
+    queryFn: () =>
+      Promise.resolve(getAppServices().karts.getDetail(kartId!)),
+    enabled: Boolean(kartId),
+  });
+}

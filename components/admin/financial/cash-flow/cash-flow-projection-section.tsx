@@ -2,7 +2,78 @@
 
 import type { CashFlowProjection } from "@/lib/contracts/cashflow";
 
+import type { IconType } from "react-icons/lib";
+import {
+  HiArrowDownCircle,
+  HiArrowUpCircle,
+  HiWallet,
+} from "react-icons/hi2";
+
+import {
+  AdminResponsiveKpis,
+  type AdminKpiItem,
+} from "@/components/admin/admin-responsive-kpis";
+import {
+  adminEmptyDashedClass,
+  adminStatTileClass,
+} from "@/lib/design";
+
 import { FinancialChartCard } from "../financial-chart-card";
+
+const PROJECTION_ICONS: Record<string, IconType> = {
+  "expected-entries": HiArrowUpCircle,
+  "expected-exits": HiArrowDownCircle,
+  "projected-balance": HiWallet,
+};
+
+function toProjectionKpis(projection: CashFlowProjection): AdminKpiItem[] {
+  const balancePositive = projection.projectedBalanceRaw >= 0;
+
+  return [
+    {
+      id: "expected-entries",
+      label: "Entradas previstas",
+      value: projection.expectedEntries,
+      iconClassName:
+        "bg-[var(--ds-success-bg)] text-[var(--ds-success-text)]",
+      valueClassName: "text-[var(--ds-success-text)]",
+    },
+    {
+      id: "expected-exits",
+      label: "Saídas previstas",
+      value: projection.expectedExits,
+      iconClassName: "bg-[var(--ds-error-bg)] text-[var(--ds-error-text)]",
+      valueClassName: "text-[var(--ds-error-text)]",
+    },
+    {
+      id: "projected-balance",
+      label: "Saldo projetado",
+      value: projection.projectedBalance,
+      iconClassName: balancePositive
+        ? "bg-accent text-white"
+        : "bg-[var(--ds-error-bg)] text-[var(--ds-error-text)]",
+      valueClassName: balancePositive
+        ? ""
+        : "text-[var(--ds-error-text)]",
+    },
+  ];
+}
+
+function riskDayTileClass(balanceRaw: number): string {
+  if (balanceRaw < 0) {
+    return "border-[var(--ds-error-border)] bg-[var(--ds-error-bg)]";
+  }
+  if (balanceRaw < 5000) {
+    return "border-[var(--ds-warning-border)] bg-[var(--ds-warning-bg)]";
+  }
+  return `${adminStatTileClass} border-[var(--ds-border-subtle)]`;
+}
+
+function riskDayValueClass(balanceRaw: number): string {
+  if (balanceRaw < 0) return "text-[var(--ds-error-text)]";
+  if (balanceRaw < 5000) return "text-[var(--ds-warning-text)]";
+  return "text-[var(--ds-text-secondary)]";
+}
 
 type Props = {
   projection: CashFlowProjection;
@@ -17,70 +88,47 @@ export function CashFlowProjectionSection({ projection }: Props) {
       {projection.negativeAlert && projection.alertMessage ? (
         <div
           role="alert"
-          className="mb-4 rounded-xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-sm font-semibold text-red-900"
+          className="mb-4 rounded-xl border border-[var(--ds-error-border)] bg-[var(--ds-error-bg)] px-4 py-3 text-sm font-semibold text-[var(--ds-error-text)]"
         >
           {projection.alertMessage}
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-            Entradas previstas
-          </p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-emerald-900">
-            {projection.expectedEntries}
-          </p>
-        </div>
-        <div className="rounded-xl border border-red-200/60 bg-red-50/50 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-red-800">
-            Saídas previstas
-          </p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-red-900">
-            {projection.expectedExits}
-          </p>
-        </div>
-        <div className="rounded-xl border border-[rgba(13,31,60,0.12)] bg-[rgba(13,31,60,0.04)] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#0d1f3c]">
-            Saldo projetado
-          </p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-[#0d1f3c]">
-            {projection.projectedBalance}
-          </p>
-        </div>
-      </div>
+      <AdminResponsiveKpis
+        kpis={toProjectionKpis(projection)}
+        icons={PROJECTION_ICONS}
+        defaultIcon={HiWallet}
+        desktopClassName="admin-page-grid grid sm:grid-cols-3"
+        showDeltaBadge={false}
+      />
 
       <div className="mt-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
           Dias com maior risco de caixa
         </p>
-        <ul className="mt-2 space-y-2">
-          {projection.riskDays.map((day) => (
-            <li
-              key={day.date}
-              className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                day.balanceRaw < 0
-                  ? "border-red-200/70 bg-red-50/50"
-                  : day.balanceRaw < 5000
-                    ? "border-amber-200/70 bg-amber-50/50"
-                    : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-              }`}
-            >
-              <span className="text-sm font-semibold text-[#0d1f3c]">{day.label}</span>
-              <span
-                className={`text-sm font-bold tabular-nums ${
-                  day.balanceRaw < 0
-                    ? "text-red-700"
-                    : day.balanceRaw < 5000
-                      ? "text-amber-700"
-                      : "text-neutral-700"
-                }`}
+        {projection.riskDays.length === 0 ? (
+          <p className={`${adminEmptyDashedClass} mt-2`}>
+            Nenhum dia de risco identificado no período.
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {projection.riskDays.map((day) => (
+              <li
+                key={day.date}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 ${riskDayTileClass(day.balanceRaw)}`}
               >
-                {day.balance}
-              </span>
-            </li>
-          ))}
-        </ul>
+                <span className="text-sm font-semibold text-[var(--ds-text-primary)]">
+                  {day.label}
+                </span>
+                <span
+                  className={`text-sm font-bold tabular-nums ${riskDayValueClass(day.balanceRaw)}`}
+                >
+                  {day.balance}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </FinancialChartCard>
   );

@@ -6,6 +6,7 @@ import {
   HiClipboardDocumentCheck,
   HiPaperAirplane,
 } from "react-icons/hi2";
+import { adminSubsectionTitleClass } from "@/lib/design";
 
 const ACTIONS = [
   { icon: HiCalendarDays, label: "Agendar aula" },
@@ -17,7 +18,7 @@ const ACTIONS = [
 export function QuickActions() {
   return (
     <section>
-      <h3 className="text-lg font-bold text-[#0d1f3c]">Ações rápidas</h3>
+      <h3 className={adminSubsectionTitleClass}>Ações rápidas</h3>
       <p className="mt-1 text-sm text-neutral-600">
         Atalhos operacionais para este piloto.
       </p>

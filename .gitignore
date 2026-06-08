@@ -16,7 +16,13 @@ yarn-error.log*
 # env
 .env
 .env*.local
-.env.example
+
+# uploads locais (checklist manutenção)
+/public/uploads/maintenance/*
+!/public/uploads/maintenance/.gitkeep
 
 # vercel
 .vercel
+
+# local blob storage (dev — ver docs/STORAGE_STRATEGY.md)
+/storage/

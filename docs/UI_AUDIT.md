@@ -296,7 +296,7 @@ Baseado em `FRONTEND_AUDIT.md` §5:
 | Problema | Evidência |
 |----------|-----------|
 | Rotas órfãs | 401, 403, 500 sem link no menu |
-| Módulos na nav sem rota | instrutores, campeonatos, relatórios |
+| Módulos na nav sem rota | relatórios (ModuleKey only) |
 | `/piloto/perfil/cadastrar-piloto` | Legado/redirecionamento |
 | Sem breadcrumbs | Admin não tem trilha de navegação |
 

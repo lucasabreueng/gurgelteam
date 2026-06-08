@@ -5,6 +5,9 @@ import { PACKAGE_CREDITS } from "./admin-financial-mocks";
 import { INVENTORY_PARTS, INVENTORY_SUPPLIERS } from "./admin-inventory-mocks";
 import { FLEET_KARTS } from "./admin-karts-mocks";
 import { PAYMENT_CLIENT_OPTIONS } from "./admin-financial-mocks";
+import { getMergedClientsList } from "./clients-runtime-store";
+import { getMergedScheduleEvents } from "./schedule-runtime-store";
+import { createReceivable } from "./finance-runtime-store";
 
 export type RevenueOriginKey =
   | "agendamento"
@@ -180,7 +183,7 @@ export type BillingScheduleOption = {
 };
 
 export function getBillingScheduleOptions(): BillingScheduleOption[] {
-  return SCHEDULE_EVENTS.filter(
+  return getMergedScheduleEvents().filter(
     (e) =>
       e.student &&
       e.student !== "—" &&
@@ -192,9 +195,14 @@ export function getBillingScheduleOptions(): BillingScheduleOption[] {
 function mapScheduleToBilling(e: ScheduleEvent): BillingScheduleOption {
   const amount = priceForCategory(e.category);
   const cat = categoryToRevenueCategory(e.category);
-  const client = PAYMENT_CLIENT_OPTIONS.find(
-    (c) => c.label.toLowerCase() === e.student.toLowerCase(),
+  const mergedClient = getMergedClientsList().find(
+    (c) => c.name.toLowerCase() === e.student.toLowerCase(),
   );
+  const client = mergedClient
+    ? { value: mergedClient.id, label: mergedClient.name }
+    : PAYMENT_CLIENT_OPTIONS.find(
+        (c) => c.label.toLowerCase() === e.student.toLowerCase(),
+      );
   return {
     id: e.id,
     label: `${e.date} ${e.start} — ${e.student} · ${e.typeLabel}`,
@@ -259,11 +267,11 @@ export type BillingEventOption = {
 
 export function getBillingEventOptions(): BillingEventOption[] {
   return SCHEDULE_EVENTS.filter(
-    (e) => e.type === "campeonato" || e.type === "telemetria" || e.type === "treino_avancado",
+    (e) => e.type === "telemetria" || e.type === "treino_avancado",
   )
     .slice(0, 8)
     .map((e) => {
-      const amount = e.type === "campeonato" ? 1200 : 650;
+      const amount = 650;
       return {
         id: e.id,
         label: `${e.date} — ${e.typeLabel}${e.student !== "—" ? ` · ${e.student}` : ""}`,
@@ -275,7 +283,13 @@ export function getBillingEventOptions(): BillingEventOption[] {
 }
 
 export function getBillingClientOptions() {
-  return PAYMENT_CLIENT_OPTIONS;
+  const runtime = getMergedClientsList().map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
+  const seen = new Set(PAYMENT_CLIENT_OPTIONS.map((o) => o.value));
+  const extra = runtime.filter((c) => !seen.has(c.value));
+  return [...PAYMENT_CLIENT_OPTIONS, ...extra];
 }
 
 export function getBillingSupplierOptions() {
@@ -307,14 +321,46 @@ export function mockSaveRevenue(input: {
   situation: RevenueSituationKey;
   amount: number;
   receivedAmount?: number;
+  clientId?: string;
+  clientName?: string;
+  paymentMethod?: string;
+  service?: string;
+  dueDate?: string;
+  scheduleEventId?: string;
 }): BillingSaveResult {
   const received = input.receivedAmount ?? input.amount;
+  const clientName = input.clientName?.trim() || "Cliente";
+  const clientId = input.clientId || "manual";
+  const paymentMethod =
+    input.paymentMethod ??
+    (input.situation === "recebido_agora" ? "Pix" : "A definir");
+  const service = input.service?.trim() || "Receita manual";
+  const dueDate =
+    input.dueDate ??
+    new Date().toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  createReceivable({
+    clientId,
+    clientName,
+    amount: input.amount,
+    dueDate,
+    status: input.situation === "recebido_agora" ? "pago" : "pendente",
+    paymentMethod,
+    service,
+    scheduleEventId: input.scheduleEventId,
+  });
+
   if (input.situation === "recebido_agora") {
     return {
       message: "Receita registrada com sucesso.",
       cashImpact: received,
       automation: [
         "Receita criada",
+        "Conta a receber quitada",
         "Movimento de caixa (entrada)",
         "Fluxo de caixa atualizado",
         "DRE atualizado",

@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { HiArrowLeft } from "react-icons/hi2";
-import { SecurityCard } from "@/components/login/security-card";
 import { CadastroForm } from "./cadastro-form";
 
 export function CadastroPage() {
@@ -29,9 +28,6 @@ export function CadastroPage() {
         </div>
 
         <CadastroForm />
-        <div className="mt-6">
-          <SecurityCard />
-        </div>
       </div>
     </div>
   );

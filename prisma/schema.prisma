@@ -1,0 +1,911 @@
+// Gurgel Team — schema PostgreSQL (Fase 3 — rascunho v1, fechado 2026-05-28)
+// P2 fora deste arquivo (checklists completos): complete_checklists
+// inspections dedicadas, achievements, video_materials, tracks — ver DATABASE_REFERENCE.md §1.1
+// Alinhado a: docs/ENTITY_CATALOG.md, docs/DATABASE_REFERENCE.md, lib/contracts/enums.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums (espelham lib/contracts/enums.ts + domínios estendidos)
+// ---------------------------------------------------------------------------
+
+enum RoleKey {
+  admin
+  recepcao
+  financeiro
+  mecanico
+}
+
+enum ConsentType {
+  terms
+  privacy
+  image
+}
+
+enum ConsentStatus {
+  ACCEPTED
+  REVOKED
+  PENDING
+}
+
+enum ClientStatus {
+  Ativo
+  Inativo
+}
+
+enum ScheduleEventType {
+  aula_individual
+  aula_grupo
+  treino_livre
+  treino_avancado
+  telemetria
+  manutencao
+  reserva_kart
+  bloqueio_pista
+}
+
+enum ScheduleEventStatus {
+  confirmado
+  pendente
+  em_andamento
+  finalizado
+  cancelado
+  reagendado
+  no_show
+  aguardando_pagamento
+}
+
+enum PaymentStatus {
+  pago
+  pendente
+  vencido
+  pacote
+}
+
+enum LessonStatus {
+  aguardando
+  em_andamento
+  pendente_registro
+  concluida
+  cancelada
+}
+
+enum KartOwnership {
+  rental
+  client
+}
+
+enum KartStatus {
+  disponivel
+  em_treino
+  reservado
+  manutencao
+  aguardando_peca
+  indisponivel
+  preparacao
+  lavagem
+}
+
+enum ReceivableStatus {
+  pago
+  pendente
+  vencido
+  parcial
+}
+
+enum PackageCreditStatus {
+  ativo
+  expirando
+  esgotado
+}
+
+enum SimpleMaintenanceStatus {
+  pendente
+  em_andamento
+  concluida
+}
+
+enum ChecklistFinalStatus {
+  aprovado
+  aprovado_ressalvas
+  reprovado
+}
+
+enum TelemetryStatus {
+  UPLOADED
+  PROCESSING
+  NORMALIZING
+  COMPLETED
+  FAILED
+}
+
+enum StockMovementType {
+  entrada
+  saida
+  ajuste
+  perda
+  devolucao
+}
+
+enum PurchaseOrderStatus {
+  solicitado
+  aprovado
+  comprado
+  entregue
+}
+
+enum ReportDomain {
+  operacional
+  financeiro
+  auditoria
+}
+
+enum ReportRunStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum ReportExportFormat {
+  pdf
+  xlsx
+  csv
+}
+
+// ---------------------------------------------------------------------------
+// §1 Identidade & acesso
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  cpf          String?  @unique
+  birthDate    DateTime? @map("birth_date") @db.Date
+  roleKey              RoleKey  @map("role_key")
+  /** Perfil de permissões (Configurações), inclusive funções customizadas. */
+  permissionProfileId  String?  @map("permission_profile_id")
+  clientId             String?  @unique @map("client_id") @db.Uuid
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  client            Client?            @relation(fields: [clientId], references: [id])
+  sessions          Session[]
+  passwordResets    PasswordReset[]
+  consents          Consent[]
+  modulePermissions ModulePermission[]
+  auditLogs         AuditLog[]         @relation("AuditActor")
+  reportRuns        ReportRun[]
+  registeredScheduleEvents ScheduleEvent[] @relation("ScheduleEventRegisteredBy")
+
+  @@map("users")
+}
+
+model Session {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  tokenHash        String   @unique @map("token_hash")
+  expiresAt        DateTime @map("expires_at")
+  rememberMe       Boolean  @default(false) @map("remember_me")
+  userAgent        String?  @map("user_agent")
+  ipAddress        String?  @map("ip_address")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+/// Cadastro aguardando confirmação por e-mail — ainda não vira `User`/`Client`.
+model PendingRegistration {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  cpf          String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  birthDate    DateTime @map("birth_date") @db.Date
+  skillLevelId String   @map("skill_level_id") @db.Uuid
+  categoryIds  Json     @map("category_ids")
+  reservedUsername String @unique @map("reserved_username")
+  codeHash     String   @map("code_hash")
+  expiresAt    DateTime @map("expires_at")
+  registrationConsents Json? @map("registration_consents")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("pending_registrations")
+}
+
+model Consent {
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  type       ConsentType
+  status     ConsentStatus
+  version    String
+  acceptedAt DateTime?     @map("accepted_at")
+  revokedAt  DateTime?     @map("revoked_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, version])
+  @@map("consents")
+}
+
+// ---------------------------------------------------------------------------
+// §2 Piloto & responsável
+// ---------------------------------------------------------------------------
+
+model Client {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  avatarUrl       String?      @map("avatar_url")
+  skillLevelId    String       @map("skill_level_id") @db.Uuid
+  status          ClientStatus @default(Ativo)
+  isMinor         Boolean      @default(false) @map("is_minor")
+  bestLapMs       Int?         @map("best_lap_ms")
+  consistencyPct  Int?         @map("consistency_pct")
+  totalSessions   Int          @default(0) @map("total_sessions")
+  memberSince     DateTime?    @map("member_since") @db.Date
+  weightKg        String?      @map("weight_kg")
+  heightCm        String?      @map("height_cm")
+  city            String?
+  state           String?
+  notifyWhatsapp  Boolean      @default(true) @map("notify_whatsapp")
+  notifyEmail     Boolean      @default(true) @map("notify_email")
+  emergencyName   String?      @map("emergency_name")
+  emergencyPhone  String?      @map("emergency_phone")
+  emergencyRelation String?    @map("emergency_relation")
+  favoriteNumber  String?      @map("favorite_number")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  skillLevel         SkillLevel          @relation(fields: [skillLevelId], references: [id])
+  user               User?
+  categories         ClientCategory[]
+  guardianLinks      GuardianLink[]      @relation("MinorClient")
+  scheduleEvents     ScheduleEvent[]
+  lessonSessions     LessonSession[]
+  accountsReceivable AccountReceivable[]
+  packageCredits     PackageCredit[]
+  ownedKarts         Kart[]              @relation("ClientOwnedKarts")
+  telemetrySessions  TelemetrySession[]
+
+  @@index([status])
+  @@index([skillLevelId])
+  @@map("clients")
+}
+
+model Guardian {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String?
+  phone     String?
+  cpf       String?  @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  links GuardianLink[]
+
+  @@map("guardians")
+}
+
+model GuardianLink {
+  id                  String   @id @default(uuid()) @db.Uuid
+  guardianId          String   @map("guardian_id") @db.Uuid
+  clientId            String   @map("client_id") @db.Uuid
+  relationship        String?
+  authorizationSigned Boolean  @default(false) @map("authorization_signed")
+  documentsOnFile     Boolean  @default(false) @map("documents_on_file")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  client   Client   @relation("MinorClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([guardianId, clientId])
+  @@map("guardian_links")
+}
+
+model KartCategory {
+  id             String   @id @default(uuid()) @db.Uuid
+  slug           String   @unique
+  name           String
+  description    String?
+  includedItems  String?  @map("included_items")
+  pricePerLesson Int      @map("price_per_lesson_cents")
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  clients ClientCategory[]
+  karts   Kart[]
+
+  @@map("kart_categories")
+}
+
+model ClientCategory {
+  clientId   String @map("client_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  client   Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  category KartCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, categoryId])
+  @@map("client_categories")
+}
+
+model SkillLevel {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  name      String
+  /// Lap time thresholds per category slug (seconds), e.g. {"f400": 62.5}
+  thresholds Json    @default("{}")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clients Client[]
+
+  @@map("skill_levels")
+}
+
+// ---------------------------------------------------------------------------
+// §3 Operacional
+// ---------------------------------------------------------------------------
+
+model ScheduleEvent {
+  id            String              @id @default(uuid()) @db.Uuid
+  startsAt      DateTime            @map("starts_at") @db.Timestamptz
+  endsAt        DateTime            @map("ends_at") @db.Timestamptz
+  type          ScheduleEventType
+  status        ScheduleEventStatus @default(pendente)
+  clientId      String?             @map("client_id") @db.Uuid
+  registeredById String?            @map("registered_by_id") @db.Uuid
+  kartId        String?             @map("kart_id") @db.Uuid
+  categoryId    String?             @map("category_id") @db.Uuid
+  paymentStatus PaymentStatus?      @map("payment_status")
+  maxStudents   Int?                @map("max_students")
+  notes         String?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  client         Client?         @relation(fields: [clientId], references: [id])
+  registeredBy   User?           @relation("ScheduleEventRegisteredBy", fields: [registeredById], references: [id])
+  kart           Kart?           @relation(fields: [kartId], references: [id])
+  lessonSession  LessonSession?
+  receivables    AccountReceivable[]
+
+  @@index([startsAt])
+  @@index([status])
+  @@index([clientId])
+  @@index([kartId])
+  @@map("schedule_events")
+}
+
+model ScheduleBlock {
+  id        String   @id @default(uuid()) @db.Uuid
+  blockDate DateTime @map("block_date") @db.Date
+  slotIds   String[] @map("slot_ids")
+  reason    String?
+  fullDay   Boolean  @default(false) @map("full_day")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([blockDate])
+  @@map("schedule_blocks")
+}
+
+model LessonSession {
+  id              String       @id @default(uuid()) @db.Uuid
+  scheduleEventId String       @unique @map("schedule_event_id") @db.Uuid
+  clientId        String?      @map("client_id") @db.Uuid
+  status          LessonStatus @default(aguardando)
+  categoryLabel   String       @map("category_label")
+  typeLabel       String       @map("type_label")
+  registeredByName  String       @map("registered_by_name")
+  kartNumber      Int          @map("kart_number")
+  objective       String?
+  previousNote    String?
+  registrationPayload Json?      @map("registration_payload")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  scheduleEvent     ScheduleEvent      @relation(fields: [scheduleEventId], references: [id])
+  client            Client?            @relation(fields: [clientId], references: [id])
+  telemetrySession  TelemetrySession?
+
+  @@index([status])
+  @@index([clientId])
+  @@map("lesson_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// §4 Frota
+// ---------------------------------------------------------------------------
+
+model Kart {
+  id                  String        @id @default(uuid()) @db.Uuid
+  number              Int           @unique
+  categoryId          String        @map("category_id") @db.Uuid
+  ownership           KartOwnership @default(rental)
+  clientId            String?       @map("client_id") @db.Uuid
+  status              KartStatus    @default(disponivel)
+  motorRef            String?       @map("motor_ref")
+  chassisRef          String?       @map("chassis_ref")
+  photoUrl            String?       @map("photo_url")
+  engineHours         Decimal?      @map("engine_hours") @db.Decimal(8, 2)
+  lastMaintenanceAt   DateTime?     @map("last_maintenance_at") @db.Date
+  nextMaintenanceHours Decimal?     @map("next_maintenance_hours") @db.Decimal(8, 2)
+  preventiveMaintenanceHours Json?  @map("preventive_maintenance_hours")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  category         KartCategory      @relation(fields: [categoryId], references: [id])
+  clientOwner      Client?           @relation("ClientOwnedKarts", fields: [clientId], references: [id])
+  scheduleEvents   ScheduleEvent[]
+  maintenanceOrders MaintenanceOrder[]
+  inspections       MaintenanceInspection[]
+
+  @@index([status])
+  @@index([categoryId])
+  @@map("karts")
+}
+
+// ---------------------------------------------------------------------------
+// §5 Manutenção (simplificado)
+// ---------------------------------------------------------------------------
+
+model MaintenanceOrder {
+  id          String                  @id @default(uuid()) @db.Uuid
+  kartId      String                  @map("kart_id") @db.Uuid
+  status      SimpleMaintenanceStatus @default(pendente)
+  title       String
+  description String?
+  detectedAt  DateTime                @map("detected_at") @db.Timestamptz
+  assignedTo  String?                 @map("assigned_to")
+  closedAt    DateTime?               @map("closed_at") @db.Timestamptz
+  checklistData Json?                 @map("checklist_data")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  kart         Kart                     @relation(fields: [kartId], references: [id])
+  parts        MaintenancePartUse[]
+  inspections  MaintenanceInspection[]
+
+  @@index([kartId])
+  @@index([status])
+  @@map("maintenance_orders")
+}
+
+model MaintenancePartUse {
+  id                 String @id @default(uuid()) @db.Uuid
+  maintenanceOrderId String @map("maintenance_order_id") @db.Uuid
+  inventoryPartId    String @map("inventory_part_id") @db.Uuid
+  qty                Int
+  notes              String?
+
+  order MaintenanceOrder @relation(fields: [maintenanceOrderId], references: [id], onDelete: Cascade)
+  part  InventoryPart    @relation(fields: [inventoryPartId], references: [id])
+
+  @@map("maintenance_part_uses")
+}
+
+model MaintenanceInspection {
+  id                 String   @id @default(uuid()) @db.Uuid
+  kartId             String   @map("kart_id") @db.Uuid
+  maintenanceOrderId String?  @map("maintenance_order_id") @db.Uuid
+  checklistType      String   @default("pre") @map("checklist_type")
+  payload            Json
+  overallStatus      String?  @map("overall_status")
+  signedBy           String?  @map("signed_by")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  kart  Kart              @relation(fields: [kartId], references: [id])
+  order MaintenanceOrder? @relation(fields: [maintenanceOrderId], references: [id])
+
+  @@index([kartId])
+  @@index([maintenanceOrderId])
+  @@map("maintenance_inspections")
+}
+
+// ---------------------------------------------------------------------------
+// §6 Estoque
+// ---------------------------------------------------------------------------
+
+model Supplier {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  cnpj         String?
+  city         String?
+  phone        String?
+  email        String?
+  active       Boolean  @default(true)
+  avgLeadDays  Int?     @map("avg_lead_days")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  parts          InventoryPart[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model InventoryPart {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  category     String
+  stockQty     Int      @default(0) @map("stock_qty")
+  minStockQty  Int      @default(0) @map("min_stock_qty")
+  unitCostCents Int     @map("unit_cost_cents")
+  supplierId   String   @map("supplier_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  supplier         Supplier             @relation(fields: [supplierId], references: [id])
+  movements        StockMovement[]
+  maintenanceUses  MaintenancePartUse[]
+  purchaseLines    PurchaseOrderLine[]
+
+  @@index([supplierId])
+  @@map("inventory_parts")
+}
+
+model StockMovement {
+  id              String            @id @default(uuid()) @db.Uuid
+  inventoryPartId String            @map("inventory_part_id") @db.Uuid
+  type            StockMovementType
+  qty             Int
+  kartId          String?           @map("kart_id") @db.Uuid
+  maintenanceId   String?           @map("maintenance_id") @db.Uuid
+  responsibleId   String?           @map("responsible_id") @db.Uuid
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  part InventoryPart @relation(fields: [inventoryPartId], references: [id])
+
+  @@index([inventoryPartId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model PurchaseOrder {
+  id         String              @id @default(uuid()) @db.Uuid
+  supplierId String              @map("supplier_id") @db.Uuid
+  status     PurchaseOrderStatus @default(solicitado)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  lines    PurchaseOrderLine[]
+
+  @@index([supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id              String @id @default(uuid()) @db.Uuid
+  purchaseOrderId String @map("purchase_order_id") @db.Uuid
+  inventoryPartId String @map("inventory_part_id") @db.Uuid
+  qty             Int
+  unitCostCents   Int    @map("unit_cost_cents")
+
+  order PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  part  InventoryPart @relation(fields: [inventoryPartId], references: [id])
+
+  @@map("purchase_order_lines")
+}
+
+// ---------------------------------------------------------------------------
+// §7 Financeiro
+// ---------------------------------------------------------------------------
+
+model AccountReceivable {
+  id              String           @id @default(uuid()) @db.Uuid
+  clientId        String           @map("client_id") @db.Uuid
+  scheduleEventId String?          @map("schedule_event_id") @db.Uuid
+  amountCents     Int              @map("amount_cents")
+  dueDate         DateTime         @map("due_date") @db.Date
+  status          ReceivableStatus @default(pendente)
+  paymentMethod   String?          @map("payment_method")
+  serviceLabel    String           @map("service_label")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  client        Client         @relation(fields: [clientId], references: [id])
+  scheduleEvent ScheduleEvent? @relation(fields: [scheduleEventId], references: [id])
+  payments      Payment[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("accounts_receivable")
+}
+
+model AccountPayable {
+  id            String           @id @default(uuid()) @db.Uuid
+  supplierName  String           @map("supplier_name")
+  category      String
+  amountCents   Int              @map("amount_cents")
+  dueDate       DateTime         @map("due_date") @db.Date
+  status        ReceivableStatus @default(pendente)
+  paymentMethod String?          @map("payment_method")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([dueDate])
+  @@map("accounts_payable")
+}
+
+model Payment {
+  id             String   @id @default(uuid()) @db.Uuid
+  receivableId   String   @map("receivable_id") @db.Uuid
+  amountCents    Int      @map("amount_cents")
+  paidAt         DateTime @map("paid_at") @db.Timestamptz
+  method         String
+  recordedById   String?  @map("recorded_by_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  receivable AccountReceivable @relation(fields: [receivableId], references: [id])
+
+  @@index([receivableId])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model PackageCredit {
+  id            String              @id @default(uuid()) @db.Uuid
+  clientId      String              @map("client_id") @db.Uuid
+  name          String
+  lessonsTotal  Int                 @map("lessons_total")
+  lessonsUsed   Int                 @default(0) @map("lessons_used")
+  expiresAt     DateTime?           @map("expires_at") @db.Date
+  status        PackageCreditStatus @default(ativo)
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([clientId])
+  @@index([status])
+  @@map("package_credits")
+}
+
+enum CashFlowEntryType {
+  entrada
+  saida
+}
+
+model CashFlowEntry {
+  id          String            @id @default(uuid()) @db.Uuid
+  entryDate   DateTime          @map("entry_date") @db.Date
+  type        CashFlowEntryType
+  category    String
+  description String            @default("")
+  amountCents Int               @map("amount_cents")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  @@index([entryDate])
+  @@map("cash_flow_entries")
+}
+
+model DreEntry {
+  id          String @id @default(uuid()) @db.Uuid
+  accountCode String @map("account_code")
+  accountName String @map("account_name")
+  groupKey    String @map("group_key")
+  rowKind     String @default("line") @map("row_kind")
+  year        Int
+  month       Int
+  amountCents Int    @map("amount_cents")
+  sortOrder   Int    @default(0) @map("sort_order")
+
+  @@index([year, month])
+  @@map("dre_entries")
+}
+
+// ---------------------------------------------------------------------------
+// §8 Telemetria (metadados DB; arquivos → blob — ver STORAGE_STRATEGY.md)
+// ---------------------------------------------------------------------------
+
+model TelemetrySession {
+  id              String          @id @default(uuid()) @db.Uuid
+  clientId        String?         @map("client_id") @db.Uuid
+  lessonSessionId String?         @unique @map("lesson_session_id") @db.Uuid
+  status          TelemetryStatus @default(UPLOADED)
+  source          String
+  trackId         String?         @map("track_id")
+  rawFileKey      String?         @map("raw_file_key")
+  processedAt     DateTime?       @map("processed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  client        Client?        @relation(fields: [clientId], references: [id])
+  lessonSession LessonSession? @relation(fields: [lessonSessionId], references: [id])
+  laps          TelemetryLap[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("telemetry_sessions")
+}
+
+model TelemetryLap {
+  id                 String @id @default(uuid()) @db.Uuid
+  telemetrySessionId String @map("telemetry_session_id") @db.Uuid
+  lapNumber          Int    @map("lap_number")
+  lapTimeMs          Int    @map("lap_time_ms")
+  valid              Boolean @default(true)
+  sectorTimesMs      Json?  @map("sector_times_ms")
+
+  session TelemetrySession @relation(fields: [telemetrySessionId], references: [id], onDelete: Cascade)
+
+  @@unique([telemetrySessionId, lapNumber])
+  @@map("telemetry_laps")
+}
+
+// ---------------------------------------------------------------------------
+// §11 Configuração (singleton + grade)
+// ---------------------------------------------------------------------------
+
+model OrganizationSettings {
+  id                 String   @id @default("default")
+  teamName           String   @map("team_name")
+  logoUrl            String?  @map("logo_url")
+  cnpj               String?
+  email              String?
+  whatsapp           String?
+  address            String?
+  instagram          String?
+  tiktok             String?
+  facebook           String?
+  institutionalText  String?  @map("institutional_text")
+  notificationEvents Json     @default("[]") @map("notification_events")
+  documentTemplates  Json     @default("[]") @map("document_templates")
+  termsRegistry      Json     @default("{}") @map("terms_registry")
+  integrations       Json     @default("[]") @map("integrations")
+  appearance         Json     @default("{}") @map("appearance")
+  /** Overrides de nome e perfis customizados (Configurações → Usuários e permissões). */
+  permissionProfiles Json     @default("{}") @map("permission_profiles")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("organization_settings")
+}
+
+model WeekScheduleSlot {
+  id          String   @id @default(uuid()) @db.Uuid
+  dayOfWeek   Int      @map("day_of_week")
+  startTime   String   @map("start_time")
+  endTime     String   @map("end_time")
+  categoryIds String[] @default([]) @map("category_ids") @db.Uuid
+  levelIds    String[] @default([]) @map("level_ids") @db.Uuid
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  @@index([dayOfWeek])
+  @@map("week_schedule_slots")
+}
+
+model SpecificDateSchedule {
+  id           String                     @id @default(uuid()) @db.Uuid
+  scheduleDate DateTime                   @unique @map("schedule_date") @db.Date
+  slots        SpecificDateScheduleSlot[]
+
+  @@map("specific_date_schedules")
+}
+
+model SpecificDateScheduleSlot {
+  id          String               @id @default(uuid()) @db.Uuid
+  scheduleId  String               @map("schedule_id") @db.Uuid
+  schedule    SpecificDateSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  startTime   String               @map("start_time")
+  endTime     String               @map("end_time")
+  categoryIds String[]             @default([]) @map("category_ids") @db.Uuid
+  levelIds    String[]             @default([]) @map("level_ids") @db.Uuid
+  sortOrder   Int                  @default(0) @map("sort_order")
+
+  @@index([scheduleId])
+  @@map("specific_date_schedule_slots")
+}
+
+model ScheduleException {
+  id            String   @id @default(uuid()) @db.Uuid
+  exceptionDate DateTime @map("exception_date") @db.Date
+  slotIds       String[] @map("slot_ids")
+  reason        String   @default("")
+
+  @@index([exceptionDate])
+  @@map("schedule_exceptions")
+}
+
+// ---------------------------------------------------------------------------
+// §12 Permissões & auditoria
+// ---------------------------------------------------------------------------
+
+model ModulePermission {
+  userId    String  @map("user_id") @db.Uuid
+  moduleKey String  @map("module_key")
+  canView   Boolean @default(false) @map("can_view")
+  canEdit   Boolean @default(false) @map("can_edit")
+  canDelete Boolean @default(false) @map("can_delete")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, moduleKey])
+  @@map("module_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  moduleKey  String?  @map("module_key")
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// §13 Relatórios (execuções; definições permanecem em TS na Fase 4)
+// ---------------------------------------------------------------------------
+
+model ReportRun {
+  id             String             @id @default(uuid()) @db.Uuid
+  definitionId   String             @map("definition_id")
+  domain         ReportDomain
+  periodFrom     DateTime           @map("period_from") @db.Date
+  periodTo       DateTime           @map("period_to") @db.Date
+  exportFormat   ReportExportFormat @map("export_format")
+  status         ReportRunStatus    @default(pending)
+  fileKey        String?            @map("file_key")
+  errorMessage   String?            @map("error_message")
+  generatedById  String             @map("generated_by_id") @db.Uuid
+  createdAt      DateTime           @default(now()) @map("created_at")
+  completedAt    DateTime?          @map("completed_at")
+
+  generatedBy User @relation(fields: [generatedById], references: [id])
+
+  @@index([status])
+  @@index([generatedById])
+  @@map("report_runs")
+}

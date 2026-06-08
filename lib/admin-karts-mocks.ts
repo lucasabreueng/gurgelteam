@@ -1,18 +1,13 @@
 /** Dados mockados — Gestão de frota / paddock Gurgel Team */
 
 import { KART_CATEGORIES } from "./admin-settings-mocks";
+import type { KartOwnership, KartStatus } from "@/lib/contracts/enums";
+import {
+  enrichFleetKartListItem,
+  type FleetKartSeed,
+} from "@/lib/karts/enrich-fleet-kart";
 
-export type KartOwnership = "rental" | "client";
-
-export type KartStatus =
-  | "disponivel"
-  | "em_treino"
-  | "reservado"
-  | "manutencao"
-  | "aguardando_peca"
-  | "indisponivel"
-  | "preparacao"
-  | "lavagem";
+export type { KartOwnership, KartStatus } from "@/lib/contracts/enums";
 
 export type KartTabKey =
   | "todos"
@@ -43,14 +38,20 @@ export const KART_FILTER_CATEGORIES = [
   { id: "competicao", name: "Competição" },
 ] as const;
 
-export const KART_FILTER_STATUSES = Object.entries(KART_STATUS_LABELS).map(
-  ([value, label]) => ({ value: value as KartStatus, label })
-);
+export const KART_FILTER_STATUSES = [
+  { value: "", label: "Status" },
+  { value: "disponivel", label: "Disponível" },
+  { value: "em_manutencao", label: "Em manutenção" },
+  { value: "indisponivel", label: "Indisponível" },
+] as const;
+
+export type KartFleetFilterStatus =
+  (typeof KART_FILTER_STATUSES)[number]["value"];
 
 export const KART_MAINTENANCE_WINDOWS = [
-  { value: "", label: "Próxima manutenção" },
-  { value: "7", label: "Até 7 dias" },
-  { value: "30", label: "Até 30 dias" },
+  { value: "", label: "Manutenção preventiva" },
+  { value: "7", label: "Até 7h restantes" },
+  { value: "30", label: "Até 30h restantes" },
   { value: "overdue", label: "Atrasada" },
 ] as const;
 
@@ -64,7 +65,10 @@ export type NewKartFormData = {
   ownershipType: "" | KartOwnership;
   clientId: string;
   number: string;
+  categoryId: string;
+  photo: string;
   motor: string;
+  chassis: string;
   engineHours: string;
   lastMaintenanceDate: string;
   lastMaintenanceUnknown: boolean;
@@ -115,39 +119,53 @@ export type FleetKartListItem = {
   categoryId: string;
   categoryName: string;
   ownership: KartOwnership;
+  clientId?: string;
   ownerName?: string;
+  /** Status operacional completo (banco / paddock). */
   status: KartStatus;
+  /** Status exibido na tabela (3 valores). */
+  fleetStatus: import("@/lib/contracts/maintenance/simple").MaintenanceFleetStatus;
   motor: string;
   chassis: string;
   lastUse: string;
+  /** @deprecated Preferir preventiveMaintenance.mostUrgent.displayLabel */
   nextMaintenance: string;
+  /** @deprecated Preferir preventiveMaintenance.mostUrgent.hoursRemaining */
   nextMaintenanceDays: number;
   usageHours: number;
+  preventiveMaintenance: import("@/lib/maintenance/preventive-maintenance").PreventiveMaintenanceSummary;
+  correctiveMaintenance: import("@/lib/contracts/maintenance/simple").CorrectiveMaintenanceSummary;
   fuel: string;
   tires: string;
   score: number;
   boxSlot?: string;
 };
 
-export const FLEET_KARTS: FleetKartListItem[] = [
-  { id: "k05", number: 5, photo: "/images/gallery-3.jpg", categoryId: "f400", categoryName: "F400", ownership: "rental", status: "disponivel", motor: "IAME X30", chassis: "CRG Road Rebel", lastUse: "Hoje, 09:20", nextMaintenance: "12 jun", nextMaintenanceDays: 18, usageHours: 412, fuel: "98", tires: "MG-Wet", score: 92 },
-  { id: "k07", number: 7, photo: "/images/gallery-4.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "em_treino", motor: "Rotax Max", chassis: "Birel ART", lastUse: "Agora", nextMaintenance: "28 mai", nextMaintenanceDays: 3, usageHours: 528, fuel: "98", tires: "Vega Red", score: 88 },
-  { id: "k12", number: 12, photo: "/images/gallery-5.jpg", categoryId: "competicao", categoryName: "Competição", ownership: "rental", status: "manutencao", motor: "IAME KZ", chassis: "OTK EVO", lastUse: "Ontem, 17:40", nextMaintenance: "Atrasada", nextMaintenanceDays: -2, usageHours: 690, fuel: "—", tires: "Troca pend.", score: 71 },
-  { id: "k18", number: 18, photo: "/images/gallery-6.jpg", categoryId: "f400", categoryName: "F400", ownership: "client", ownerName: "João Silva", status: "disponivel", motor: "IAME Mini", chassis: "Birel C28", lastUse: "18 mai", nextMaintenance: "20 jun", nextMaintenanceDays: 26, usageHours: 198, fuel: "95", tires: "Dunlop SL", score: 85, boxSlot: "Box 2" },
-  { id: "k03", number: 3, photo: "/images/gallery-1.jpg", categoryId: "cadete", categoryName: "Cadete", ownership: "rental", status: "reservado", motor: "IAME Cadet", chassis: "CRG Hero", lastUse: "19 mai", nextMaintenance: "05 jun", nextMaintenanceDays: 11, usageHours: 156, fuel: "95", tires: "MG-SM", score: 90 },
-  { id: "k21", number: 21, photo: "/images/gallery-2.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "aguardando_peca", motor: "Rotax DD2", chassis: "Tony Kart", lastUse: "08 mai", nextMaintenance: "Em andamento", nextMaintenanceDays: 0, usageHours: 445, fuel: "—", tires: "—", score: 62 },
-  { id: "k09", number: 9, photo: "/images/gallery-7.jpg", categoryId: "mirim", categoryName: "Mirim", ownership: "rental", status: "lavagem", motor: "IAME Mini", chassis: "Birel", lastUse: "Hoje, 08:00", nextMaintenance: "15 jul", nextMaintenanceDays: 51, usageHours: 89, fuel: "95", tires: "Novo", score: 94 },
-  { id: "k14", number: 14, photo: "/images/gallery-8.jpg", categoryId: "rental", categoryName: "Rental", ownership: "rental", status: "disponivel", motor: "IAME Rental", chassis: "CRG Rental", lastUse: "17 mai", nextMaintenance: "10 jun", nextMaintenanceDays: 16, usageHours: 312, fuel: "95", tires: "MG-Wet", score: 87 },
-  { id: "k22", number: 22, photo: "/images/gallery-9.jpg", categoryId: "competicao", categoryName: "Competição", ownership: "client", ownerName: "Equipe Velocity", status: "preparacao", motor: "IAME KZ", chassis: "Parolin", lastUse: "16 mai", nextMaintenance: "22 mai", nextMaintenanceDays: -3, usageHours: 520, fuel: "98", tires: "Vega XH", score: 79, boxSlot: "Box 5" },
-  { id: "k06", number: 6, photo: "/images/project-1.jpg", categoryId: "f400", categoryName: "F400", ownership: "rental", status: "em_treino", motor: "IAME X30", chassis: "Birel ART", lastUse: "Agora", nextMaintenance: "30 mai", nextMaintenanceDays: 5, usageHours: 378, fuel: "98", tires: "MG-Wet", score: 91 },
-  { id: "k17", number: 17, photo: "/images/project-2.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "indisponivel", motor: "Rotax Max", chassis: "Tony Kart", lastUse: "02 mai", nextMaintenance: "Revisão motor", nextMaintenanceDays: -12, usageHours: 601, fuel: "—", tires: "—", score: 55 },
-  { id: "k31", number: 31, photo: "/images/project-3.jpg", categoryId: "f400", categoryName: "F400", ownership: "client", ownerName: "Marina Costa", status: "disponivel", motor: "IAME X30", chassis: "CRG", lastUse: "20 mai", nextMaintenance: "01 jul", nextMaintenanceDays: 37, usageHours: 244, fuel: "98", tires: "Dunlop", score: 83, boxSlot: "Box 8" },
+export type { FleetKartSeed } from "@/lib/karts/enrich-fleet-kart";
+
+export const FLEET_KARTS_SEED: FleetKartSeed[] = [
+  { id: "k05", number: 5, photo: "/images/gallery-3.jpg", categoryId: "f400", categoryName: "F400", ownership: "rental", status: "disponivel", motor: "IAME X30", chassis: "CRG Road Rebel", lastUse: "Hoje, 09:20", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 412, fuel: "98", tires: "MG-Wet", score: 92 },
+  { id: "k07", number: 7, photo: "/images/gallery-4.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "em_treino", motor: "Rotax Max", chassis: "Birel ART", lastUse: "Agora", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 528, fuel: "98", tires: "Vega Red", score: 88 },
+  { id: "k12", number: 12, photo: "/images/gallery-5.jpg", categoryId: "competicao", categoryName: "Competição", ownership: "rental", status: "manutencao", motor: "IAME KZ", chassis: "OTK EVO", lastUse: "Ontem, 17:40", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 690, fuel: "—", tires: "Troca pend.", score: 71 },
+  { id: "k18", number: 18, photo: "/images/gallery-6.jpg", categoryId: "f400", categoryName: "F400", ownership: "client", ownerName: "João Silva", status: "disponivel", motor: "IAME Mini", chassis: "Birel C28", lastUse: "18 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 198, fuel: "95", tires: "Dunlop SL", score: 85, boxSlot: "Box 2" },
+  { id: "k03", number: 3, photo: "/images/gallery-1.jpg", categoryId: "cadete", categoryName: "Cadete", ownership: "rental", status: "reservado", motor: "IAME Cadet", chassis: "CRG Hero", lastUse: "19 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 156, fuel: "95", tires: "MG-SM", score: 90 },
+  { id: "k21", number: 21, photo: "/images/gallery-2.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "aguardando_peca", motor: "Rotax DD2", chassis: "Tony Kart", lastUse: "08 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 445, fuel: "—", tires: "—", score: 62 },
+  { id: "k09", number: 9, photo: "/images/gallery-7.jpg", categoryId: "mirim", categoryName: "Mirim", ownership: "rental", status: "lavagem", motor: "IAME Mini", chassis: "Birel", lastUse: "Hoje, 08:00", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 89, fuel: "95", tires: "Novo", score: 94 },
+  { id: "k14", number: 14, photo: "/images/gallery-8.jpg", categoryId: "rental", categoryName: "Rental", ownership: "rental", status: "disponivel", motor: "IAME Rental", chassis: "CRG Rental", lastUse: "17 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 312, fuel: "95", tires: "MG-Wet", score: 87 },
+  { id: "k22", number: 22, photo: "/images/gallery-9.jpg", categoryId: "competicao", categoryName: "Competição", ownership: "client", ownerName: "Equipe Velocity", status: "preparacao", motor: "IAME KZ", chassis: "Parolin", lastUse: "16 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 520, fuel: "98", tires: "Vega XH", score: 79, boxSlot: "Box 5" },
+  { id: "k06", number: 6, photo: "/images/project-1.jpg", categoryId: "f400", categoryName: "F400", ownership: "rental", status: "em_treino", motor: "IAME X30", chassis: "Birel ART", lastUse: "Agora", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 378, fuel: "98", tires: "MG-Wet", score: 91 },
+  { id: "k17", number: 17, photo: "/images/project-2.jpg", categoryId: "125cc", categoryName: "125cc", ownership: "rental", status: "indisponivel", motor: "Rotax Max", chassis: "Tony Kart", lastUse: "02 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 601, fuel: "—", tires: "—", score: 55 },
+  { id: "k31", number: 31, photo: "/images/project-3.jpg", categoryId: "f400", categoryName: "F400", ownership: "client", ownerName: "Marina Costa", status: "disponivel", motor: "IAME X30", chassis: "CRG", lastUse: "20 mai", nextMaintenance: "—", nextMaintenanceDays: 0, usageHours: 244, fuel: "98", tires: "Dunlop", score: 83, boxSlot: "Box 8" },
 ];
+
+/** Frota enriquecida (mock estático — preferir `getMergedFleet()` em runtime). */
+export const FLEET_KARTS: FleetKartListItem[] =
+  FLEET_KARTS_SEED.map(enrichFleetKartListItem);
 
 export type KartUsageEvent = {
   id: string;
   date: string;
-  type: "aula" | "treino" | "campeonato" | "incidente";
+  type: "aula" | "treino" | "evento" | "incidente";
   title: string;
   pilot: string;
   duration?: string;
@@ -244,9 +262,12 @@ export type KartDetail = {
   };
   documents: { id: string; label: string; date: string; fileUrl: string }[];
   telemetry: {
+    maxSpeedKmh: string;
+    minRpm: string;
+    maxRpm: string;
     avgLap: string;
     bestLap: string;
-    lapTrend: { date: string; lapTime: number }[];
+    sessionsCount: number;
   };
 };
 
@@ -264,10 +285,7 @@ function buildMaintenance(): MaintenanceItem[] {
   ];
 }
 
-export function getKartDetail(kartId: string): KartDetail | null {
-  const list = FLEET_KARTS.find((k) => k.id === kartId);
-  if (!list) return null;
-
+export function buildKartDetailFromList(list: FleetKartListItem): KartDetail {
   return {
     list,
     heroBg: "/images/hero-image.jpg",
@@ -276,7 +294,7 @@ export function getKartDetail(kartId: string): KartDetail | null {
     usageHistory: [
       { id: "u1", date: "Hoje, 10:30", type: "treino", title: "Treino avançado", pilot: "Lucas Mendes", duration: "42min de pista" },
       { id: "u2", date: "Ontem, 16:00", type: "aula", title: "Aula técnica", pilot: "Marina Souza", duration: "50min" },
-      { id: "u3", date: "18 mai", type: "campeonato", title: "Copa Gurgel — Etapa 2", pilot: "Beatriz Lima", note: "P2 na categoria" },
+      { id: "u3", date: "18 mai", type: "evento", title: "Evento externo — Etapa 2", pilot: "Beatriz Lima", note: "P2 na categoria" },
       { id: "u4", date: "15 mai", type: "incidente", title: "Toque leve na chicane", pilot: "Rafael Dias", note: "Carenagem — sem downtime" },
     ],
     maintenance: buildMaintenance(),
@@ -312,7 +330,7 @@ export function getKartDetail(kartId: string): KartDetail | null {
       { day: "Seg", slots: [{ time: "10:00", label: "Aula", tone: "sky" }, { time: "14:00", label: "Treino", tone: "navy" }] },
       { day: "Ter", slots: [{ time: "09:00", label: "Reservado", tone: "amber" }] },
       { day: "Qua", slots: [{ time: "—", label: "Manutenção", tone: "red" }] },
-      { day: "Qui", slots: [{ time: "16:00", label: "Campeonato", tone: "violet" }] },
+      { day: "Qui", slots: [{ time: "16:00", label: "Evento", tone: "violet" }] },
       { day: "Sex", slots: [{ time: "11:00", label: "Treino", tone: "navy" }, { time: "15:00", label: "Aula", tone: "sky" }] },
     ],
     financial: {
@@ -342,18 +360,20 @@ export function getKartDetail(kartId: string): KartDetail | null {
       { id: "d5", label: "Regulagem motor", date: "10 abr", fileUrl: "/images/gallery-5.jpg" },
     ],
     telemetry: {
+      maxSpeedKmh: "82,4 km/h",
+      minRpm: "9.200 rpm",
+      maxRpm: "14.500 rpm",
       avgLap: list.categoryName === "125cc" ? "54,2s" : "56,8s",
       bestLap: list.categoryName === "125cc" ? "52,9s" : "55,1s",
-      lapTrend: [
-        { date: "14 mai", lapTime: 56.2 },
-        { date: "16 mai", lapTime: 55.8 },
-        { date: "18 mai", lapTime: 55.4 },
-        { date: "19 mai", lapTime: 55.1 },
-        { date: "20 mai", lapTime: 54.9 },
-        { date: "21 mai", lapTime: 54.6 },
-      ],
+      sessionsCount: 5,
     },
   };
+}
+
+export function getKartDetail(kartId: string): KartDetail | null {
+  const list = FLEET_KARTS.find((k) => k.id === kartId);
+  if (!list) return null;
+  return buildKartDetailFromList(list);
 }
 
 export function filterKartsByTab(

@@ -33,9 +33,33 @@ import {
 import { useTelemetryWorkspace } from "./telemetry/telemetry-workspace-context";
 import { useTelemetryTabletLayout } from "@/lib/hooks/use-telemetry-tablet-layout";
 import { useProcessedTelemetrySession } from "./telemetry/use-telemetry-session-data";
+import { ApiTelemetryCloudView } from "./telemetry/api-telemetry-cloud-view";
 import { TelemetryEmptyState } from "./telemetry/telemetry-empty-state";
 import { TELEMETRY_NO_SESSION } from "@/lib/telemetry-active-session";
+import { isApiSessionId } from "@/lib/telemetry-api-session";
 import { isProcessedSessionId } from "@/lib/telemetry-engine";
+import {
+  telemetryAsideClass,
+  telemetryAsideHeaderClass,
+  telemetryAsideRightClass,
+  telemetryBestBadgeClass,
+  telemetryCenterColumnClass,
+  telemetryChartCellClass,
+  telemetryChartCellHeatClass,
+  telemetryChartLabelClass,
+  telemetryHeatLegendClass,
+  telemetryLapButtonClass,
+  telemetryLapLegendClass,
+  telemetryLapTitleClass,
+  telemetryLoadingTextClass,
+  telemetryMapMetaClass,
+  telemetryMapTitleClass,
+  telemetrySectorTabClass,
+  telemetryStatLabelClass,
+  telemetryStripFooterClass,
+  telemetryStripHeaderClass,
+  telemetryWorkspaceBgClass,
+} from "@/lib/design";
 
 type SectorTab = "full" | 1 | 2 | 3;
 
@@ -49,7 +73,7 @@ export function TelemetryComparison() {
 
   if (!activeSessionId || activeSessionId === TELEMETRY_NO_SESSION) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+      <div className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}>
         <TelemetryEmptyState
           onOpenSessions={openSessionsModal}
           onOpenLoad={openLoadModal}
@@ -60,15 +84,19 @@ export function TelemetryComparison() {
 
   if (isProcessedSessionId(activeSessionId) && sessionLoading) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-[#f3f5f9]">
-        <p className="text-sm font-medium text-neutral-600">Carregando sessão…</p>
+      <div className={`flex h-full min-h-0 flex-col items-center justify-center ${telemetryWorkspaceBgClass}`}>
+        <p className={telemetryLoadingTextClass}>Carregando sessão…</p>
       </div>
     );
   }
 
+  if (isApiSessionId(activeSessionId)) {
+    return <ApiTelemetryCloudView sessionId={activeSessionId} />;
+  }
+
   if (!processedSession) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+      <div className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}>
         <TelemetryEmptyState
           onOpenSessions={openSessionsModal}
           onOpenLoad={openLoadModal}
@@ -396,8 +424,8 @@ function TelemetryComparisonContent({
       }`}
     >
         {/* Coluna esquerda — voltas */}
-        <aside className="flex min-h-0 flex-col border-r border-[rgba(17,17,17,0.08)] bg-white">
-          <div className="shrink-0 border-b border-[rgba(17,17,17,0.08)] px-3 py-2">
+        <aside className={telemetryAsideClass}>
+          <div className={telemetryAsideHeaderClass}>
             <dl className="space-y-2">
               {[
                 { label: "Melhor volta", value: `${stats.bestLap}s` },
@@ -415,7 +443,7 @@ function TelemetryComparisonContent({
                   key={row.label}
                   className="flex items-baseline justify-between gap-2"
                 >
-                  <dt className="text-[10px] uppercase tracking-wide text-neutral-500">
+                  <dt className={telemetryStatLabelClass}>
                     {row.label}
                   </dt>
                   <dd className="font-mono text-[13px] font-bold text-accent">
@@ -444,15 +472,7 @@ function TelemetryComparisonContent({
                   <button
                     type="button"
                     onClick={() => toggleLap(index)}
-                    className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${
-                      selected
-                        ? isBestLap
-                          ? "border-amber-400/60 bg-amber-50/80"
-                          : "border-[rgba(17,17,17,0.12)] bg-neutral-50"
-                        : isBestLap
-                          ? "border-amber-300/50 bg-amber-50/40 hover:bg-amber-50/70"
-                          : "border-transparent bg-transparent hover:bg-neutral-50"
-                    }`}
+                    className={telemetryLapButtonClass({ selected, isBest: isBestLap })}
                   >
                     <span
                       className="flex h-4 w-4 shrink-0 items-center justify-center rounded border"
@@ -478,17 +498,11 @@ function TelemetryComparisonContent({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
-                        <span
-                          className={`text-[12px] font-semibold ${
-                            isBestLap ? "text-amber-900" : "text-neutral-800"
-                          }`}
-                        >
+                        <span className={telemetryLapTitleClass(isBestLap)}>
                           V{row.lap}
                         </span>
                         {isBestLap ? (
-                          <span className="rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
-                            Melhor
-                          </span>
+                          <span className={telemetryBestBadgeClass}>Melhor</span>
                         ) : null}
                       </span>
                     </span>
@@ -498,8 +512,8 @@ function TelemetryComparisonContent({
                         color: selected
                           ? color
                           : isBestLap
-                            ? "#b45309"
-                            : "rgb(82,82,82)",
+                            ? "var(--ds-warning-text)"
+                            : "var(--ds-text-secondary)",
                       }}
                     >
                       {row.timeLabel}s
@@ -512,8 +526,8 @@ function TelemetryComparisonContent({
         </aside>
 
         {/* Coluna central — 5 gráficos */}
-        <div className="flex min-h-0 min-w-0 flex-col bg-[#f3f5f9]">
-          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-[rgba(17,17,17,0.08)] bg-white px-3 py-2">
+        <div className={telemetryCenterColumnClass}>
+          <div className={telemetryStripHeaderClass}>
             {selectedLapIndices.map((lapIdx, colorIdx) => {
               const lap = sessionLaps[lapIdx];
               const color =
@@ -521,7 +535,7 @@ function TelemetryComparisonContent({
               return (
                 <span
                   key={lap.lap}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-neutral-700"
+                  className={telemetryLapLegendClass}
                 >
                   <span
                     className="inline-block h-0.5 w-5 rounded-full"
@@ -539,14 +553,14 @@ function TelemetryComparisonContent({
             {lapLinesByMetric.map(({ metric, lines, yExtent }) => (
               <div
                 key={metric.key}
-                className={`flex min-h-0 flex-1 flex-col rounded-md border bg-white px-2 py-1 transition ${
+                className={`${telemetryChartCellClass} ${
                   heatMapEnabled && hoveredHeatMapMetric === metric.key
-                    ? "border-accent/35 ring-1 ring-accent/20"
-                    : "border-[rgba(17,17,17,0.06)]"
+                    ? telemetryChartCellHeatClass
+                    : ""
                 }`}
                 onMouseEnter={() => setHoveredHeatMapMetric(metric.key)}
               >
-                <p className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                <p className={telemetryChartLabelClass}>
                   {metric.label}
                 </p>
                 <div className="min-h-0 flex-1">
@@ -564,7 +578,7 @@ function TelemetryComparisonContent({
               </div>
             ))}
           </div>
-          <div className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white p-2">
+          <div className={telemetryStripFooterClass}>
             <div className="grid grid-cols-4 gap-1">
               {(
                 [
@@ -583,11 +597,7 @@ function TelemetryComparisonContent({
                       setSectorTab(tab.id);
                       mapRef.current?.setHoverMarkers([]);
                     }}
-                    className={`w-full rounded-lg px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
-                      active
-                        ? "bg-[#0d1f3c] text-white ring-1 ring-[#0d1f3c]/30"
-                        : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800"
-                    }`}
+                    className={telemetrySectorTabClass(active)}
                   >
                     {tab.label}
                   </button>
@@ -598,19 +608,21 @@ function TelemetryComparisonContent({
         </div>
 
         {/* Coluna direita — mapa */}
-        <aside className="flex min-h-0 flex-col border-l border-[rgba(17,17,17,0.08)] bg-white">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[rgba(17,17,17,0.08)] px-3 py-2">
-            <p className="min-w-0 truncate text-[12px] font-semibold text-[#0d1f3c]">
-              {processedSession.trackName}
-            </p>
-            <p className="shrink-0 font-mono text-[11px] tabular-nums text-neutral-500">
-              {formatSessionDateTime(processedSession.createdAt)}
-            </p>
+        <aside className={telemetryAsideRightClass}>
+          <div className={`flex shrink-0 flex-col gap-2 ${telemetryAsideHeaderClass}`}>
+            <div className="flex items-center justify-between gap-2">
+              <p className={telemetryMapTitleClass}>
+                {processedSession.trackName}
+              </p>
+              <p className={telemetryMapMetaClass}>
+                {formatSessionDateTime(processedSession.createdAt)}
+              </p>
+            </div>
           </div>
-          <div className="relative min-h-0 flex-1 p-2">
+          <div className="relative flex min-h-0 flex-1 flex-col p-2">
             {heatMapLegend ? (
-              <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-10 rounded-xl border border-[rgba(17,17,17,0.1)] bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <div className={telemetryHeatLegendClass}>
+                <p className={telemetryChartLabelClass}>
                   {heatMapLegend.label}
                 </p>
                 <div
@@ -620,7 +632,7 @@ function TelemetryComparisonContent({
                       "linear-gradient(to right, hsl(240, 88%, 46%), hsl(120, 88%, 46%), hsl(0, 88%, 46%))",
                   }}
                 />
-                <div className="mt-1 flex justify-between font-mono text-[10px] tabular-nums text-neutral-600">
+                <div className="mt-1 flex justify-between font-mono text-[10px] tabular-nums text-[var(--ds-text-secondary)]">
                   <span>{formatHeatMapValue(heatMapLegend.min, activeHeatMapMetric!)}</span>
                   <span>{formatHeatMapValue(heatMapLegend.max, activeHeatMapMetric!)}</span>
                 </div>
@@ -633,7 +645,7 @@ function TelemetryComparisonContent({
               center={mapCenter}
               fill
               mapType="satellite"
-              className="rounded-xl border border-[rgba(17,17,17,0.08)]"
+              className="rounded-xl border border-[var(--ds-border)]"
             />
           </div>
         </aside>

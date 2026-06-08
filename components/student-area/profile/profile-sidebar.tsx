@@ -44,6 +44,7 @@ export function ProfileSidebar({
         <div className="flex flex-col items-center text-center">
           <ProfileAvatarPicker
             avatarUrl={profile.avatarUrl}
+            name={StudentProfileServiceMock.formatProfileName(profile)}
             onChange={onAvatarChange}
             size={96}
           />

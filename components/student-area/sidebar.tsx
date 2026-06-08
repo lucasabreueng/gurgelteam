@@ -1,6 +1,8 @@
 "use client";
 
 import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
+import { usePilotPermissions } from "@/lib/query/hooks/use-admin-permissions";
 import type { NavItemKey } from "@/lib/contracts/student-area";
 
 import Image from "next/image";
@@ -8,40 +10,35 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { IconType } from "react-icons/lib";
 import {
+  HiBolt,
   HiCalendarDays,
-  HiChartBarSquare,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
-  HiClipboardDocumentList,
-  HiCube,
-  HiFlag,
   HiSquares2X2,
-  HiTrophy,
-  HiBolt,
-  HiUsers,
-  HiSpeakerWave,
 } from "react-icons/hi2";
 
 import { ShellMobileAccountLinks } from "@/components/shell/mobile-account-links";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ShellSidebarTabletProfile } from "@/components/shell/shell-sidebar-tablet-profile";
 import { CollapsedRailNavItem } from "@/components/shell/collapsed-rail-nav-item";
+import { shellSidebarClass } from "@/lib/design";
 import { useCollapsedNavArm } from "@/lib/hooks/use-collapsed-nav-arm";
 
 const ICON_MAP: Record<NavItemKey, IconType> = {
   dashboard: HiSquares2X2,
-  agenda: HiCalendarDays,
-  evolucao: HiChartBarSquare,
-  feedbacks: HiSpeakerWave,
-  plano: HiClipboardDocumentList,
   telemetria: HiBolt,
-  resultados: HiFlag,
-  materiais: HiCube,
-  conquistas: HiTrophy,
-  ranking: HiUsers,
+  agenda: HiCalendarDays,
+  evolucao: HiSquares2X2,
+  feedbacks: HiSquares2X2,
+  resultados: HiSquares2X2,
+  materiais: HiSquares2X2,
+  conquistas: HiSquares2X2,
+  ranking: HiSquares2X2,
 };
 
 function resolveActiveNav(pathname: string): NavItemKey {
   if (pathname.startsWith("/piloto/telemetria")) return "telemetria";
+  if (pathname.startsWith("/piloto/reservar")) return "agenda";
   return "dashboard";
 }
 
@@ -70,10 +67,17 @@ export function Sidebar({
   onExpandSidebar,
   onCollapseSidebar,
 }: Props) {
+  const { data: home } = usePilotHome();
+  const avatarSrc = home?.avatarUrl ?? undefined;
   const pathname = usePathname();
   const router = useRouter();
   const activeNav = activeNavProp ?? resolveActiveNav(pathname);
   const { arm, clearArm, isArmed } = useCollapsedNavArm();
+  const { canViewNav } = usePilotPermissions();
+
+  const navItems = StudentAreaServiceMock.getStudentNav().filter((item) =>
+    canViewNav(item.key),
+  );
 
   const navItemClass = (active: boolean) =>
     `flex w-full items-center rounded-xl text-left text-[14px] font-medium transition lg:rounded-2xl ${
@@ -172,11 +176,11 @@ export function Sidebar({
           collapsed
             ? ""
             : showTabletSidebarControls
-              ? "mt-0 pb-6"
+              ? "mt-4 pb-6"
               : "mt-5 pb-6"
         }`}
       >
-        {StudentAreaServiceMock.getStudentNav().map((item) => {
+        {navItems.map((item) => {
           const Icon = ICON_MAP[item.key];
           const href = StudentAreaServiceMock.getStudentNavHref()[item.key];
           const active = activeNav === item.key;
@@ -220,6 +224,9 @@ export function Sidebar({
 
       {!collapsed && !showTabletSidebarControls ? (
         <>
+          <div className="mt-2 px-2 lg:hidden">
+            <ThemeToggle variant="menu" onDarkSurface />
+          </div>
           <ShellMobileAccountLinks
             profileHref="/piloto/perfil"
             logoutHref="/"
@@ -250,7 +257,7 @@ export function Sidebar({
       {showTabletSidebarControls ? (
         <ShellSidebarTabletProfile
           profileHref="/piloto/perfil"
-          avatarSrc={StudentAreaServiceMock.getStudentProfile().avatarFallback}
+          avatarSrc={avatarSrc}
           collapsed={collapsed}
           onNavigate={onCloseMobile}
         />
@@ -263,8 +270,8 @@ export function Sidebar({
       <aside
         className={`${
           collapsed
-            ? "fixed inset-y-0 left-0 z-50 flex h-[calc(var(--app-vh,1vh)*100)] max-h-[calc(var(--app-vh,1vh)*100)] w-[72px] min-h-0 flex-col overflow-visible border-r border-white/10 bg-accent-gradient-soft p-2"
-            : "hidden w-[288px] shrink-0 bg-accent-gradient-soft p-6 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/10"
+            ? `fixed inset-y-0 left-0 z-50 flex h-[calc(var(--app-vh,1vh)*100)] max-h-[calc(var(--app-vh,1vh)*100)] w-[72px] min-h-0 flex-col overflow-visible border-r border-white/10 p-2 ${shellSidebarClass}`
+            : `hidden w-[288px] shrink-0 p-6 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/10 ${shellSidebarClass}`
         } ${showTabletSidebarControls && !collapsed ? "!flex !h-[calc(var(--app-vh,1vh)*100)] !max-h-[calc(var(--app-vh,1vh)*100)] !min-h-0" : ""}`}
       >
         {sidebarInner}
@@ -279,7 +286,7 @@ export function Sidebar({
           />
           <aside
             id="shell-mobile-menu"
-            className="fixed inset-y-0 right-0 z-[80] flex w-[min(90vw,300px)] max-w-[90vw] flex-col bg-accent-gradient-soft p-6 text-white shadow-2xl lg:hidden"
+            className={`fixed inset-y-0 right-0 z-[80] flex w-[min(90vw,300px)] max-w-[90vw] flex-col p-6 shadow-2xl lg:hidden ${shellSidebarClass}`}
           >
             {sidebarInner}
           </aside>

@@ -1,9 +1,7 @@
 "use client";
 
 import type { CashFlowPeriodFilter } from "@/lib/contracts/cashflow";
-import { CashFlowServiceMock } from "@/services/cashflow/cashFlowServiceMock";
-
-import { useMemo } from "react";
+import { useCashFlowDataset } from "@/lib/query/hooks/use-cash-flow";
 
 import { CashFlowAlerts } from "../cash-flow/cash-flow-alerts";
 import { CashFlowCalendar } from "../cash-flow/cash-flow-calendar";
@@ -20,10 +18,9 @@ type Props = {
 };
 
 export function CashFlowTab({ filter, onAction }: Props) {
-  const dataset = useMemo(
-    () => CashFlowServiceMock.getCashFlowDataset(filter),
-    [filter]
-  );
+  const { data: dataset } = useCashFlowDataset(filter);
+
+  if (!dataset) return null;
 
   return (
     <div className="admin-page-stack">

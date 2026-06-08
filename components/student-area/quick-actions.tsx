@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { HiCalendarDays, HiShoppingBag, HiUserGroup } from "react-icons/hi2";
 import type { IconType } from "react-icons/lib";
-import { FaFlagCheckered } from "react-icons/fa6";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import type { QuickAction as QuickActionT } from "@/lib/contracts/student-area";
 
@@ -9,7 +8,6 @@ const ICON_MAP: Record<string, IconType> = {
   agenda: HiCalendarDays,
   pacote: HiShoppingBag,
   coletivo: HiUserGroup,
-  campeonato: FaFlagCheckered,
   equipa: IoChatbubbleEllipsesOutline,
 };
 

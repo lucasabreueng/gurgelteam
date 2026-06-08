@@ -1,15 +1,21 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import type { ClientProfileDetail } from "@/lib/contracts/clients";
+import {
+  adminCardMutedClass,
+  adminChartAccentColor,
+  adminStatTileClass,
+  adminSubsectionTitleClass,
+  adminTextValueClass,
+} from "@/lib/design";
 
 type Props = {
   performance: ClientProfileDetail["performance"];
 };
 
-const chartBox =
-  "rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4";
+const chartBox = adminCardMutedClass;
 
 export function PerformanceOverview({ performance }: Props) {
   const lapOption: EChartsOption = {
@@ -32,7 +38,7 @@ export function PerformanceOverview({ performance }: Props) {
         type: "line",
         smooth: true,
         data: performance.lapTrend,
-        lineStyle: { color: "#0d1f3c", width: 2 },
+        lineStyle: { color: adminChartAccentColor, width: 2 },
         areaStyle: {
           color: {
             type: "linear",
@@ -48,7 +54,7 @@ export function PerformanceOverview({ performance }: Props) {
         },
         symbol: "circle",
         symbolSize: 6,
-        itemStyle: { color: "#0d1f3c" },
+        itemStyle: { color: adminChartAccentColor },
       },
     ],
   };
@@ -118,7 +124,7 @@ export function PerformanceOverview({ performance }: Props) {
 
   return (
     <section>
-      <h3 className="text-lg font-bold text-[#0d1f3c]">Performance</h3>
+      <h3 className={adminSubsectionTitleClass}>Performance</h3>
       <p className="mt-1 text-sm text-neutral-600">
         Tempos, consistência e evolução na pista.
       </p>
@@ -127,12 +133,12 @@ export function PerformanceOverview({ performance }: Props) {
         {stats.map((s) => (
           <li
             key={s.label}
-            className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-4 py-3 shadow-sm"
+            className={adminStatTileClass}
           >
             <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               {s.label}
             </p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-[#0d1f3c]">
+            <p className={`mt-1 ${adminTextValueClass}`}>
               {s.value}
             </p>
           </li>
@@ -144,7 +150,7 @@ export function PerformanceOverview({ performance }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
             Evolução de volta
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={lapOption}
             style={{ height: 200 }}
             opts={{ renderer: "svg" }}
@@ -154,7 +160,7 @@ export function PerformanceOverview({ performance }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
             Consistência
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={consistencyOption}
             style={{ height: 200 }}
             opts={{ renderer: "svg" }}
@@ -164,7 +170,7 @@ export function PerformanceOverview({ performance }: Props) {
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
             Comparativo de evolução
           </p>
-          <ReactECharts
+          <ThemedECharts
             option={compareOption}
             style={{ height: 180 }}
             opts={{ renderer: "svg" }}

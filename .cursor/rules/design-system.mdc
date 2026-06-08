@@ -1,0 +1,50 @@
+---
+description: Design system admin — usar lib/design em vez de cores/classes hardcoded
+globs: components/admin/**/*,lib/design/**/*,components/ui/**/*
+alwaysApply: false
+---
+
+# Design System Admin (Gurgel)
+
+Referência completa: `docs/DESIGN_SYSTEM.md`. Implementação canônica: `@/lib/design`.
+
+## Regras
+
+1. **Não hardcodar** `#0d1f3c`, `#f3f5f9`, `#fafbfc` nem `rgba(17,17,17,...)` em `components/admin/`.
+2. **Importar** tokens e classes de `@/lib/design` (não de `settings-section` diretamente).
+3. **Novos padrões repetidos** → adicionar em `lib/design/classes.ts` (ou `tokens.ts`), não inline no componente.
+4. **Botões primários/secundários** → classes globais `.btn-primary-sm/md` e `.btn-outline-sm/md` (`app/globals.css`).
+5. **Formulários** → `AdminField` + `adminInputClass` / `adminTextareaClass`.
+6. **Gráficos (ECharts etc.)** → `adminChartAccentColor` de `@/lib/design`.
+7. **Cor dinâmica em Tailwind** → preferir token `accent` (`bg-accent`, `text-accent`) em vez de hex.
+
+## Mapa rápido
+
+| Uso | Classe / componente |
+|-----|---------------------|
+| Card | `adminCardClass`, `adminCardInnerClass`, `adminCardMutedClass` |
+| Título de seção | `adminSubsectionTitleClass`, `adminSectionTitleClass` |
+| Texto accent | `adminTextAccentClass`, `adminTextAccentBoldClass`, `adminTextValueClass` |
+| Input / textarea | `adminInputClass`, `adminTextareaClass` |
+| Tabela | `adminTableWrapClass`, `adminTableHeadRowClass`, `adminTableBodyRowClass` |
+| Drawer | `adminDrawerPanelClass`, `adminDrawerHeaderClass` |
+| KPI | `adminKpiCardClass`, `adminKpiValueClass` |
+| Empty state | `adminEmptyStateClass` |
+
+## Exemplo
+
+```tsx
+// ❌ Evitar
+<h3 className="text-lg font-bold text-[#0d1f3c]">Título</h3>
+<div className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5">
+
+// ✅ Preferir
+import { adminSubsectionTitleClass, adminCardInnerClass } from "@/lib/design";
+
+<h3 className={adminSubsectionTitleClass}>Título</h3>
+<div className={adminCardInnerClass}>
+```
+
+## Piloto concluído
+
+Módulo **Clientes** (`components/admin/clients/`) já migrado — usar como referência ao migrar Karts, Agenda, etc.

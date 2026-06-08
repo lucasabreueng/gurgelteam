@@ -1,6 +1,7 @@
 "use client";
 
 import { HiPlus } from "react-icons/hi2";
+import { useAdminPanelTabletLayout } from "@/lib/hooks/use-admin-panel-tablet-layout";
 import { TableFiltersButton } from "@/components/ui/table-filters-button";
 import { AdminPageHeader } from "../admin-page-header";
 
@@ -15,6 +16,8 @@ export function LessonRegistrationHeader({
   activeFilterCount = 0,
   onNewClass,
 }: Props) {
+  const { tabletLandscape } = useAdminPanelTabletLayout();
+
   return (
     <AdminPageHeader
       title="Central de Registro de Aulas"
@@ -24,17 +27,21 @@ export function LessonRegistrationHeader({
           <TableFiltersButton
             onClick={() => onOpenFilters?.()}
             activeFilterCount={activeFilterCount}
+            iconOnlyPortrait
           />
-          <button
-            type="button"
-            onClick={() => onNewClass?.()}
-            className="btn-outline-md"
-          >
-            <HiPlus className="h-4 w-4 shrink-0" aria-hidden />
-            Nova aula
-          </button>
+          {onNewClass ? (
+            <button
+              type="button"
+              onClick={() => onNewClass()}
+              className="btn-outline-sm"
+            >
+              <HiPlus className="h-4 w-4 shrink-0" aria-hidden />
+              {tabletLandscape ? "Aula" : "Nova aula"}
+            </button>
+          ) : null}
         </>
       }
+      actionsClassName="admin-page-header-actions--tablet-compact"
     />
   );
 }

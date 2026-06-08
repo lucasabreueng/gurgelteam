@@ -1,10 +1,13 @@
 "use client";
 
-import { NewMaintenanceServiceMock } from "@/services/maintenance/newMaintenanceServiceMock";
-
 import type { NewMaintenanceTypeKey, NewMaintenancePriority, MaintenanceOriginKey, OperationalStatusKey, DiagnosisAreaKey, DiagnosisAreaState, MaintenanceKartOption, PredictedPartLine, PlannedServiceKey } from "@/lib/contracts/maintenance";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { queryKeys } from "@/lib/query/keys";
+import { NewMaintenanceServiceMock } from "@/services/maintenance/newMaintenanceServiceMock";
 
 import { MaintenanceHeader } from "./maintenance-header";
 import { MaintenanceFooterActions } from "./maintenance-footer-actions";
@@ -37,7 +40,7 @@ type Props = {
 
 export function NewMaintenanceModal({ open, onClose, onSuccess }: Props) {
   const [osNumber, setOsNumber] = useState(NewMaintenanceServiceMock.generateOsNumber);
-  const [kart, setKart] = useState<MaintenanceKartOption | null>(NewMaintenanceServiceMock.getDefaultKart());
+  const [kart, setKart] = useState<MaintenanceKartOption | null>(null);
   const [maintType, setMaintType] = useState<NewMaintenanceTypeKey>("corretiva");
   const [priority, setPriority] = useState<NewMaintenancePriority>("alta");
   const [origin, setOrigin] = useState<MaintenanceOriginKey>("inspecao");
@@ -52,10 +55,11 @@ export function NewMaintenanceModal({ open, onClose, onSuccess }: Props) {
   const [services, setServices] =
     useState<PlannedServiceKey[]>(NewMaintenanceServiceMock.getDefaultPlannedServices());
   const [returnEstimate, setReturnEstimate] = useState("24 mai 2026, 10:00");
+  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   const reset = useCallback(() => {
     setOsNumber(NewMaintenanceServiceMock.generateOsNumber());
-    setKart(NewMaintenanceServiceMock.getDefaultKart());
     setMaintType("corretiva");
     setPriority("alta");
     setOrigin("inspecao");
@@ -67,6 +71,9 @@ export function NewMaintenanceModal({ open, onClose, onSuccess }: Props) {
     setPartLines(DEFAULT_PART_LINES);
     setServices(NewMaintenanceServiceMock.getDefaultPlannedServices());
     setReturnEstimate("24 mai 2026, 10:00");
+    void getAppServices()
+      .newMaintenance.getDefaultKart()
+      .then((defaultKart) => setKart(defaultKart));
   }, []);
 
   useEffect(() => {
@@ -97,8 +104,42 @@ export function NewMaintenanceModal({ open, onClose, onSuccess }: Props) {
     setDiagnosis((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   };
 
-  const createOs = (variant: "default" | "block" | "quote") => {
-    if (!canCreate || !kart) return;
+  const createOs = async (variant: "default" | "block" | "quote") => {
+    if (!canCreate || !kart || saving) return;
+
+    if (getDataSourceMode() === "http") {
+      setSaving(true);
+      try {
+        const created = await getAppServices().maintenance.createOrder({
+          kartId: kart.id,
+          title: problem.trim(),
+          description: [
+            `Tipo: ${maintType}`,
+            `Prioridade: ${priority}`,
+            `Origem: ${origin}`,
+            variant === "block" ? "Kart bloqueado na criação." : "",
+            variant === "quote" ? "Orçamento solicitado ao cliente." : "",
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          assignedTo: identifiedBy,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.maintenance.all,
+        });
+        const label = created
+          ? `OS-${created.id.slice(0, 8).toUpperCase()}`
+          : osNumber;
+        onSuccess?.(`${label} criada para kart #${kart.number}.`);
+        onClose();
+      } catch {
+        onSuccess?.("Erro ao criar ordem de manutenção.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const msgs = {
       default: `${osNumber} criada para kart #${kart.number} (mock).`,
       block: `${osNumber} criada — kart #${kart.number} bloqueado e removido da agenda (mock).`,
@@ -131,9 +172,9 @@ export function NewMaintenanceModal({ open, onClose, onSuccess }: Props) {
           onSaveDraft={() =>
             onSuccess?.(`Rascunho ${osNumber} salvo (mock).`)
           }
-          onCreate={() => createOs("default")}
+          onCreate={() => void createOs("default")}
           onClose={onClose}
-          createDisabled={!canCreate}
+          createDisabled={!canCreate || saving}
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">

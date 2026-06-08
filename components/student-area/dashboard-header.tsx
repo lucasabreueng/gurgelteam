@@ -1,15 +1,19 @@
 "use client";
 
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
 
-import Image from "next/image";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import Link from "next/link";
+import { LogoutLink } from "@/components/auth/logout-link";
 import { useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import { HiOutlineUserCircle, HiArrowRightOnRectangle } from "react-icons/hi2";
 
 
 export function DashboardHeader() {
+  const { data: home } = usePilotHome();
+  const profile = home?.profile;
+  const displayName = profile?.firstName?.trim() || "Piloto";
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -47,18 +51,16 @@ export function DashboardHeader() {
           className="flex max-w-full items-center gap-3 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white py-2 pl-2 pr-3 transition hover:border-accent/25 md:gap-4 md:rounded-full md:border-0 md:bg-transparent md:pr-4 md:hover:bg-[rgba(13,31,60,0.03)]"
           onClick={() => setOpen((o) => !o)}
         >
-          <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm ring-1 ring-[rgba(17,17,17,0.08)] md:h-11 md:w-11">
-            <Image
-              src={StudentAreaServiceMock.getStudentProfile().avatarFallback}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="44px"
-            />
-          </span>
+          <UserAvatar
+            src={home?.avatarUrl}
+            name={displayName || "Piloto"}
+            size={44}
+            roundedClass="rounded-full"
+            className="border-2 border-white ring-1 ring-[rgba(17,17,17,0.08)]"
+          />
           <div className="min-w-0 text-left md:block">
             <p className="truncate text-sm font-semibold text-[#111]">
-              {StudentAreaServiceMock.getStudentProfile().firstName}
+              {profile?.firstName ?? "Piloto"}
             </p>
             <p className="hidden truncate text-xs text-neutral-600 md:block">
               Ver perfil
@@ -78,14 +80,14 @@ export function DashboardHeader() {
           >
             <Link
               role="menuitem"
-              href="#section-dashboard"
+              href="/piloto/perfil"
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[#111] transition hover:bg-[rgba(13,31,60,0.06)]"
               onClick={() => setOpen(false)}
             >
               <HiOutlineUserCircle className="text-lg text-[#0d1f3c]" aria-hidden />
               Meu perfil
             </Link>
-            <Link
+            <LogoutLink
               role="menuitem"
               href="/"
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700/90 transition hover:bg-red-50"
@@ -93,7 +95,7 @@ export function DashboardHeader() {
             >
               <HiArrowRightOnRectangle className="text-lg" aria-hidden />
               Sair
-            </Link>
+            </LogoutLink>
           </div>
         ) : null}
       </div>

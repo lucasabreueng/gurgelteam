@@ -4,6 +4,7 @@ export { SettingsHeader } from "./settings-header";
 export { SettingsSection } from "./settings-section";
 export { PermissionCard } from "./permission-card";
 export { PricesPanel } from "./prices-panel";
+export { TermsRegistryPanel } from "./terms-registry-panel";
 export { UsersPermissionsPanel } from "./users-permissions-panel";
 export { CategoriesLevelsPanel } from "./categories-levels-panel";
 export { KartsPanel } from "./karts-panel";

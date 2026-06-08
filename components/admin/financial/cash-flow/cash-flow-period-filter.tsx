@@ -2,14 +2,15 @@
 
 import type { CashFlowPeriodFilter, CashFlowPeriodKey } from "@/lib/admin-cash-flow-mocks";
 import { CASH_FLOW_PERIOD_OPTIONS } from "@/lib/admin-cash-flow-mocks";
-import { settingsInputClass } from "../../settings/settings-section";
+import { ScheduleActionModal } from "@/components/admin/schedule/schedule-action-modal";
+import { SettingsDatePicker } from "../../settings/settings-date-picker";
 import {
   FINANCIAL_PERIOD_FILTER_BAR_CLASS,
   financialPeriodCustomButtonClass,
   financialPeriodPresetButtonClass,
 } from "../financial-period-filter-styles";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { HiFunnel } from "react-icons/hi2";
 
 type Props = {
@@ -18,38 +19,30 @@ type Props = {
 };
 
 export function CashFlowPeriodFilterBar({ filter, onChange }: Props) {
-  const [showCustom, setShowCustom] = useState(filter.key === "custom");
-
-  useEffect(() => {
-    if (filter.key === "custom") setShowCustom(true);
-  }, [filter.key]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState(filter.customStart ?? "");
+  const [draftEnd, setDraftEnd] = useState(filter.customEnd ?? "");
 
   const selectPreset = (key: Exclude<CashFlowPeriodKey, "custom">) => {
-    setShowCustom(false);
     onChange({ key, customStart: filter.customStart, customEnd: filter.customEnd });
   };
 
-  const openCustomFilter = () => {
-    setShowCustom(true);
-    if (filter.key !== "custom") {
-      onChange({
-        key: "custom",
-        customStart: filter.customStart,
-        customEnd: filter.customEnd,
-      });
-    }
+  const openPeriodModal = () => {
+    setDraftStart(filter.customStart ?? "");
+    setDraftEnd(filter.customEnd ?? "");
+    setModalOpen(true);
   };
 
-  const applyCustomRange = (start: string, end: string) => {
-    if (start && end) {
-      onChange({ key: "custom", customStart: start, customEnd: end });
-    }
+  const applyCustomRange = () => {
+    if (!draftStart || !draftEnd) return;
+    onChange({ key: "custom", customStart: draftStart, customEnd: draftEnd });
+    setModalOpen(false);
   };
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-3 lg:items-end">
+    <>
       <div
-        className={`${FINANCIAL_PERIOD_FILTER_BAR_CLASS} flex flex-wrap justify-end gap-2`}
+        className={`${FINANCIAL_PERIOD_FILTER_BAR_CLASS} flex w-full flex-wrap justify-end gap-2 max-md:hidden`}
       >
         {CASH_FLOW_PERIOD_OPTIONS.map((option) => (
           <button
@@ -63,48 +56,101 @@ export function CashFlowPeriodFilterBar({ filter, onChange }: Props) {
         ))}
         <button
           type="button"
-          onClick={openCustomFilter}
-          aria-expanded={showCustom}
+          onClick={openPeriodModal}
           aria-label="Filtrar por período personalizado"
           className={financialPeriodCustomButtonClass(filter.key === "custom")}
         >
           <HiFunnel className="h-4 w-4" aria-hidden />
         </button>
       </div>
-      {showCustom ? (
-        <div className="flex flex-wrap items-end justify-end gap-2 rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3">
-          <label className="min-w-[140px] space-y-1">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+
+      <div className="flex w-full justify-end md:hidden">
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className={financialPeriodCustomButtonClass(filter.key === "custom")}
+          aria-label="Filtrar período do fluxo de caixa"
+        >
+          <HiFunnel className="h-4 w-4" aria-hidden />
+          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider">
+            {filter.key === "custom"
+              ? "Período customizado"
+              : CASH_FLOW_PERIOD_OPTIONS.find((o) => o.key === filter.key)?.label ??
+                "Período"}
+          </span>
+        </button>
+      </div>
+
+      <ScheduleActionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Período personalizado"
+        titleId="cashflow-period-modal-title"
+        description="Selecione a data inicial e final para filtrar o fluxo de caixa."
+        maxWidthClass="max-w-md"
+        contentOverflow="visible"
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            <div className="grid grid-cols-2 gap-2 sm:hidden">
+              {CASH_FLOW_PERIOD_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => {
+                    selectPreset(option.key);
+                    setModalOpen(false);
+                  }}
+                  className={financialPeriodPresetButtonClass(filter.key === option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="btn-outline-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={applyCustomRange}
+                disabled={!draftStart || !draftEnd}
+                className="btn-primary-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <label className="block space-y-2">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
               Data inicial
             </span>
-            <input
-              type="date"
-              className={`${settingsInputClass} py-2 text-[12px]`}
-              value={filter.customStart ?? ""}
-              onChange={(e) => {
-                const start = e.target.value;
-                const end = filter.customEnd ?? start;
-                applyCustomRange(start, end);
-              }}
+            <SettingsDatePicker
+              value={draftStart}
+              onChange={setDraftStart}
+              aria-label="Data inicial"
+              placeholder="Selecionar data inicial"
             />
           </label>
-          <label className="min-w-[140px] space-y-1">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+          <label className="block space-y-2">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)]">
               Data final
             </span>
-            <input
-              type="date"
-              className={`${settingsInputClass} py-2 text-[12px]`}
-              value={filter.customEnd ?? ""}
-              onChange={(e) => {
-                const end = e.target.value;
-                const start = filter.customStart ?? end;
-                applyCustomRange(start, end);
-              }}
+            <SettingsDatePicker
+              value={draftEnd}
+              onChange={setDraftEnd}
+              aria-label="Data final"
+              placeholder="Selecionar data final"
             />
           </label>
         </div>
-      ) : null}
-    </div>
+      </ScheduleActionModal>
+    </>
   );
 }

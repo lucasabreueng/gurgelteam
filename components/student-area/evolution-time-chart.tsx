@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import type { EvolutionLapPoint } from "@/lib/contracts/student-area";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
 
 function formatAxisDate(iso: string) {
   const d = new Date(iso + "T12:00:00");
@@ -24,6 +25,8 @@ export function EvolutionTimeChart({
 }: {
   data: readonly EvolutionLapPoint[];
 }) {
+  const chartTheme = useChartTheme();
+
   const option = useMemo<EChartsOption>(() => {
     const categories = data.map((d) => formatAxisDate(d.sessionDate));
     const secs = data.map((d) => d.seconds);
@@ -34,6 +37,9 @@ export function EvolutionTimeChart({
     return {
       tooltip: {
         trigger: "axis",
+        backgroundColor: chartTheme.tooltipBg,
+        borderColor: chartTheme.grid,
+        textStyle: { color: chartTheme.tooltipText, fontSize: 12 },
         formatter: (items: unknown) => {
           if (!Array.isArray(items) || !items.length) return "";
           const p = items[0] as {
@@ -56,12 +62,12 @@ export function EvolutionTimeChart({
         type: "category",
         boundaryGap: false,
         data: categories,
-        axisLine: { lineStyle: { color: "#cbd5e1" } },
-        axisTick: { show: true, lineStyle: { color: "#cbd5e1" } },
+        axisLine: { lineStyle: { color: chartTheme.grid } },
+        axisTick: { show: true, lineStyle: { color: chartTheme.grid } },
         axisLabel: {
           show: true,
           fontSize: 10,
-          color: "#64748b",
+          color: chartTheme.axis,
           interval: 0,
           rotate: data.length > 5 ? 22 : 0,
         },
@@ -76,7 +82,7 @@ export function EvolutionTimeChart({
         axisLabel: {
           show: true,
           fontSize: 10,
-          color: "#64748b",
+          color: chartTheme.axis,
           formatter: (v: number) =>
             `${v.toFixed(2)}`.replace(".", ","),
         },
@@ -89,25 +95,15 @@ export function EvolutionTimeChart({
           smooth: 0.25,
           showSymbol: true,
           symbolSize: 8,
-          lineStyle: { width: 2.75, color: "#0d1f3c" },
+          lineStyle: { width: 2.75, color: chartTheme.line },
           itemStyle: {
-            color: "#0d1f3c",
-            borderColor: "#ffffff",
+            color: chartTheme.line,
+            borderColor: chartTheme.tooltipBg,
             borderWidth: 2,
           },
           areaStyle: {
-            opacity: 0.12,
-            color: {
-              type: "linear",
-              x: 0,
-              y: 0,
-              x2: 1,
-              y2: 0,
-              colorStops: [
-                { offset: 0, color: "rgba(13,31,60,0.08)" },
-                { offset: 1, color: "rgba(13,31,60,0.38)" },
-              ],
-            },
+            opacity: 0.18,
+            color: chartTheme.area,
           },
           data: data.map((d) => d.seconds),
           emphasis: { focus: "series" },
@@ -115,7 +111,7 @@ export function EvolutionTimeChart({
       ],
       animationDuration: 420,
     };
-  }, [data]);
+  }, [chartTheme, data]);
 
   if (data.length === 0) return null;
 
@@ -130,7 +126,8 @@ export function EvolutionTimeChart({
         </p>
       </div>
 
-      <ReactECharts
+      <ThemedECharts
+        applyTheme={false}
         option={option}
         style={{ height: 280, width: "100%" }}
         opts={{ renderer: "svg" }}

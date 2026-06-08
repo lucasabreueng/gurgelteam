@@ -1,15 +1,7 @@
-import { Header } from "@/sections/Header";
-import { Footer } from "@/sections/Footer";
-import { ClientKartReserva } from "@/components/client-kart-reserva";
+import { redirect } from "next/navigation";
+import { BOOKING_LOGIN_PATH } from "@/lib/landing/booking";
 
-export default function ReservaPage() {
-  return (
-    <>
-      <Header />
-      <main>
-        <ClientKartReserva />
-      </main>
-      <Footer />
-    </>
-  );
+/** Rota legada — redireciona visitantes para login antes do agendamento. */
+export default function ReservaRedirectPage() {
+  redirect(BOOKING_LOGIN_PATH);
 }

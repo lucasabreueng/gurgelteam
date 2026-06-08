@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { adminCardInnerClass } from "@/lib/design";
 
 type Props = {
   title: string;
@@ -18,7 +19,7 @@ export function ProfileSection({
   return (
     <section
       id={id}
-      className="scroll-mt-28 rounded-2xl border border-[rgba(17,17,17,0.06)] bg-white p-6 shadow-[0_2px_16px_rgba(13,31,60,0.04)] transition-shadow hover:shadow-[0_4px_24px_rgba(13,31,60,0.06)] md:p-8"
+      className={`scroll-mt-28 ${adminCardInnerClass} transition-shadow hover:shadow-[0_4px_24px_rgba(13,31,60,0.06)] md:p-8`}
     >
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-[rgba(17,17,17,0.06)] pb-5">
         <div className="min-w-0 flex-1">

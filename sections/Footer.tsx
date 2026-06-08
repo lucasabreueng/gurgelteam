@@ -11,8 +11,12 @@ import {
   FaWhatsapp,
 } from "react-icons/fa6";
 import { useTheme } from "@/components/theme-provider";
-import { Container } from "@/components/ui/container";
-import { WideSection } from "@/components/ui/container";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { Container, WideSection } from "@/components/ui/container";
+import {
+  WHATSAPP_PHONE_DISPLAY,
+  WHATSAPP_PHONE_HREF,
+} from "@/lib/landing/constants";
 
 const social = [
   {
@@ -31,29 +35,32 @@ const social = [
     Icon: FaInstagram,
   },
   {
-    href: "https://wa.me/+556199634893",
+    href: WHATSAPP_PHONE_HREF,
     label: "WhatsApp",
     Icon: FaWhatsapp,
   },
 ];
 
 export function Footer() {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const logoSrc =
-    theme === "dark" ? "/images/logo-light.svg" : "/images/logo.svg";
+    resolvedTheme === "dark" ? "/images/logo-light.svg" : "/images/logo.svg";
 
   return (
     <footer>
       <WideSection id="contato" className="main-footer bg-secondary">
         <Container>
           <div className="footer-header">
-            <div className="section-title">
-              <h2>
-                Viva a pista com quem une{" "}
-                <span>tradição, segurança e performance.</span>
-              </h2>
-            </div>
-            <div className="contact-us-circle footer-header-logo">
+            <SectionHeading
+              title={
+                <>
+                  Viva a pista com quem une{" "}
+                  <span>tradição, segurança e performance.</span>
+                </>
+              }
+              className="footer-header-heading mb-0 max-w-[900px]"
+            />
+            <div className="contact-us-circle shrink-0">
               <Link
                 href="/#contato"
                 aria-label="Gurgel Team — página de contato"
@@ -89,12 +96,12 @@ export function Footer() {
                   </span>
                   <h3 className="footer-contact-value">
                     <a
-                      href="https://wa.me/+556199634893"
+                      href={WHATSAPP_PHONE_HREF}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Enviar mensagem no WhatsApp para (61) 99999-9999"
+                      aria-label={`Enviar mensagem no WhatsApp para ${WHATSAPP_PHONE_DISPLAY}`}
                     >
-                      (61) 99999-9999
+                      {WHATSAPP_PHONE_DISPLAY}
                     </a>
                   </h3>
                 </div>
@@ -159,10 +166,10 @@ export function Footer() {
             <div className="footer-menu">
               <ul>
                 <li>
-                  <Link href="#">Política de privacidade</Link>
+                  <Link href="/legal/privacidade">Política de privacidade</Link>
                 </li>
                 <li>
-                  <Link href="#">Termos e condições</Link>
+                  <Link href="/legal/termos">Termos e condições</Link>
                 </li>
               </ul>
             </div>

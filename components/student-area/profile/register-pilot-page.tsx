@@ -13,10 +13,10 @@ export function RegisterPilotPage() {
       pageHeader={
         <AdminPageHeader
           title="Cadastrar piloto"
-          subtitle="Vincule um novo piloto à sua conta de responsável"
+          subtitle="Vincule um novo piloto à sua conta"
           actions={
             <div className="flex flex-wrap items-center gap-2">
-              <Link href="/piloto/perfil?demo=responsavel" className="btn-outline-md">
+              <Link href="/piloto/perfil" className="btn-outline-md">
                 Voltar ao perfil
               </Link>
               <Link href="/piloto" className="btn-outline-md">

@@ -5,6 +5,7 @@ import {
   HiArrowRightOnRectangle,
   HiOutlineUserCircle,
 } from "react-icons/hi2";
+import { LogoutLink } from "@/components/auth/logout-link";
 
 type Props = {
   profileHref?: string;
@@ -31,14 +32,14 @@ export function ShellMobileAccountLinks({
         <HiOutlineUserCircle className="h-5 w-5 shrink-0" aria-hidden />
         Meu perfil
       </Link>
-      <Link
+      <LogoutLink
         href={logoutHref}
         className={`${linkClass} text-red-200 hover:bg-red-500/15 hover:text-white`}
         onClick={() => onNavigate?.()}
       >
         <HiArrowRightOnRectangle className="h-5 w-5 shrink-0" aria-hidden />
         Sair
-      </Link>
+      </LogoutLink>
     </div>
   );
 }

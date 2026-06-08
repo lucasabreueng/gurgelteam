@@ -7,7 +7,7 @@ export type InspectionTypeKey =
   | "pos_treino"
   | "preventiva"
   | "corretiva"
-  | "pre_campeonato"
+  | "pre_evento"
   | "pos_incidente"
   | "vistoria"
   | "entrada";
@@ -75,8 +75,8 @@ export const INSPECTION_TYPE_OPTIONS: InspectionTypeOption[] = [
     icon: "bolt",
   },
   {
-    key: "pre_campeonato",
-    label: "Pré-campeonato",
+    key: "pre_evento",
+    label: "Pré-evento",
     description: "Homologação técnica para evento.",
     icon: "trophy",
   },
@@ -236,87 +236,24 @@ export const MOCK_DIAGNOSIS =
 
 export const SIGNATURE_STAFF = {
   mechanic: "Carlos Silva",
-  instructor: "Lucas Mendes",
+  supervisor: "Lucas Mendes",
   signedAt: "21 mai 2026, 15:42",
 };
 
+import {
+  buildInitialItemStates as buildInitialItemStatesFromModules,
+  computeInspectionResult as computeInspectionResultFromModules,
+} from "@/lib/maintenance/inspection-compute";
+
 export function buildInitialItemStates(): Record<string, InspectionItemState> {
-  const state: Record<string, InspectionItemState> = {};
-  for (const mod of INSPECTION_MODULES) {
-    for (const item of mod.items) {
-      if (item.id === "tr-corrente") {
-        state[item.id] = { status: "warn", severity: "moderada", note: "" };
-      } else if (item.id === "fr-desg") {
-        state[item.id] = { status: "warn", severity: "leve", note: "" };
-      } else {
-        state[item.id] = { status: null, severity: null, note: "" };
-      }
-    }
-  }
-  return state;
+  return buildInitialItemStatesFromModules(INSPECTION_MODULES);
 }
 
 export function computeInspectionResult(
   items: Record<string, InspectionItemState>,
-  general: GeneralCondition
-): {
-  ok: number;
-  warn: number;
-  fail: number;
-  critical: number;
-  final: FinalResultStatus;
-  recommendation: AutoRecommendation;
-  recommendationText: string;
-  score: number;
-} {
-  let ok = 0;
-  let warn = 0;
-  let fail = 0;
-  let critical = 0;
-
-  for (const mod of INSPECTION_MODULES) {
-    for (const def of mod.items) {
-      const s = items[def.id];
-      if (!s?.status) continue;
-      if (s.status === "ok") ok++;
-      else if (s.status === "warn") warn++;
-      else if (s.status === "fail") {
-        fail++;
-        if (s.severity === "critica" || def.critical) critical++;
-      }
-    }
-  }
-
-  let final: FinalResultStatus = "liberado";
-  let recommendation: AutoRecommendation = "liberar";
-  let recommendationText =
-    "Recomendação: kart liberado para operação normal.";
-
-  if (critical > 0 || general === "critica") {
-    final = "bloqueado";
-    recommendation = "bloquear";
-    recommendationText =
-      "Recomendação: bloquear kart — itens críticos detectados.";
-  } else if (fail > 0 || warn > 0 || general === "atencao") {
-    final = "restrito";
-    recommendation = fail > 0 ? "manutencao" : "liberar_obs";
-    recommendationText =
-      "Recomendação: enviar para manutenção antes da próxima sessão.";
-  }
-
-  const total = ok + warn + fail || 1;
-  const score = Math.round((ok / total) * 100);
-
-  return {
-    ok,
-    warn,
-    fail,
-    critical,
-    final,
-    recommendation,
-    recommendationText,
-    score,
-  };
+  general: GeneralCondition,
+) {
+  return computeInspectionResultFromModules(INSPECTION_MODULES, items, general);
 }
 
 export const GENERAL_CONDITION_META: Record<

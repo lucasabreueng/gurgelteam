@@ -14,9 +14,11 @@ type SummaryProps = {
   warn: number;
   fail: number;
   overall: OverallInspectionStatus;
+  overallStatusLabels?: Record<OverallInspectionStatus, string>;
 };
 
 type Props = SummaryProps & {
+  saving?: boolean;
   onRelease: () => void;
   onSendToMaintenance: () => void;
   onSave: () => void;
@@ -37,7 +39,7 @@ function ActionBtn({
       ? "bg-emerald-600 text-white"
       : variant === "warn"
         ? "bg-[#0d1f3c] text-white"
-        : "border border-[rgba(13,31,60,0.2)] bg-white text-[#0d1f3c]";
+        : "border border-[var(--ds-border-field)] bg-[var(--ds-bg-card)] text-[var(--ds-text-primary)]";
   return (
     <button
       type="button"
@@ -54,6 +56,7 @@ export function ChecklistDrawerFooter({
   warn,
   fail,
   overall,
+  overallStatusLabels,
   onRelease,
   onSendToMaintenance,
   onSave,
@@ -63,7 +66,13 @@ export function ChecklistDrawerFooter({
     <footer className={`${DRAWER_FOOTER_SHELL_CLASS} shadow-[0_-8px_32px_rgba(13,31,60,0.08)]`}>
       <div className={DRAWER_FOOTER_INNER_CLASS}>
         <DrawerFooterExtra>
-          <ChecklistSummary ok={ok} warn={warn} fail={fail} overall={overall} />
+          <ChecklistSummary
+            ok={ok}
+            warn={warn}
+            fail={fail}
+            overall={overall}
+            overallStatusLabels={overallStatusLabels}
+          />
         </DrawerFooterExtra>
         <DrawerFooterActions columns={4}>
           <ActionBtn variant="primary" onClick={onRelease}>

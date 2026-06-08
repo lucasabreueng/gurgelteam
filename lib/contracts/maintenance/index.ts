@@ -39,7 +39,9 @@ export type {
 } from "./inspection";
 
 export type {
-  KartOperationalStatus,
+  MaintenanceFleetStatus,
+  CorrectiveMaintenanceSummary,
+  CorrectiveMaintenanceStatus,
   InspectionItemKey,
   InspectionItemRating,
   MaintenanceCategory,
@@ -59,7 +61,8 @@ export type {
 
 export {
   INSPECTION_ITEM_LABELS,
-  KART_STATUS_LABELS,
+  MAINTENANCE_FLEET_STATUS_LABELS,
+  MAINTENANCE_FLEET_STATUSES,
 } from "./simple";
 
 export type {

@@ -1,6 +1,13 @@
 "use client";
 
 import type { ClientProfileDetail } from "@/lib/contracts/clients";
+import {
+  adminCardMutedClass,
+  adminNoteDashedClass,
+  adminOutlineButtonClass,
+  adminSubsectionTitleClass,
+  adminTextAccentClass,
+} from "@/lib/design";
 
 type Props = {
   notes: ClientProfileDetail["internalNotes"];
@@ -15,7 +22,7 @@ const NOTE_FIELDS: {
   { key: "emotional", label: "Perfil emocional" },
   { key: "competitive", label: "Potencial competitivo" },
   { key: "difficulties", label: "Dificuldades" },
-  { key: "instructorNotes", label: "Observações do instrutor" },
+  { key: "technicalNotes", label: "Observações técnicas" },
 ];
 
 export function InternalNotes({ notes, guardian }: Props) {
@@ -23,16 +30,16 @@ export function InternalNotes({ notes, guardian }: Props) {
     <div className="space-y-8">
       {guardian ? (
         <section>
-          <h3 className="text-lg font-bold text-[#0d1f3c]">Responsável</h3>
+          <h3 className={adminSubsectionTitleClass}>Responsável</h3>
           <p className="mt-1 text-sm text-neutral-600">
             Dados do responsável legal (menor de idade).
           </p>
-          <dl className="mt-5 grid gap-4 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-5 sm:grid-cols-2">
+          <dl className={`mt-5 grid gap-4 sm:grid-cols-2 ${adminCardMutedClass}`}>
             <div>
               <dt className="text-[10px] font-bold uppercase text-neutral-500">
                 Nome
               </dt>
-              <dd className="mt-1 font-semibold text-[#0d1f3c]">
+              <dd className={`mt-1 ${adminTextAccentClass}`}>
                 {guardian.name}
               </dd>
             </div>
@@ -62,7 +69,7 @@ export function InternalNotes({ notes, guardian }: Props) {
                 {guardian.documents.map((doc) => (
                   <span
                     key={doc}
-                    className="rounded-lg border border-[rgba(17,17,17,0.1)] bg-white px-3 py-1.5 text-[12px] font-medium"
+                    className={`rounded-lg px-3 py-1.5 text-[12px] font-medium ${adminOutlineButtonClass}`}
                   >
                     {doc}
                   </span>
@@ -74,7 +81,7 @@ export function InternalNotes({ notes, guardian }: Props) {
       ) : null}
 
       <section>
-        <h3 className="text-lg font-bold text-[#0d1f3c]">
+        <h3 className={adminSubsectionTitleClass}>
           Observações internas
         </h3>
         <p className="mt-1 text-sm text-neutral-600">
@@ -84,7 +91,7 @@ export function InternalNotes({ notes, guardian }: Props) {
           {NOTE_FIELDS.map(({ key, label }) => (
             <li
               key={key}
-              className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafbfc]/80 px-4 py-3"
+              className={adminNoteDashedClass}
             >
               <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                 {label}

@@ -8,6 +8,7 @@ export type {
   ProfileNavSection,
   LinkedPilotCard,
   StudentAccountBundle,
+  ProfileLegalDocuments,
   ProfileDemoKey,
 } from "@/lib/student-profile-mocks";
 

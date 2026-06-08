@@ -1,9 +1,8 @@
 "use client";
 
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
 
 import { HiChatBubbleLeftRight } from "react-icons/hi2";
-
 
 type Props = {
   onAction?: (msg: string) => void;
@@ -11,10 +10,31 @@ type Props = {
 };
 
 export function DelinquencyAlerts({ onAction, onResolve }: Props) {
+  const { data, isLoading } = useFinanceInsights();
+  const items = data?.delinquencyItems ?? [];
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border-2 border-red-200/50 bg-gradient-to-br from-red-50/40 to-white p-5 shadow-sm md:p-6">
+        <div className="h-24 animate-pulse rounded-xl bg-white/80" />
+      </section>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <section className="rounded-2xl border border-emerald-200/50 bg-emerald-50/30 p-5 shadow-sm md:p-6">
+        <p className="text-sm font-semibold text-emerald-800">
+          Nenhum cliente inadimplente no momento.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border-2 border-red-200/50 bg-gradient-to-br from-red-50/40 to-white p-5 shadow-sm md:p-6">
       <ul className="space-y-4">
-        {FinancialServiceMock.getDelinquencyItems().map((item) => (
+        {items.map((item) => (
           <li
             key={item.id}
             className="rounded-xl bg-white p-4 ring-1 ring-red-200/40"

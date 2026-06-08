@@ -1,5 +1,5 @@
 import type { MaintenanceStatus } from "@/lib/contracts/maintenance";
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 
 export function statusStyle(status: MaintenanceStatus): string {
@@ -24,7 +24,7 @@ export function MaintenanceStatusBadge({
     <span
       className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${statusStyle(status)}`}
     >
-      {MaintenanceServiceMock.getStatusLabels()[status]}
+      {getAppServices().maintenance.getStatusLabels()[status]}
     </span>
   );
 }

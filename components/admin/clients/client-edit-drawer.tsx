@@ -10,6 +10,15 @@ import { SettingsCheckbox } from "../settings/settings-checkbox";
 import { SettingsDropdown } from "../settings/settings-dropdown";
 import { SettingsField } from "../settings/settings-section";
 import {
+  adminChoiceTileClass,
+  adminDrawerHeaderSimpleClass,
+  adminDrawerOverlayLightClass,
+  adminDrawerPanelFormClass,
+  adminDrawerTitleClass,
+  adminCardInnerClass,
+  adminBodyClass,
+} from "@/lib/design";
+import {
   DRAWER_FOOTER_INNER_CLASS,
   DRAWER_FOOTER_SHELL_CLASS,
   DrawerFooterActions,
@@ -95,7 +104,7 @@ export function ClientEditDrawer({
     <div className="fixed inset-0 z-[230] flex justify-end">
       <button
         type="button"
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        className={adminDrawerOverlayLightClass}
         aria-label="Fechar edição"
         onClick={onClose}
       />
@@ -103,15 +112,15 @@ export function ClientEditDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="client-edit-title"
-        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)]"
+        className={adminDrawerPanelFormClass}
       >
-        <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className={adminDrawerHeaderSimpleClass}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 id="client-edit-title" className="truncate text-xl font-bold text-[#0d1f3c]">
+              <h1 id="client-edit-title" className={`truncate ${adminDrawerTitleClass}`}>
                 Editar cliente
               </h1>
-              <p className="mt-1 truncate text-sm text-neutral-600">{client.name}</p>
+              <p className={`mt-1 truncate ${adminBodyClass}`}>{client.name}</p>
             </div>
             <button
               type="button"
@@ -125,7 +134,7 @@ export function ClientEditDrawer({
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          <div className="space-y-4 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
+          <div className={`${adminCardInnerClass} space-y-4`}>
             <SettingsField label="Categoria">
               <ul className="space-y-2">
                 {categories.map((category) => {
@@ -133,11 +142,7 @@ export function ClientEditDrawer({
                   return (
                     <li key={category.id}>
                       <div
-                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition ${
-                          checked
-                            ? "border-accent/30 bg-[rgba(13,31,60,0.04)]"
-                            : "border-[rgba(17,17,17,0.1)] bg-[#fafbfc] hover:border-accent/25"
-                        }`}
+                        className={adminChoiceTileClass({ checked })}
                       >
                         <SettingsCheckbox
                           checked={checked}

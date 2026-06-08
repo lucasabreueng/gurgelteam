@@ -1,21 +1,28 @@
-/** Nova aula — único instrutor: Gurgel */
+/** Nova aula — operação Gurgel Team */
 
-import { SCHEDULE_EVENTS, SCHEDULE_TODAY } from "./admin-schedule-mocks";
+import { SCHEDULE_TODAY } from "./admin-schedule-mocks";
+import { getMergedScheduleEvents } from "./schedule-runtime-store";
+import { MAINTENANCE_KART_OPTIONS } from "./admin-new-maintenance-mocks";
 import {
-  formatScheduleDuration,
   getEffectiveScheduleSlotsForDate,
   KART_CATEGORIES,
-  scheduleSlotDurationMinutes,
   SKILL_LEVELS,
 } from "./admin-settings-mocks";
-import { MAINTENANCE_KART_OPTIONS } from "./admin-new-maintenance-mocks";
+import {
+  buildGurgelTimelineWithEvents,
+  type BuildGurgelTimelineOptions,
+  type GurgelTimelineSlot,
+} from "@/lib/schedule/gurgel-timeline";
 
-/** ID usado na agenda mock existente (Ricardo Gurgel) */
-export const GURGEL_SCHEDULE_INSTRUCTOR_ID = "i1";
+export type {
+  BuildGurgelTimelineOptions,
+  GurgelSlotStatus,
+  GurgelTimelineSlot,
+} from "@/lib/schedule/gurgel-timeline";
 
-export const GURGEL_INSTRUCTOR = {
+export const GURGEL_OPERATIONAL = {
   id: "gurgel",
-  name: "Gurgel",
+  name: "Gurgel Team",
   avatar: "/images/team-1.png",
   specialty: "Competição e formação de pilotos",
   dayOccupancy: 78,
@@ -23,13 +30,6 @@ export const GURGEL_INSTRUCTOR = {
   operationalStatus: "em_aula" as const,
   operationalStatusLabel: "Em aula",
 } as const;
-
-export type GurgelSlotStatus =
-  | "available"
-  | "busy"
-  | "break"
-  | "conflict"
-  | "level_mismatch";
 
 export type KartOwnershipMode = "rental" | "own" | "third_party";
 
@@ -41,9 +41,8 @@ export type NewClassStudentOption = {
   hasOwnKart: boolean;
   ownKartNumber?: number;
   ownKartCategory?: string;
-  /** Categorias liberadas para o aluno */
+  ownKartId?: string;
   allowedCategoryIds: string[];
-  /** Nível atual do aluno */
   levelId: string;
 };
 
@@ -108,7 +107,7 @@ export function getLevelLabel(levelId: string): string {
 }
 
 export const GURGEL_CLASS_ALERTS = [
-  "Gurgel já possui aula às 16h.",
+  "Horário já reservado neste período.",
   "Horário muito próximo da próxima sessão.",
   "Carga operacional elevada no período.",
 ];
@@ -130,119 +129,55 @@ function defaultClassTimeForDate(date: string): string {
 export const DEFAULT_CLASS_TIME = defaultClassTimeForDate(SCHEDULE_TODAY);
 
 export function getGurgelEventsForDate(date: string) {
-  return SCHEDULE_EVENTS.filter(
-    (e) =>
-      e.date === date &&
-      e.instructorId === GURGEL_SCHEDULE_INSTRUCTOR_ID &&
-      e.type !== "bloqueio_pista" &&
-      e.type !== "manutencao"
-  ).sort((a, b) => a.start.localeCompare(b.start));
+  return getMergedScheduleEvents()
+    .filter(
+      (e) =>
+        e.date === date &&
+        e.type !== "bloqueio_pista" &&
+        e.type !== "manutencao" &&
+        e.status !== "cancelado",
+    )
+    .sort((a, b) => a.start.localeCompare(b.start));
 }
-
-export type GurgelTimelineSlot = {
-  slotId: string;
-  time: string;
-  end: string;
-  durationMinutes: number;
-  durationLabel: string;
-  status: GurgelSlotStatus;
-  title: string;
-  detail?: string;
-  eventId?: string;
-  categoryId: string;
-  levelId: string;
-  categoryName: string;
-  levelName: string;
-};
-
-export type BuildGurgelTimelineOptions = {
-  categoryId?: string;
-  studentLevelId?: string;
-};
 
 export function buildGurgelTimeline(
   date: string,
-  options: BuildGurgelTimelineOptions = {}
+  options: BuildGurgelTimelineOptions = {},
+  blockedSlotIds?: Set<string>,
 ): GurgelTimelineSlot[] {
-  const { categoryId, studentLevelId } = options;
-  const events = getGurgelEventsForDate(date);
-  let scheduleSlots = getEffectiveScheduleSlotsForDate(date);
-
-  if (categoryId) {
-    scheduleSlots = scheduleSlots.filter((s) => s.categoryId === categoryId);
-  }
-
-  return scheduleSlots.map((slot) => {
-    const durationMinutes = scheduleSlotDurationMinutes(slot.start, slot.end);
-    const durationLabel = formatScheduleDuration(durationMinutes);
-    const categoryName = getCategoryLabel(slot.categoryId);
-    const levelName = getLevelLabel(slot.levelId);
-    const event = events.find(
-      (e) =>
-        e.start === slot.start || parseHour(e.start) === parseHour(slot.start)
-    );
-
-    const base = {
-      slotId: slot.id,
-      time: slot.start,
-      end: slot.end,
-      durationMinutes,
-      durationLabel,
-      categoryId: slot.categoryId,
-      levelId: slot.levelId,
-      categoryName,
-      levelName,
-    };
-
-    if (event) {
-      return {
-        ...base,
-        status: "busy" as const,
-        title: "Ocupado",
-        detail: event.student,
-        eventId: event.id,
-      };
-    }
-
-    const levelMismatch =
-      studentLevelId && slot.levelId !== studentLevelId;
-
-    return {
-      ...base,
-      status: levelMismatch ? ("level_mismatch" as const) : ("available" as const),
-      title: levelMismatch ? "Outro nível" : "Disponível",
-    };
-  });
+  return buildGurgelTimelineWithEvents(
+    date,
+    options,
+    getGurgelEventsForDate(date),
+    blockedSlotIds ?? new Set(),
+  );
 }
 
 export function getDefaultSlotForDate(
   date: string,
-  options: BuildGurgelTimelineOptions = {}
+  options: BuildGurgelTimelineOptions = {},
 ): GurgelTimelineSlot | undefined {
   return buildGurgelTimeline(date, options).find(
-    (s) => s.status === "available" || s.status === "level_mismatch"
+    (s) => s.status === "available" || s.status === "level_mismatch",
   );
 }
 
 export function getSlotStatusForTime(
   date: string,
   time: string,
-  options: BuildGurgelTimelineOptions = {}
+  options: BuildGurgelTimelineOptions = {},
 ): GurgelTimelineSlot | undefined {
   return buildGurgelTimeline(date, options).find((s) => s.time === time);
 }
 
-export function getAlertsForSelection(
-  date: string,
-  time: string
-): string[] {
+export function getAlertsForSelection(date: string, time: string): string[] {
   const slot = getSlotStatusForTime(date, time);
   const alerts: string[] = [];
   if (slot?.status === "busy") {
-    alerts.push("Gurgel já possui aula neste horário.");
+    alerts.push("Horário já reservado neste período.");
   }
   if (slot?.status === "conflict") {
-    alerts.push("Horário muito próximo de outra sessão do Gurgel.");
+    alerts.push("Horário muito próximo de outra sessão.");
   }
   if (slot && parseHour(slot.time) >= 17) {
     alerts.push("Carga operacional elevada no período.");
@@ -265,7 +200,7 @@ export const NEW_CLASS_KARTS = MAINTENANCE_KART_OPTIONS.slice(0, 8).map(
     id: k.id,
     number: k.number,
     category: k.categoryName,
-  })
+  }),
 );
 
 export const NEW_CLASS_THIRD_PARTY_KARTS = [

@@ -1,11 +1,27 @@
-import { ChecklistServiceMock } from "@/services/maintenance/checklistServiceMock";
+"use client";
+
+import { useChecklistContext } from "@/lib/query/hooks/use-checklist-context";
 import { HiExclamationTriangle, HiInformationCircle } from "react-icons/hi2";
 
-
 export function ChecklistSmartAlerts() {
+  const { data, isLoading } = useChecklistContext();
+  const alerts = data?.smartAlerts ?? [];
+
+  if (isLoading) {
+    return <p className="text-xs text-neutral-500">Carregando alertas…</p>;
+  }
+
+  if (alerts.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] bg-white px-3 py-4 text-xs text-neutral-500">
+        Nenhum alerta ativo no momento.
+      </p>
+    );
+  }
+
   return (
     <ul className="space-y-2">
-      {ChecklistServiceMock.getSmartAlerts().map((a) => (
+      {alerts.map((a) => (
         <li
           key={a.id}
           className={`flex gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium leading-snug ${

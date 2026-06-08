@@ -4,6 +4,12 @@ import { useEffect, type ReactNode } from "react";
 import { HiXMark } from "react-icons/hi2";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { DRAWER_FOOTER_INNER_CLASS, DRAWER_FOOTER_SHELL_CLASS } from "@/components/ui/drawer-footer";
+import {
+  adminCardClass,
+  adminDrawerHeaderSimpleClass,
+  adminDrawerPanelBillingClass,
+  adminDrawerTitleClass,
+} from "@/lib/design";
 import { BillingStepIndicator } from "./billing-step-indicator";
 import { BILLING_STEP_LABELS } from "./billing-utils";
 
@@ -59,20 +65,20 @@ export function FinancialBillingDrawerShell({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(720px,96vw)]"
+        className={adminDrawerPanelBillingClass}
       >
-        <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-4 py-4 md:px-6">
+        <header className={`${adminDrawerHeaderSimpleClass} px-4 md:px-6`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-[#0d1f3c] md:text-2xl">{title}</h1>
-              <p className="mt-0.5 max-w-xl text-[13px] leading-snug text-neutral-600 md:text-[14px]">
+              <h1 className={`${adminDrawerTitleClass} md:text-2xl`}>{title}</h1>
+              <p className="mt-0.5 max-w-xl text-[13px] leading-snug text-[var(--ds-text-secondary)] md:text-[14px]">
                 {subtitle}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-xl p-2 text-neutral-500 hover:bg-neutral-100"
+              className="shrink-0 rounded-xl p-2 text-[var(--ds-text-muted)] hover:bg-[var(--ds-bg-muted)]"
               aria-label="Fechar"
             >
               <HiXMark className="h-5 w-5" />
@@ -82,7 +88,7 @@ export function FinancialBillingDrawerShell({
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
           {!hideSteps ? (
-            <div className="mb-4 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white px-3 py-3 shadow-sm md:px-4">
+            <div className={`mb-4 px-3 py-3 md:px-4 ${adminCardClass}`}>
               <BillingStepIndicator
                 currentStep={currentStep}
                 labels={stepLabels}
@@ -94,7 +100,7 @@ export function FinancialBillingDrawerShell({
         </div>
 
         <footer className={DRAWER_FOOTER_SHELL_CLASS}>
-          <div className="border-b border-[rgba(17,17,17,0.06)] bg-[#fafbfc] px-4 py-3 md:px-6">
+          <div className="border-b border-[var(--ds-border-subtle)] bg-[var(--ds-bg-muted)] px-4 py-3 md:px-6">
             {summary}
           </div>
           <div className={DRAWER_FOOTER_INNER_CLASS}>{footer}</div>

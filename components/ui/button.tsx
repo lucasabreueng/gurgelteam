@@ -18,9 +18,9 @@ const base =
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-[length:200%_auto] bg-accent-gradient text-white hover:bg-right",
+    "bg-accent text-white hover:bg-[var(--color-accent-hover)]",
   outline:
-    "border border-divider bg-transparent px-6 py-[14px] text-primary backdrop-blur-sm hover:text-white dark:border-dark-divider dark:text-white",
+    "border border-divider bg-transparent px-6 py-[14px] text-primary backdrop-blur-sm hover:border-accent hover:bg-accent hover:text-white dark:border-dark-divider dark:text-white",
 };
 
 function paddingClass(
@@ -49,29 +49,23 @@ export function ButtonLink({
     >
       {variant === "primary" && !hideTrailingDecoration && (
         <span
-          className="pointer-events-none absolute right-[-40px] top-1/2 flex h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-accent-gradient transition-transform duration-300 group-hover:rotate-45 max-md:hidden"
+          className="pointer-events-none absolute right-[-40px] top-1/2 flex h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-accent transition-transform duration-300 group-hover:rotate-45 group-hover:bg-[var(--color-accent-hover)] max-md:hidden"
           aria-hidden
         >
           <span className="block h-3 w-3 bg-[url('/images/arrow-white.svg')] bg-contain bg-center bg-no-repeat" />
         </span>
       )}
-      {variant === "outline" && (
-        <>
-          {!hideTrailingDecoration && (
-            <span
-              className="pointer-events-none absolute right-[-40px] top-1/2 hidden h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white md:flex"
-              aria-hidden
-            >
-              <span className="block h-6 w-6 bg-[url('/images/arrow-accent.svg')] bg-contain bg-center bg-no-repeat" />
-            </span>
-          )}
-          <span
-            className="absolute inset-0 -z-10 scale-x-0 rounded-full bg-accent-gradient opacity-0 transition-all duration-300 group-hover:scale-x-100 group-hover:opacity-100"
-            aria-hidden
-          />
-        </>
+      {variant === "outline" && !hideTrailingDecoration && (
+        <span
+          className="pointer-events-none absolute right-[-40px] top-1/2 hidden h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white md:flex"
+          aria-hidden
+        >
+          <span className="block h-6 w-6 bg-[url('/images/arrow-accent.svg')] bg-contain bg-center bg-no-repeat" />
+        </span>
       )}
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        {children}
+      </span>
     </Link>
   );
 }
@@ -107,13 +101,15 @@ export function ButtonNative({
     >
       {variant === "primary" && !hideTrailingDecoration && (
         <span
-          className="pointer-events-none absolute right-[-40px] top-1/2 flex h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-accent-gradient transition-transform duration-300 group-hover:rotate-45 max-md:hidden"
+          className="pointer-events-none absolute right-[-40px] top-1/2 flex h-[50px] w-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-accent transition-transform duration-300 group-hover:rotate-45 group-hover:bg-[var(--color-accent-hover)] max-md:hidden"
           aria-hidden
         >
           <span className="block h-3 w-3 bg-[url('/images/arrow-white.svg')] bg-contain bg-center bg-no-repeat" />
         </span>
       )}
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        {children}
+      </span>
     </button>
   );
 }

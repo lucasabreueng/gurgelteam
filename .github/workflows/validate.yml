@@ -1,0 +1,89 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gurgel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gurgel_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gurgel_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/gurgel_test
+      SESSION_SECRET: ci-validate-session-secret-min-32-chars-long
+      SEED_DEFAULT_PASSWORD: Gurgel@123
+      NEXT_PUBLIC_DATA_SOURCE: http
+      ENABLE_ROUTE_GUARD: "false"
+      SMOKE_BASE_URL: http://localhost:3000
+      SMOKE_EMAIL: ana.silva@gurgelteam.com.br
+      SMOKE_PASSWORD: Gurgel@123
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma validate
+        run: npm run db:validate
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Migrate database
+        run: npm run db:migrate
+
+      - name: Seed database
+        run: npm run db:seed
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+      - name: Prepare smoke fixtures
+        run: npm run smoke:setup
+
+      - name: Start server
+        run: npm run start &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 45); do
+            if curl -sf http://localhost:3000/api/v1/auth/session >/dev/null; then
+              echo "Server ready after ${i} attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become ready in time"
+          exit 1
+
+      - name: Smoke checklist
+        run: npm run smoke:checklist

@@ -11,7 +11,7 @@ import {
   settingsTextareaClass,
 } from "../../settings/settings-section";
 import { SettingsCheckbox } from "../../settings/settings-checkbox";
-import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
+import { ClientsRepositoryMock } from "@/repositories/clients/ClientsRepositoryMock";
 import { isCompleteBrazilDate } from "@/lib/brazil-date-input";
 import {
   getBillingClientOptions,
@@ -43,6 +43,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess?: (message: string) => void;
+  initialClientId?: string;
+  initialScheduleId?: string;
 };
 
 const EMPTY = {
@@ -66,7 +68,13 @@ const EMPTY = {
   fieldsLocked: true,
 };
 
-export function NewRevenueDrawer({ open, onClose, onSuccess }: Props) {
+export function NewRevenueDrawer({
+  open,
+  onClose,
+  onSuccess,
+  initialClientId,
+  initialScheduleId,
+}: Props) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(EMPTY);
   const [newClientOpen, setNewClientOpen] = useState(false);
@@ -85,12 +93,53 @@ export function NewRevenueDrawer({ open, onClose, onSuccess }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!open) reset();
-  }, [open, reset]);
+    if (!open) {
+      reset();
+      return;
+    }
+
+    if (initialScheduleId) {
+      const item = getBillingScheduleOptions().find((o) => o.id === initialScheduleId);
+      if (item) {
+        setStep(1);
+        setForm({
+          ...EMPTY,
+          origin: "agendamento",
+          scheduleId: item.id,
+          clientId: item.clientId,
+          category: item.category,
+          description: item.description,
+          amount: formatMoneyInput(String(Math.round(item.amount * 100))),
+          situation: "receber_depois",
+          fieldsLocked: true,
+          revenueDate: todayBrazilDate(),
+          receivedDate: todayBrazilDate(),
+        });
+        setErrors({});
+        return;
+      }
+    }
+
+    if (initialClientId) {
+      setStep(1);
+      setForm({
+        ...EMPTY,
+        origin: "manual",
+        clientId: initialClientId,
+        fieldsLocked: false,
+        revenueDate: todayBrazilDate(),
+        receivedDate: todayBrazilDate(),
+      });
+      setErrors({});
+    }
+  }, [open, initialClientId, initialScheduleId, reset]);
 
   const patch = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
 
-  const scheduleOptions = useMemo(() => getBillingScheduleOptions(), []);
+  const scheduleOptions = useMemo(
+    () => (open ? getBillingScheduleOptions() : []),
+    [open],
+  );
   const productOptions = useMemo(() => getBillingProductOptions(), []);
   const eventOptions = useMemo(() => getBillingEventOptions(), []);
   const clientOptions = useMemo(
@@ -189,10 +238,25 @@ export function NewRevenueDrawer({ open, onClose, onSuccess }: Props) {
 
   const save = (andNew: boolean) => {
     if (!validateStep(2)) return;
+    const paymentLabel =
+      PAYMENT_METHOD_BILLING_OPTIONS.find((o) => o.value === form.paymentMethod)
+        ?.label ?? form.paymentMethod;
+    const serviceLabel =
+      REVENUE_CATEGORY_OPTIONS.find((o) => o.value === form.category)?.label ??
+      form.description.trim();
+
     const result = mockSaveRevenue({
       situation: form.situation,
       amount: amountNum,
       receivedAmount: receivedNum,
+      clientId: form.clientId || undefined,
+      clientName,
+      paymentMethod: paymentLabel,
+      service: serviceLabel,
+      dueDate:
+        form.situation === "receber_depois" ? form.dueDate : form.receivedDate,
+      scheduleEventId:
+        form.origin === "agendamento" ? form.scheduleId : undefined,
     });
     onSuccess?.(result.message);
     if (andNew) reset();
@@ -518,8 +582,8 @@ export function NewRevenueDrawer({ open, onClose, onSuccess }: Props) {
 
   const mainContent = newClientOpen ? (
     <BillingNewClientPanel
-      categories={ClientsServiceMock.getKartCategories()}
-      skillLevels={ClientsServiceMock.getSkillLevels()}
+      categories={ClientsRepositoryMock.getKartCategories()}
+      skillLevels={ClientsRepositoryMock.getSkillLevels()}
       onBack={() => setNewClientOpen(false)}
       onSuccess={(clientId, clientName) => {
         setExtraClients((prev) => [...prev, { value: clientId, label: clientName }]);

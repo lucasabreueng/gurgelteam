@@ -1,8 +1,7 @@
 "use client";
 
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
-
 import type { InspectionTypeKey, InspectionTypeOption } from "@/lib/contracts/maintenance";
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
 
 import {
   HiArrowRightOnRectangle,
@@ -15,7 +14,6 @@ import {
   HiWrench,
 } from "react-icons/hi2";
 import type { IconType } from "react-icons/lib";
-
 
 const ICONS: Record<InspectionTypeOption["icon"], IconType> = {
   flag: HiFlag,
@@ -34,6 +32,17 @@ type Props = {
 };
 
 export function InspectionTypeSelector({ selected, onSelect }: Props) {
+  const { data: template, isLoading } = useInspectionTemplate();
+  const options = (template?.typeOptions ?? []) as InspectionTypeOption[];
+
+  if (isLoading) {
+    return (
+      <section>
+        <div className="h-32 animate-pulse rounded-2xl bg-white" />
+      </section>
+    );
+  }
+
   return (
     <section>
       <h2 className="text-sm font-bold text-[#0d1f3c]">Tipo de inspeção</h2>
@@ -41,7 +50,7 @@ export function InspectionTypeSelector({ selected, onSelect }: Props) {
         Selecione o protocolo técnico da sessão
       </p>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {InspectionServiceMock.getTypeOptions().map((opt) => {
+        {options.map((opt) => {
           const Icon = ICONS[opt.icon];
           const active = selected === opt.key;
           return (

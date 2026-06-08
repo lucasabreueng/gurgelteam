@@ -1,25 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { HiArrowLeft } from "react-icons/hi2";
 import { SecurityCard } from "@/components/login/security-card";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
 import { ResetPasswordForm } from "./reset-password-form";
 
-export function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const tokenFromUrl = searchParams.get("token")?.trim();
+    if (tokenFromUrl) {
+      AuthServiceMock.setRecoveryToken(tokenFromUrl);
+      AuthServiceMock.setRecoveryVerified("invite-link");
+      setReady(true);
+      return;
+    }
+
     if (!AuthServiceMock.getRecoveryVerified()) {
       router.replace("/recuperar-senha");
       return;
     }
     setReady(true);
-  }, [router]);
+  }, [router, searchParams]);
 
   if (!ready) return null;
 
@@ -52,5 +61,13 @@ export function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordPageContent />
+    </Suspense>
   );
 }

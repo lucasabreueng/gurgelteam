@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
+import { getAppServices } from "@/lib/data-source/app-services";
 import type {
   InspectionItemKey,
   InspectionItemRating,
@@ -61,6 +64,7 @@ export function SimpleInspectionDrawer({
   onSuccess,
   onRequestMaintenance,
 }: Props) {
+  const queryClient = useQueryClient();
   const [kartId, setKartId] = useState(initialKartId);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [responsible, setResponsible] = useState("");
@@ -89,9 +93,26 @@ export function SimpleInspectionDrawer({
 
   const canSubmit = Boolean(kartId && date && responsible);
 
-  const finishInspection = (openMaintenance: boolean) => {
+  const finishInspection = async (openMaintenance: boolean) => {
     const kart = karts.find((k) => k.id === kartId);
     if (!kart) return;
+
+    try {
+      const hasCritical = failedItems.length > 0;
+      await getAppServices().inspection.createInspection({
+        kartId,
+        checklistType: "simple",
+        payload: { date, responsible, notes, items },
+        overallStatus: hasCritical ? "atencao" : "liberado",
+        signedBy: responsible,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.maintenance.all,
+      });
+    } catch {
+      onSuccess("Erro ao registrar inspeção.");
+      return;
+    }
 
     onSuccess(
       `Inspeção do Kart ${String(kart.number).padStart(2, "0")} registrada.`,
@@ -115,7 +136,7 @@ export function SimpleInspectionDrawer({
       setConfirmMaintenance(true);
       return;
     }
-    finishInspection(false);
+    void finishInspection(false);
   };
 
   const kartOptions = [
@@ -239,11 +260,11 @@ export function SimpleInspectionDrawer({
         cancelLabel="Não, só salvar inspeção"
         onConfirm={() => {
           setConfirmMaintenance(false);
-          finishInspection(true);
+          void finishInspection(true);
         }}
         onCancel={() => {
           setConfirmMaintenance(false);
-          finishInspection(false);
+          void finishInspection(false);
         }}
       />
     </>

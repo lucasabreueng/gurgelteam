@@ -1,73 +1,74 @@
 "use client";
 
-import { useEffect } from "react";
-import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
-import { HiXMark } from "react-icons/hi2";
+import { useRef, useState } from "react";
+import { TeamDrawerShell } from "@/components/admin/team/team-drawer-shell";
+import { DrawerFooterActions } from "@/components/ui/drawer-footer";
 import { RegisterPilotForm } from "./register-pilot-form";
 
 type Props = {
   open: boolean;
+  guardianProfileId: string;
+  demoParam?: string | null;
   onClose: () => void;
   onSuccess?: () => void;
 };
 
-export function RegisterPilotDrawer({ open, onClose, onSuccess }: Props) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      };
-  }, [open, onClose]);
-  useDrawerBodyLock(open);
+export function RegisterPilotDrawer({
+  open,
+  guardianProfileId,
+  demoParam = null,
+  onClose,
+  onSuccess,
+}: Props) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [submitState, setSubmitState] = useState({
+    loading: false,
+    usernameLoading: false,
+  });
 
-
-  if (!open) return null;
+  const handleSuccess = () => {
+    onSuccess?.();
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-[228] flex justify-end">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-        aria-label="Fechar"
-        onClick={onClose}
-      />
-      <aside
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="register-pilot-drawer-title"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,520px)] flex-col bg-[#f4f6f8] shadow-2xl"
-      >
-        <header className="flex shrink-0 items-center justify-between border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
-          <h2
-            id="register-pilot-drawer-title"
-            className="text-lg font-bold text-[#0d1f3c]"
-          >
-            Cadastrar piloto
-          </h2>
+    <TeamDrawerShell
+      open={open}
+      onClose={onClose}
+      title="Cadastrar piloto"
+      titleId="register-pilot-drawer-title"
+      footer={
+        <DrawerFooterActions columns={2}>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.1)] transition hover:bg-[#fafbfc]"
-            aria-label="Fechar"
+            className="btn-outline-md bg-white"
           >
-            <HiXMark className="h-5 w-5 text-neutral-600" aria-hidden />
+            Cancelar
           </button>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          <RegisterPilotForm
-            embedded
-            onCancel={onClose}
-            onSuccess={() => {
-              onSuccess?.();
-              onClose();
-            }}
-          />
-        </div>
-      </aside>
-    </div>
+          <button
+            type="button"
+            onClick={() => formRef.current?.requestSubmit()}
+            disabled={submitState.loading || submitState.usernameLoading}
+            className="btn-primary-md disabled:opacity-50"
+          >
+            {submitState.loading ? "Cadastrando…" : "Cadastrar piloto"}
+          </button>
+        </DrawerFooterActions>
+      }
+    >
+      <RegisterPilotForm
+        key={open ? "open" : "closed"}
+        embedded
+        hideActions
+        formRef={formRef}
+        resetWhen={open}
+        guardianProfileId={guardianProfileId}
+        demoParam={demoParam}
+        onSubmitStateChange={setSubmitState}
+        onCancel={onClose}
+        onSuccess={handleSuccess}
+      />
+    </TeamDrawerShell>
   );
 }

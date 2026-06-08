@@ -1,26 +1,4 @@
-import { NewMaintenanceRepositoryMock } from "@/repositories/maintenance/NewMaintenanceRepositoryMock";
+import { createNewMaintenanceService } from "./newMaintenanceService";
 
-export const NewMaintenanceServiceMock = {
-  getDefaultResponsible: () => NewMaintenanceRepositoryMock.getDefaultResponsible(),
-  generateOsNumber: NewMaintenanceRepositoryMock.generateOsNumber,
-  getNowLabel: () => NewMaintenanceRepositoryMock.getNowLabel(),
-  getKartOptions: () => NewMaintenanceRepositoryMock.getKartOptions(),
-  searchKarts: NewMaintenanceRepositoryMock.searchKarts,
-  getTypeOptions: () => NewMaintenanceRepositoryMock.getTypeOptions(),
-  getPriorityOptions: () => NewMaintenanceRepositoryMock.getPriorityOptions(),
-  getOriginOptions: () => NewMaintenanceRepositoryMock.getOriginOptions(),
-  getOriginLinkMock: () => NewMaintenanceRepositoryMock.getOriginLinkMock(),
-  getDiagnosisAreas: () => NewMaintenanceRepositoryMock.getDiagnosisAreas(),
-  buildInitialDiagnosis: NewMaintenanceRepositoryMock.buildInitialDiagnosis,
-  getMockProblem: () => NewMaintenanceRepositoryMock.getMockProblem(),
-  getPlannedServices: () => NewMaintenanceRepositoryMock.getPlannedServices(),
-  getDefaultPlannedServices: () => NewMaintenanceRepositoryMock.getDefaultPlannedServices(),
-  getLaborRate: () => NewMaintenanceRepositoryMock.getLaborRate(),
-  getTimeline: () => NewMaintenanceRepositoryMock.getTimeline(),
-  getSmartAlerts: () => NewMaintenanceRepositoryMock.getSmartAlerts(),
-  getAffectedBookings: () => NewMaintenanceRepositoryMock.getAffectedBookings(),
-  getSignature: () => NewMaintenanceRepositoryMock.getSignature(),
-  searchParts: NewMaintenanceRepositoryMock.searchParts,
-  computeEstimatedCosts: NewMaintenanceRepositoryMock.computeEstimatedCosts,
-  getDefaultKart: () => NewMaintenanceRepositoryMock.getDefaultKart(),
-};
+/** Alias histórico — respeita `NEXT_PUBLIC_DATA_SOURCE`. */
+export const NewMaintenanceServiceMock = createNewMaintenanceService();

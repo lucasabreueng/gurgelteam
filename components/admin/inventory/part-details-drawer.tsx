@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import Image from "next/image";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { HiXMark } from "react-icons/hi2";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
@@ -78,9 +78,9 @@ export function PartDetailsDrawer({ partId, onClose }: Props) {
       <aside
         role="dialog"
         aria-modal="true"
-        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[#f3f5f9] shadow-2xl"
+        className="app-drawer-panel relative flex h-full w-full max-w-[min(100vw,720px)] flex-col bg-[var(--ds-bg-panel)] shadow-2xl"
       >
-        <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+        <header className="shrink-0 border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-3">
@@ -192,7 +192,7 @@ export function PartDetailsDrawer({ partId, onClose }: Props) {
 
             <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
               <h3 className="font-bold text-[#0d1f3c]">Custo histórico</h3>
-              <ReactECharts
+              <ThemedECharts
                 option={costChart}
                 style={{ height: 180 }}
                 opts={{ renderer: "svg" }}

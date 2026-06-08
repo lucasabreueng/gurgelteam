@@ -1,7 +1,8 @@
 "use client";
 
 import type { ScheduleEvent } from "@/lib/contracts/schedule";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { adminCardClass } from "@/lib/design";
 
 type Props = {
   time: string;
@@ -10,38 +11,37 @@ type Props = {
 };
 
 export function TimelineSlotCard({ time, events, onEventClick }: Props) {
+  const schedule = getAppServices().schedule;
   const categories = [
     ...new Set(
       events
-        .map((event) => ScheduleServiceMock.formatEventCategory(event.category))
-        .filter((category) => category !== "—")
+        .map((event) => schedule.formatEventCategory(event.category))
+        .filter((category) => category !== "—"),
     ),
   ];
   const sharedCategory = categories.length === 1 ? categories[0] : null;
 
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm">
-      <p className="break-words text-sm font-black text-[#0d1f3c]">
+    <div className={`${adminCardClass} w-full min-w-0 max-w-full overflow-hidden p-3`}>
+      <p className="break-words text-sm font-black text-[var(--ds-text-primary)]">
         <span className="tabular-nums">{time}</span>
         {sharedCategory ? (
           <>
-            <span className="mx-1.5 font-bold text-neutral-400">·</span>
+            <span className="mx-1.5 font-bold text-[var(--ds-text-muted)]">·</span>
             <span className="font-bold text-accent">{sharedCategory}</span>
           </>
         ) : null}
       </p>
       <ul className="mt-2 space-y-1">
         {events.map((event) => {
-          const category = ScheduleServiceMock.formatEventCategory(
-            event.category,
-          );
+          const category = schedule.formatEventCategory(event.category);
 
           return (
             <li key={event.id}>
               <button
                 type="button"
                 onClick={() => onEventClick(event.id)}
-                className="w-full text-left text-sm font-bold text-[#0d1f3c] transition hover:text-accent"
+                className="w-full text-left text-sm font-bold text-[var(--ds-text-primary)] transition hover:text-accent"
               >
                 {event.student}
                 {!sharedCategory && category !== "—" ? (

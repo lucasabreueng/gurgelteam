@@ -3,14 +3,13 @@
 import { TELEMETRY_NO_SESSION } from "@/lib/telemetry-active-session";
 
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 
 import { TelemetryLoadModal } from "../telemetry-load-modal";
 import { TelemetrySessionsModal } from "../telemetry-sessions-modal";
 import { TelemetryToolbar } from "../telemetry-toolbar";
 import { TracksModal } from "./tracks/tracks-modal";
-import { isTelemetryLightPage } from "@/lib/telemetry-routes";
 import { useTelemetryWorkspace } from "./telemetry-workspace-context";
+import { telemetryWorkspaceBgClass } from "@/lib/design";
 
 function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
   const {
@@ -30,16 +29,9 @@ function TelemetryWorkspaceChrome({ children }: { children: ReactNode }) {
     setActiveSessionId,
   } = useTelemetryWorkspace();
 
-  const pathname = usePathname();
-  const isLightPage = isTelemetryLightPage(pathname);
-
   return (
     <div
-      className={
-        isLightPage
-          ? "flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]"
-          : "flex h-full min-h-0 flex-col overflow-hidden bg-[#0d1f3c]"
-      }
+      className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}
     >
       <TelemetryToolbar
         onOpenLoad={openLoadModal}

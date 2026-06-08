@@ -9,11 +9,18 @@ import { HiChevronDoubleDown, HiChevronDoubleUp, HiChevronDown } from "react-ico
 
 import {
   inventoryTableClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryThClass,
   inventoryThFirstClass,
 } from "@/components/admin/inventory/inventory-table-shared";
+import {
+  adminOutlineButtonClass,
+  adminTableBodyRowClass,
+  adminTableRowMutedClass,
+  adminTableRowSuccessClass,
+} from "@/lib/design";
 
 import { FinancialChartCard } from "../financial-chart-card";
 
@@ -90,10 +97,10 @@ export function DreStructuredTable({
   const isGroupExpanded = (id: string) => !collapsed.has(id);
 
   const renderValueColor = (value: number, kind: DreStructuredRow["kind"]) => {
-    if (kind === "total" || kind === "subtotal") return "text-[#0d1f3c]";
-    if (value > 0) return "text-emerald-700";
-    if (value < 0) return "text-red-700";
-    return "text-neutral-700";
+    if (kind === "total" || kind === "subtotal") return "text-[var(--ds-text-primary)]";
+    if (value > 0) return "text-[var(--ds-success-text)]";
+    if (value < 0) return "text-[var(--ds-error-text)]";
+    return "text-[var(--ds-text-secondary)]";
   };
 
   const handleAccountClick = (row: DreStructuredRow) => {
@@ -118,7 +125,7 @@ export function DreStructuredTable({
           <button
             type="button"
             onClick={toggleAllGroups}
-            className="btn-outline-sm inline-flex items-center gap-1.5 bg-white"
+            className={`${adminOutlineButtonClass} inline-flex items-center gap-1.5`}
             aria-label={allExpanded ? "Retrair todos os grupos" : "Expandir todos os grupos"}
           >
             {allExpanded ? (
@@ -136,10 +143,10 @@ export function DreStructuredTable({
         ) : null
       }
     >
-      <div className="hidden overflow-x-auto rounded-xl border border-[rgba(17,17,17,0.08)] lg:block">
+      <div className="hidden overflow-x-auto rounded-xl border border-[var(--ds-border)] lg:block">
         <table className={inventoryTableClass}>
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={inventoryThFirstClass}>Conta</th>
               <th className={`${inventoryThClass} text-right`}>Valor total</th>
               <th className={`${inventoryThClass} text-right`}>% receita</th>
@@ -172,12 +179,12 @@ export function DreStructuredTable({
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-[rgba(17,17,17,0.05)] last:border-0 ${
+                  className={`${adminTableBodyRowClass} ${
                     isTotal
-                      ? "bg-emerald-50/80"
+                      ? adminTableRowSuccessClass
                       : isSubtotal || isGroup
-                        ? "bg-[rgba(13,31,60,0.03)]"
-                        : "hover:bg-[#fafbfc]/60"
+                        ? adminTableRowMutedClass
+                        : ""
                   } ${clickable ? "cursor-pointer" : ""}`}
                   onClick={() => handleAccountClick(row)}
                 >
@@ -215,26 +222,28 @@ export function DreStructuredTable({
                   >
                     {FinancialServiceMock.formatDreBrl(row.currentValue)}
                   </td>
-                  <td className={`${inventoryTdClass} text-right tabular-nums text-neutral-500`}>
+                  <td className={`${inventoryTdClass} text-right tabular-nums text-[var(--ds-text-muted)]`}>
                     {FinancialServiceMock.formatDrePercent(row.currentValue, grossRevenue)}
                   </td>
                   {isMonthly ? (
                     (row.monthlyValues ?? []).map((value, i) => (
                       <td
                         key={`${row.id}-${monthColumns[i] ?? i}`}
-                        className={`${inventoryTdClass} text-right tabular-nums text-neutral-700`}
+                        className={`${inventoryTdClass} text-right tabular-nums text-[var(--ds-text-secondary)]`}
                       >
                         {FinancialServiceMock.formatDreBrl(value)}
                       </td>
                     ))
                   ) : (
                     <>
-                      <td className={`${inventoryTdClass} text-right tabular-nums text-neutral-700`}>
+                      <td className={`${inventoryTdClass} text-right tabular-nums text-[var(--ds-text-secondary)]`}>
                         {FinancialServiceMock.formatDreBrl(row.previousValue)}
                       </td>
                       <td
                         className={`${inventoryTdClass} text-right font-semibold tabular-nums ${
-                          variationPositive ? "text-emerald-700" : "text-red-700"
+                          variationPositive
+                            ? "text-[var(--ds-success-text)]"
+                            : "text-[var(--ds-error-text)]"
                         }`}
                       >
                         {FinancialServiceMock.formatDreVariation(
@@ -272,12 +281,12 @@ export function DreStructuredTable({
                   handleAccountClick(row);
                 }
               }}
-              className={`rounded-xl border border-[rgba(17,17,17,0.08)] p-3 ${
+              className={`rounded-xl border border-[var(--ds-border)] p-3 ${
                 isTotal
-                  ? "bg-emerald-50/80"
+                  ? adminTableRowSuccessClass
                   : isSubtotal || isGroup
-                    ? "bg-[rgba(13,31,60,0.03)]"
-                    : "bg-white"
+                    ? adminTableRowMutedClass
+                    : "bg-[var(--ds-bg-card)]"
               } ${clickable ? "cursor-pointer active:scale-[0.99]" : ""}`}
               style={{ marginLeft: `${row.level * 12}px` }}
             >
@@ -288,7 +297,7 @@ export function DreStructuredTable({
                     e.stopPropagation();
                     toggleGroup(row.id);
                   }}
-                  className="flex w-full items-center gap-2 text-left text-sm font-bold text-[#0d1f3c]"
+                  className="flex w-full items-center gap-2 text-left text-sm font-bold text-[var(--ds-text-primary)]"
                 >
                   <HiChevronDown
                     className={`h-4 w-4 shrink-0 text-accent transition-transform ${
@@ -301,30 +310,32 @@ export function DreStructuredTable({
               ) : (
                 <p
                   className={`text-sm ${
-                    isTotal || isSubtotal ? "font-bold text-[#0d1f3c]" : "font-semibold"
+                    isTotal || isSubtotal
+                      ? "font-bold text-[var(--ds-text-primary)]"
+                      : "font-semibold text-[var(--ds-text-secondary)]"
                   }`}
                 >
                   {row.label}
                 </p>
               )}
-              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+              <div className="mt-2 grid grid-cols-1 gap-2 text-[11px] sm:grid-cols-2">
                 <div>
-                  <p className="text-neutral-500">Valor total</p>
+                  <p className="text-[var(--ds-text-muted)]">Valor total</p>
                   <p className={`font-bold tabular-nums ${valueClass}`}>
                     {FinancialServiceMock.formatDreBrl(row.currentValue)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-neutral-500">% receita</p>
-                  <p className="font-semibold tabular-nums text-neutral-600">
+                  <p className="text-[var(--ds-text-muted)]">% receita</p>
+                  <p className="font-semibold tabular-nums text-[var(--ds-text-secondary)]">
                     {FinancialServiceMock.formatDrePercent(row.currentValue, grossRevenue)}
                   </p>
                 </div>
                 {isMonthly
                   ? monthColumns.map((col, i) => (
                       <div key={col}>
-                        <p className="text-neutral-500">{col}</p>
-                        <p className="font-semibold tabular-nums text-neutral-700">
+                        <p className="text-[var(--ds-text-muted)]">{col}</p>
+                        <p className="font-semibold tabular-nums text-[var(--ds-text-secondary)]">
                           {FinancialServiceMock.formatDreBrl(row.monthlyValues?.[i] ?? 0)}
                         </p>
                       </div>
@@ -332,18 +343,18 @@ export function DreStructuredTable({
                   : (
                     <>
                       <div>
-                        <p className="text-neutral-500">{displayPrevious}</p>
-                        <p className="font-semibold tabular-nums text-neutral-700">
+                        <p className="text-[var(--ds-text-muted)]">{displayPrevious}</p>
+                        <p className="font-semibold tabular-nums text-[var(--ds-text-secondary)]">
                           {FinancialServiceMock.formatDreBrl(row.previousValue)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-neutral-500">Variação</p>
+                        <p className="text-[var(--ds-text-muted)]">Variação</p>
                         <p
                           className={`font-bold tabular-nums ${
                             row.currentValue >= row.previousValue
-                              ? "text-emerald-700"
-                              : "text-red-700"
+                              ? "text-[var(--ds-success-text)]"
+                              : "text-[var(--ds-error-text)]"
                           }`}
                         >
                           {FinancialServiceMock.formatDreVariation(

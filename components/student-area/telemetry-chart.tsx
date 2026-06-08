@@ -4,7 +4,7 @@ import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock"
 import type { TelemetryTabKey } from "@/lib/contracts/student-area";
 
 import { useMemo, useRef, useEffect, useCallback } from "react";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { ECharts, EChartsOption } from "echarts";
 
 
@@ -383,7 +383,7 @@ export function TelemetryEChart({
   }, [chartGroup]);
 
   return (
-    <ReactECharts
+    <ThemedECharts
       option={option}
       style={{
         height: chartHeight,

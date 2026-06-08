@@ -1,7 +1,6 @@
 "use client";
 
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
-import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import { InventoryCatalogRepositoryMock } from "@/repositories/inventory/InventoryCatalogRepositoryMock";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HiMagnifyingGlass, HiOutlineChevronDown } from "react-icons/hi2";
@@ -17,14 +16,7 @@ export type OsOption = {
 
 const OS_OPTIONS: OsOption[] = (() => {
   const map = new Map<string, OsOption>();
-  for (const o of MaintenanceServiceMock.getOrders()) {
-    map.set(o.osNumber, {
-      osNumber: o.osNumber,
-      kartNumber: o.kartNumber,
-      label: `${o.osNumber} · Kart ${String(o.kartNumber).padStart(2, "0")}`,
-    });
-  }
-  for (const m of InventoryServiceMock.getMovements()) {
+  for (const m of InventoryCatalogRepositoryMock.getMovements()) {
     if (!m.osNumber || map.has(m.osNumber)) continue;
     map.set(m.osNumber, {
       osNumber: m.osNumber,
@@ -177,11 +169,9 @@ export function OsSearchDropdown({
   );
 }
 
-export const INVENTORY_KART_OPTIONS = [
-  ...new Set(MaintenanceServiceMock.getOrders().map((o) => o.kartNumber)),
-]
-  .sort((a, b) => a - b)
-  .map((n) => ({
+export const INVENTORY_KART_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1).map(
+  (n) => ({
     value: String(n),
     label: `Kart ${String(n).padStart(2, "0")}`,
-  }));
+  }),
+);

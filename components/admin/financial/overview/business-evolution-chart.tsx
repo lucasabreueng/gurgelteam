@@ -1,12 +1,17 @@
 "use client";
 
 import type { BusinessEvolutionPeriod } from "@/lib/admin-financial-mocks";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { useMemo, useState } from "react";
 
+import {
+  adminFilterPillActiveClass,
+  adminFilterPillClass,
+} from "@/lib/design";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
+import { useBusinessEvolution } from "@/lib/query/hooks/use-finance-charts";
 import { FinancialChartCard } from "../financial-chart-card";
 
 const PERIOD_LABELS: { key: BusinessEvolutionPeriod; label: string }[] = [
@@ -17,40 +22,37 @@ const PERIOD_LABELS: { key: BusinessEvolutionPeriod; label: string }[] = [
 
 export function BusinessEvolutionChart() {
   const [period, setPeriod] = useState<BusinessEvolutionPeriod>("6m");
-  const data = FinancialServiceMock.getBusinessEvolution()[period];
+  const { data } = useBusinessEvolution(period);
+  const chartTheme = useChartTheme();
 
-  const option: EChartsOption = useMemo(
-    () => ({
+  const option: EChartsOption = useMemo(() => {
+    if (!data) return {};
+    return {
       grid: { left: 48, right: 16, top: 28, bottom: 40 },
       tooltip: { trigger: "axis" },
-      legend: {
-        bottom: 0,
-        textStyle: { fontSize: 10, color: "#666" },
-      },
+      legend: { bottom: 0, textStyle: { fontSize: 10 } },
       xAxis: {
         type: "category",
         data: data.labels,
-        axisLine: { lineStyle: { color: "rgba(17,17,17,0.12)" } },
-        axisLabel: { color: "#666", fontSize: 10 },
+        axisLabel: { fontSize: 10 },
       },
       yAxis: {
         type: "value",
-        splitLine: { lineStyle: { color: "rgba(17,17,17,0.06)" } },
-        axisLabel: { color: "#666", fontSize: 10, formatter: "R$ {value}k" },
+        axisLabel: { fontSize: 10, formatter: "R$ {value}k" },
       },
       series: [
         {
           name: "Receita",
           type: "bar",
           data: data.revenue,
-          itemStyle: { color: "#0d1f3c", borderRadius: [4, 4, 0, 0] },
+          itemStyle: { color: chartTheme.line, borderRadius: [4, 4, 0, 0] },
           barMaxWidth: period === "12m" ? 16 : 24,
         },
         {
           name: "Lucro",
           type: "bar",
           data: data.profit,
-          itemStyle: { color: "rgba(13,31,60,0.35)", borderRadius: [4, 4, 0, 0] },
+          itemStyle: { color: chartTheme.area, borderRadius: [4, 4, 0, 0] },
           barMaxWidth: period === "12m" ? 16 : 24,
         },
         {
@@ -58,14 +60,19 @@ export function BusinessEvolutionChart() {
           type: "line",
           smooth: true,
           data: data.goal,
-          lineStyle: { color: "var(--color-accent, #c41e3a)", width: 2, type: "dashed" },
+          lineStyle: {
+            color: chartTheme.accent,
+            width: 2,
+            type: "dashed",
+          },
           symbol: "circle",
           symbolSize: 5,
         },
       ],
-    }),
-    [data, period]
-  );
+    };
+  }, [data, period, chartTheme]);
+
+  if (!data) return null;
 
   return (
     <FinancialChartCard
@@ -78,17 +85,15 @@ export function BusinessEvolutionChart() {
             key={key}
             type="button"
             onClick={() => setPeriod(key)}
-            className={`rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${
-              period === key
-                ? "bg-[#0d1f3c] text-white"
-                : "bg-[#fafbfc] text-neutral-600 ring-1 ring-[rgba(17,17,17,0.08)] hover:ring-accent/30"
-            }`}
+            className={
+              period === key ? adminFilterPillActiveClass : adminFilterPillClass
+            }
           >
             {label}
           </button>
         ))}
       </div>
-      <ReactECharts
+      <ThemedECharts
         option={option}
         style={{ height: 260 }}
         opts={{ renderer: "svg" }}

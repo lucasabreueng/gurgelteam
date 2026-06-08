@@ -1,21 +1,21 @@
 import * as newClassMocks from "@/lib/admin-new-class-mocks";
 
 export const NewClassRepositoryMock = {
-  getScheduleInstructorId: () => newClassMocks.GURGEL_SCHEDULE_INSTRUCTOR_ID,
-  getInstructor: () => newClassMocks.GURGEL_INSTRUCTOR,
+  getOperational: () => newClassMocks.GURGEL_OPERATIONAL,
   getStudents: () => newClassMocks.NEW_CLASS_STUDENTS,
-  getRentalKarts: () => newClassMocks.NEW_CLASS_KARTS,
-  getThirdPartyKarts: () => newClassMocks.NEW_CLASS_THIRD_PARTY_KARTS,
-  getClassAlerts: () => newClassMocks.GURGEL_CLASS_ALERTS,
+  getAlerts: () => newClassMocks.GURGEL_CLASS_ALERTS,
   getSmartSuggestion: () => newClassMocks.GURGEL_SMART_SUGGESTION,
-  getDefaultClassDate: () => newClassMocks.DEFAULT_CLASS_DATE,
-  getDefaultClassTime: () => newClassMocks.DEFAULT_CLASS_TIME,
+  getDefaultDate: () => newClassMocks.DEFAULT_CLASS_DATE,
+  getDefaultTime: () => newClassMocks.DEFAULT_CLASS_TIME,
   getGurgelEventsForDate: newClassMocks.getGurgelEventsForDate,
   buildGurgelTimeline: newClassMocks.buildGurgelTimeline,
   getDefaultSlotForDate: newClassMocks.getDefaultSlotForDate,
   getSlotStatusForTime: newClassMocks.getSlotStatusForTime,
   getAlertsForSelection: newClassMocks.getAlertsForSelection,
   formatClassDateTime: newClassMocks.formatClassDateTime,
+  getKarts: () => newClassMocks.NEW_CLASS_KARTS,
+  getThirdPartyKarts: () => newClassMocks.NEW_CLASS_THIRD_PARTY_KARTS,
+  getRentalKarts: () => newClassMocks.NEW_CLASS_KARTS,
   getCategoryLabel: newClassMocks.getCategoryLabel,
   getLevelLabel: newClassMocks.getLevelLabel,
 };

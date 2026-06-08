@@ -1,5 +1,6 @@
+import { z } from "zod";
+
 import {
-  cadastroSchema,
   loginSchema,
   passwordRecoveryIdentifierSchema,
   passwordRecoveryVerifyCodeSchema,
@@ -12,7 +13,7 @@ import type {
   PasswordRecoveryVerifyCodeDTO,
   ResetPasswordDTO,
 } from "@/lib/contracts/auth/auth.types";
-import { PasswordRecoveryRepositoryMock } from "@/repositories/auth/PasswordRecoveryRepositoryMock";
+import { parseLoginIdentifier } from "@/lib/auth-accounts-mocks";
 import type { CadastroFieldErrors } from "@/repositories/auth/AuthRepositoryMock";
 import { AuthRepositoryMock } from "@/repositories/auth/AuthRepositoryMock";
 
@@ -34,16 +35,21 @@ function zodFieldErrors(
     else if (key === "cpf") next.cpf = msg;
     else if (key === "email") next.email = msg;
     else if (key === "password") next.password = [msg];
+    else if (key === "acceptedPrivacy") next.acceptedPrivacy = msg;
+    else if (key === "acceptedTerms") next.acceptedTerms = msg;
   }
   return next;
 }
 
 export function validateLoginForm(input: LoginDTO): LoginFormErrors {
   const errors: LoginFormErrors = {};
-  const identifierError = AuthRepositoryMock.getLoginIdentifierError(
-    input.identifier,
-  );
-  if (identifierError) errors.identifier = identifierError;
+  const trimmed = input.identifier.trim();
+  if (!trimmed) {
+    errors.identifier = "Informe o e-mail ou usuário.";
+  } else if (parseLoginIdentifier(trimmed) === "invalid") {
+    errors.identifier =
+      "Informe um e-mail válido ou usuário no formato nome.sobrenome.";
+  }
 
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) {
@@ -58,7 +64,37 @@ export function validateLoginForm(input: LoginDTO): LoginFormErrors {
 }
 
 export function validateCadastroForm(input: CadastroDTO): CadastroFieldErrors {
-  const parsed = cadastroSchema.safeParse(input);
+  const parsed = z
+    .object({
+      firstName: z.string().min(1, "Informe o nome."),
+      lastName: z.string().min(1, "Informe o sobrenome."),
+      cpf: z.string().min(11, "Informe o CPF."),
+      email: z.string().email("Informe um e-mail válido."),
+      password: z
+        .string()
+        .min(8, "A senha deve ter no mínimo 8 caracteres.")
+        .refine((v) => !v.includes(" "), "Senha não pode conter espaços."),
+      acceptedPrivacy: z.boolean(),
+      acceptedTerms: z.boolean(),
+      acceptedImageUsage: z.boolean(),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.acceptedPrivacy) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Aceite a Política de privacidade para continuar.",
+          path: ["acceptedPrivacy"],
+        });
+      }
+      if (!data.acceptedTerms) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Aceite os Termos de uso para continuar.",
+          path: ["acceptedTerms"],
+        });
+      }
+    })
+    .safeParse(input);
   const zodErrors = parsed.success
     ? {}
     : zodFieldErrors(parsed.error.flatten().fieldErrors);
@@ -80,13 +116,12 @@ export function validateCadastroForm(input: CadastroDTO): CadastroFieldErrors {
 export function validateRecoveryIdentifierForm(
   input: PasswordRecoveryIdentifierDTO,
 ): string | undefined {
-  const mockError = PasswordRecoveryRepositoryMock.getRecoveryIdentifierError(
-    input.identifier,
-  );
   const parsed = passwordRecoveryIdentifierSchema.safeParse(input);
-  if (mockError) return mockError;
   if (!parsed.success) {
     return parsed.error.flatten().fieldErrors.identifier?.[0];
+  }
+  if (!input.identifier.trim()) {
+    return "Informe o e-mail ou usuário.";
   }
   return undefined;
 }
@@ -97,9 +132,6 @@ export function validateRecoveryCodeForm(
   const parsed = passwordRecoveryVerifyCodeSchema.safeParse(input);
   if (!parsed.success) {
     return parsed.error.flatten().fieldErrors.code?.[0];
-  }
-  if (!PasswordRecoveryRepositoryMock.isValidRecoveryCode(input.code)) {
-    return "Código inválido. Use 123456 no ambiente de demonstração.";
   }
   return undefined;
 }

@@ -1,8 +1,7 @@
-import Link from "next/link";
-import Image from "next/image";
+import { BookingCta } from "@/components/landing/booking-cta";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { Container } from "@/components/ui/container";
-import { WideSection } from "@/components/ui/container";
+import { Container, WideSection } from "@/components/ui/container";
+import Image from "next/image";
 
 const steps = [
   {
@@ -65,15 +64,10 @@ export function Steps() {
             ))}
           </div>
 
-          <p className="mt-16 text-center text-lg text-primary dark:text-white">
+          <div className="mt-16 text-center text-lg text-primary dark:text-white">
             Pronto para viver sua primeira experiência no kart?{" "}
-            <Link
-              href="/reserva"
-              className="font-semibold text-accent underline-offset-4 hover:underline"
-            >
-              Agendar experiência
-            </Link>
-          </p>
+            <BookingCta variant="inline">Agendar experiência</BookingCta>
+          </div>
         </Container>
       </WideSection>
     </section>

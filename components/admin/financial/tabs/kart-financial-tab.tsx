@@ -1,17 +1,24 @@
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+"use client";
+
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
 
 import { KartFinancialOverview } from "../kart-financial-overview";
 
+function parseBrl(value: string) {
+  return parseFloat(value.replace(/[^\d.-]/g, "")) || 0;
+}
+
 export function KartFinancialTab() {
-  const mostProfitable = [...FinancialServiceMock.getKartFinancials()]
+  const { data } = useFinanceInsights();
+  const kartFinancials = data?.kartFinancials ?? [];
+
+  const mostProfitable = [...kartFinancials]
     .filter((k) => k.profitPositive)
-    .sort((a, b) => parseFloat(b.estimatedProfit.replace(/[^\d.-]/g, "")) - parseFloat(a.estimatedProfit.replace(/[^\d.-]/g, "")))[0];
-  const highestCost = [...FinancialServiceMock.getKartFinancials()].sort(
-    (a, b) =>
-      parseFloat(b.costPerHour.replace(/[^\d]/g, "")) -
-      parseFloat(a.costPerHour.replace(/[^\d]/g, ""))
+    .sort((a, b) => parseBrl(b.estimatedProfit) - parseBrl(a.estimatedProfit))[0];
+  const highestCost = [...kartFinancials].sort(
+    (a, b) => parseBrl(b.costPerHour) - parseBrl(a.costPerHour),
   )[0];
-  const lowRentability = FinancialServiceMock.getKartFinancials().filter((k) => !k.profitPositive);
+  const lowRentability = kartFinancials.filter((k) => !k.profitPositive);
 
   return (
     <div className="admin-page-stack">
@@ -61,4 +68,3 @@ export function KartFinancialTab() {
     </div>
   );
 }
-

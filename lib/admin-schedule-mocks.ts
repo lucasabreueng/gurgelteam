@@ -1,5 +1,20 @@
 /** Dados mockados — Agenda operacional Gurgel Team */
 
+import { resolveScheduleCategoryName } from "@/lib/schedule/schedule-slot-selection";
+import type {
+  KartScheduleStatus,
+  PaymentStatus,
+  ScheduleEventStatus,
+  ScheduleEventType,
+} from "@/lib/contracts/enums";
+
+export type {
+  KartScheduleStatus,
+  PaymentStatus,
+  ScheduleEventStatus,
+  ScheduleEventType,
+} from "@/lib/contracts/enums";
+
 export type ScheduleViewKey = "day" | "week";
 
 export type UpcomingDaySummary = {
@@ -19,16 +34,11 @@ export type TimelineRow =
       kind: "free";
       time: string;
       category: string;
+      level: string;
     }
   | { kind: "event"; time: string; events: ScheduleEvent[] };
 
 export type AvailableKartItem = { number: number; category?: string };
-export type AvailableInstructorItem = {
-  id: string;
-  name: string;
-  nextFree?: string;
-};
-
 export type OperationalSidebarAlert = {
   id: string;
   message: string;
@@ -83,36 +93,6 @@ export function getEventsGroupedByDate(
   return map;
 }
 
-export type ScheduleEventType =
-  | "aula_individual"
-  | "aula_grupo"
-  | "treino_livre"
-  | "treino_avancado"
-  | "telemetria"
-  | "campeonato"
-  | "manutencao"
-  | "reserva_kart"
-  | "bloqueio_pista";
-
-export type ScheduleEventStatus =
-  | "confirmado"
-  | "pendente"
-  | "em_andamento"
-  | "finalizado"
-  | "cancelado"
-  | "reagendado"
-  | "no_show"
-  | "aguardando_pagamento";
-
-export type PaymentStatus = "pago" | "pendente" | "vencido" | "pacote";
-
-export type KartScheduleStatus =
-  | "disponivel"
-  | "reservado"
-  | "em_treino"
-  | "manutencao"
-  | "bloqueado_checklist";
-
 export type ScheduleKpi = {
   id: string;
   label: string;
@@ -131,8 +111,6 @@ export type ScheduleEvent = {
   studentPhone?: string;
   type: ScheduleEventType;
   typeLabel: string;
-  instructorId: string;
-  instructorName: string;
   kartNumber: number;
   kartId: string;
   status: ScheduleEventStatus;
@@ -142,16 +120,6 @@ export type ScheduleEvent = {
   plan?: string;
   lessonsLeft?: number;
   objective?: string;
-};
-
-export type ScheduleInstructor = {
-  id: string;
-  name: string;
-  avatar: string;
-  occupancy: number;
-  freeSlots: string[];
-  studentsToday: string[];
-  status: "disponivel" | "em_aula" | "pausa";
 };
 
 export type KartScheduleRow = {
@@ -182,7 +150,6 @@ export const SCHEDULE_KPIS: ScheduleKpi[] = [
   { id: "treinos", label: "Treinos confirmados", value: "18", delta: "94% confirmação", deltaPositive: true, sparkline: [14, 15, 16, 17, 16, 18, 18] },
   { id: "livres", label: "Horários livres", value: "9", delta: "Pico 17h–19h", deltaPositive: true, sparkline: [12, 11, 10, 9, 10, 9, 9] },
   { id: "karts", label: "Karts disponíveis", value: "14", delta: "2 em manutenção", deltaPositive: false, sparkline: [16, 15, 15, 14, 14, 14, 14] },
-  { id: "instrutores", label: "Instrutores ativos", value: "6", delta: "Todos escalados", deltaPositive: true, sparkline: [5, 6, 6, 5, 6, 6, 6] },
   { id: "ocupacao", label: "Taxa de ocupação", value: "92%", delta: "+3% semana", deltaPositive: true, sparkline: [85, 87, 88, 90, 89, 91, 92] },
   { id: "cancel", label: "Cancelamentos hoje", value: "2", delta: "1 reagendado", deltaPositive: true, sparkline: [4, 3, 2, 3, 2, 2, 2] },
   { id: "conflitos", label: "Conflitos operacionais", value: "3", delta: "Resolver agora", deltaPositive: false, sparkline: [1, 2, 2, 3, 2, 3, 3] },
@@ -282,10 +249,6 @@ export const AVAILABLE_KARTS_NOW: AvailableKartItem[] = [
   { number: 9, category: "Rental" },
 ];
 
-export const AVAILABLE_INSTRUCTORS_NOW: AvailableInstructorItem[] = [
-  { id: "gurgel", name: "Gurgel", nextFree: "11:00" },
-];
-
 export const OPERATIONAL_SIDEBAR_ALERTS: OperationalSidebarAlert[] = [
   {
     id: "oa1",
@@ -326,7 +289,6 @@ export const EVENT_TYPE_OPTIONS: { value: ScheduleEventType | ""; label: string 
   { value: "treino_livre", label: "Treino livre" },
   { value: "treino_avancado", label: "Treino avançado" },
   { value: "telemetria", label: "Telemetria" },
-  { value: "campeonato", label: "Campeonato" },
   { value: "manutencao", label: "Manutenção" },
   { value: "reserva_kart", label: "Reserva de kart" },
   { value: "bloqueio_pista", label: "Bloqueio de pista" },
@@ -344,13 +306,6 @@ export const EVENT_STATUS_OPTIONS: { value: ScheduleEventStatus | ""; label: str
   { value: "aguardando_pagamento", label: "Aguardando pagamento" },
 ];
 
-export const INSTRUCTOR_FILTER_OPTIONS = [
-  { value: "", label: "Todos instrutores" },
-  { value: "i1", label: "Ricardo Gurgel" },
-  { value: "i2", label: "Rafael Costa" },
-  { value: "i3", label: "Ana Martins" },
-];
-
 export const CATEGORY_FILTER_OPTIONS = [
   { value: "", label: "Todas categorias" },
   { value: "125cc", label: "125cc" },
@@ -364,7 +319,6 @@ export const EVENT_TYPE_LABELS: Record<ScheduleEventType, string> = {
   treino_livre: "Treino livre",
   treino_avancado: "Treino avançado",
   telemetria: "Telemetria",
-  campeonato: "Campeonato",
   manutencao: "Manutenção",
   reserva_kart: "Reserva de kart",
   bloqueio_pista: "Bloqueio de pista",
@@ -381,36 +335,6 @@ export const EVENT_STATUS_LABELS: Record<ScheduleEventStatus, string> = {
   aguardando_pagamento: "Aguardando pagamento",
 };
 
-export const SCHEDULE_INSTRUCTORS: ScheduleInstructor[] = [
-  {
-    id: "i1",
-    name: "Ricardo Gurgel",
-    avatar: "/images/team-1.png",
-    occupancy: 88,
-    freeSlots: ["11:00", "13:30"],
-    studentsToday: ["Lucas Mendes", "Ana Ribeiro", "Grupo B"],
-    status: "em_aula",
-  },
-  {
-    id: "i2",
-    name: "Rafael Costa",
-    avatar: "/images/team-2.png",
-    occupancy: 95,
-    freeSlots: ["10:00"],
-    studentsToday: ["João Silva", "Marina Costa"],
-    status: "disponivel",
-  },
-  {
-    id: "i3",
-    name: "Ana Martins",
-    avatar: "/images/team-3.png",
-    occupancy: 72,
-    freeSlots: ["14:00", "15:30", "18:00"],
-    studentsToday: ["Pedro Alves"],
-    status: "pausa",
-  },
-];
-
 export const SCHEDULE_EVENTS: ScheduleEvent[] = [
   {
     id: "e1",
@@ -420,10 +344,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     student: "Ana Ribeiro",
     studentPhone: "+55 11 98765-4321",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i1",
-    instructorName: "Ricardo Gurgel",
-    kartNumber: 5,
+    typeLabel: "Aula individual",    kartNumber: 5,
     kartId: "k05",
     status: "finalizado",
     payment: "pago",
@@ -438,10 +359,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "11:00",
     student: "Grupo Cadete",
     type: "aula_grupo",
-    typeLabel: "Aula em grupo",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 3,
+    typeLabel: "Aula em grupo",    kartNumber: 3,
     kartId: "k03",
     status: "em_andamento",
     payment: "pacote",
@@ -455,10 +373,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "11:00",
     student: "Pedro Alves",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 4,
+    typeLabel: "Aula individual",    kartNumber: 4,
     kartId: "k04",
     status: "confirmado",
     payment: "pago",
@@ -472,10 +387,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     student: "Lucas Mendes",
     studentPhone: "+55 11 91234-5678",
     type: "treino_avancado",
-    typeLabel: "Treino avançado",
-    instructorId: "i1",
-    instructorName: "Ricardo Gurgel",
-    kartNumber: 12,
+    typeLabel: "Treino avançado",    kartNumber: 12,
     kartId: "k12",
     status: "confirmado",
     payment: "pendente",
@@ -492,10 +404,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "16:00",
     student: "—",
     type: "manutencao",
-    typeLabel: "Manutenção",
-    instructorId: "i1",
-    instructorName: "Oficina",
-    kartNumber: 12,
+    typeLabel: "Manutenção",    kartNumber: 12,
     kartId: "k12",
     status: "confirmado",
     payment: "pago",
@@ -508,10 +417,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "17:30",
     student: "João Silva",
     type: "treino_livre",
-    typeLabel: "Treino livre",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 18,
+    typeLabel: "Treino livre",    kartNumber: 18,
     kartId: "k18",
     status: "pendente",
     payment: "pendente",
@@ -524,10 +430,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "19:00",
     student: "Grupo avançado",
     type: "treino_avancado",
-    typeLabel: "Treino avançado",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 7,
+    typeLabel: "Treino avançado",    kartNumber: 7,
     kartId: "k07",
     status: "pendente",
     payment: "pacote",
@@ -541,10 +444,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "19:30",
     student: "Telemetria — Marina",
     type: "telemetria",
-    typeLabel: "Telemetria",
-    instructorId: "i3",
-    instructorName: "Ana Martins",
-    kartNumber: 6,
+    typeLabel: "Telemetria",    kartNumber: 6,
     kartId: "k06",
     status: "confirmado",
     payment: "pago",
@@ -556,14 +456,11 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "21:00",
     student: "—",
     type: "bloqueio_pista",
-    typeLabel: "Bloqueio de pista",
-    instructorId: "i1",
-    instructorName: "Operações",
-    kartNumber: 0,
+    typeLabel: "Bloqueio de pista",    kartNumber: 0,
     kartId: "",
     status: "confirmado",
     payment: "pago",
-    note: "Campeonato regional — pista fechada",
+    note: "Evento regional — pista fechada",
   },
   {
     id: "e9",
@@ -572,10 +469,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "10:00",
     student: "Marina Costa",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 18,
+    typeLabel: "Aula individual",    kartNumber: 18,
     kartId: "k18",
     status: "confirmado",
     payment: "pago",
@@ -588,10 +482,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "15:00",
     student: "Pedro Alves",
     type: "treino_livre",
-    typeLabel: "Treino livre",
-    instructorId: "i3",
-    instructorName: "Ana Martins",
-    kartNumber: 5,
+    typeLabel: "Treino livre",    kartNumber: 5,
     kartId: "k05",
     status: "confirmado",
     payment: "pacote",
@@ -603,10 +494,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "17:00",
     student: "Grupo F400",
     type: "aula_grupo",
-    typeLabel: "Aula em grupo",
-    instructorId: "i1",
-    instructorName: "Ricardo Gurgel",
-    kartNumber: 7,
+    typeLabel: "Aula em grupo",    kartNumber: 7,
     kartId: "k07",
     status: "pendente",
     payment: "pacote",
@@ -616,12 +504,9 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     date: "2026-05-23",
     start: "10:00",
     end: "11:30",
-    student: "Campeonato amador",
-    type: "campeonato",
-    typeLabel: "Campeonato",
-    instructorId: "i1",
-    instructorName: "Operações",
-    kartNumber: 0,
+    student: "—",
+    type: "bloqueio_pista",
+    typeLabel: "Bloqueio de pista",    kartNumber: 0,
     kartId: "",
     status: "confirmado",
     payment: "pago",
@@ -634,10 +519,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "16:00",
     student: "João Silva",
     type: "treino_avancado",
-    typeLabel: "Treino avançado",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 5,
+    typeLabel: "Treino avançado",    kartNumber: 5,
     kartId: "k05",
     status: "confirmado",
     payment: "pago",
@@ -649,10 +531,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "18:00",
     student: "Lucas Mendes",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i1",
-    instructorName: "Ricardo Gurgel",
-    kartNumber: 5,
+    typeLabel: "Aula individual",    kartNumber: 5,
     kartId: "k05",
     status: "pendente",
     payment: "pendente",
@@ -664,10 +543,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "10:30",
     student: "Ana Ribeiro",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i3",
-    instructorName: "Ana Martins",
-    kartNumber: 3,
+    typeLabel: "Aula individual",    kartNumber: 3,
     kartId: "k03",
     status: "confirmado",
     payment: "pago",
@@ -679,10 +555,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "15:00",
     student: "Treino livre",
     type: "treino_livre",
-    typeLabel: "Treino livre",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 7,
+    typeLabel: "Treino livre",    kartNumber: 7,
     kartId: "k07",
     status: "confirmado",
     payment: "pacote",
@@ -694,10 +567,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "12:00",
     student: "Grupo rental",
     type: "aula_grupo",
-    typeLabel: "Aula em grupo",
-    instructorId: "i2",
-    instructorName: "Rafael Costa",
-    kartNumber: 14,
+    typeLabel: "Aula em grupo",    kartNumber: 14,
     kartId: "k14",
     status: "finalizado",
     payment: "pago",
@@ -709,10 +579,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "16:00",
     student: "Marina Costa",
     type: "aula_individual",
-    typeLabel: "Aula individual",
-    instructorId: "i3",
-    instructorName: "Ana Martins",
-    kartNumber: 18,
+    typeLabel: "Aula individual",    kartNumber: 18,
     kartId: "k18",
     status: "confirmado",
     payment: "pago",
@@ -724,10 +591,7 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     end: "11:00",
     student: "Pedro Alves",
     type: "treino_livre",
-    typeLabel: "Treino livre",
-    instructorId: "i1",
-    instructorName: "Ricardo Gurgel",
-    kartNumber: 5,
+    typeLabel: "Treino livre",    kartNumber: 5,
     kartId: "k05",
     status: "pendente",
     payment: "pendente",
@@ -737,12 +601,9 @@ export const SCHEDULE_EVENTS: ScheduleEvent[] = [
     date: "2026-05-30",
     start: "14:00",
     end: "16:00",
-    student: "Campeonato",
-    type: "campeonato",
-    typeLabel: "Campeonato",
-    instructorId: "i1",
-    instructorName: "Operações",
-    kartNumber: 0,
+    student: "—",
+    type: "bloqueio_pista",
+    typeLabel: "Bloqueio de pista",    kartNumber: 0,
     kartId: "",
     status: "confirmado",
     payment: "pago",
@@ -775,7 +636,6 @@ export const QUICK_ACTIONS = [
   { id: "qa1", label: "Nova aula", action: "new_class" },
   { id: "qa2", label: "Novo treino", action: "new_training" },
   { id: "qa3", label: "Agendar telemetria", action: "telemetry" },
-  { id: "qa4", label: "Criar campeonato", action: "championship" },
   { id: "qa5", label: "Bloquear pista", action: "block_track" },
   { id: "qa6", label: "Reservar kart", action: "reserve_kart" },
 ] as const;
@@ -876,12 +736,16 @@ export function formatMonthYearLabel(year: number, month: number): string {
 
 export function formatEventCategory(category?: string): string {
   if (!category) return "—";
+  if (category.includes(",")) return category;
+  const resolved = resolveScheduleCategoryName(category);
+  if (resolved !== category) return resolved;
   const labels: Record<string, string> = {
     "125cc": "125cc",
     cadete: "Cadete",
     competicao: "Competição",
     f400: "F400",
     rental: "Rental",
+    "mirim-cadete": "Mirim / Cadete",
   };
   return labels[category.toLowerCase()] ?? category;
 }
@@ -947,6 +811,7 @@ export function buildDayTimeline(
         kind: "free",
         time: slot,
         category: FREE_SLOT_CATEGORIES[slotIndex % FREE_SLOT_CATEGORIES.length],
+        level: "—",
       });
     }
   }
@@ -958,7 +823,6 @@ export function filterScheduleEvents(
   events: ScheduleEvent[],
   filters: {
     search: string;
-    instructorId: string;
     kart: string;
     type: string;
     status: string;
@@ -971,7 +835,6 @@ export function filterScheduleEvents(
     if (q) {
       const hay = [
         e.student,
-        e.instructorName,
         String(e.kartNumber),
         e.typeLabel,
         e.note ?? "",
@@ -980,7 +843,6 @@ export function filterScheduleEvents(
         .toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (filters.instructorId && e.instructorId !== filters.instructorId) return false;
     if (filters.kart && String(e.kartNumber) !== filters.kart) return false;
     if (filters.type && e.type !== filters.type) return false;
     if (filters.status && e.status !== filters.status) return false;

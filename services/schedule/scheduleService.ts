@@ -1,7 +1,9 @@
+import { format, addDays } from "date-fns";
 import { getDataSourceMode } from "@/lib/data-source/mode";
 import type { ScheduleEvent } from "@/lib/contracts/schedule";
 import type { ScheduleMetaDTO } from "@/lib/contracts/schedule/schedule-api.types";
 import * as schedulePure from "@/lib/schedule/schedule-pure";
+import { confirmScheduleEvent, getScheduleEventById } from "@/lib/schedule-runtime-store";
 import { buildScheduleMetaDTO } from "@/repositories/schedule/schedule-api-handlers";
 import { ScheduleRepositoryHttp } from "@/repositories/schedule/ScheduleRepositoryHttp";
 import { ScheduleRepositoryMock } from "@/repositories/schedule/ScheduleRepositoryMock";
@@ -10,11 +12,20 @@ function isHttpMode(): boolean {
   return getDataSourceMode() === "http";
 }
 
+function agendaEventsRange(): { from: string; to: string } {
+  const today = new Date();
+  return {
+    from: format(addDays(today, -7), "yyyy-MM-dd"),
+    to: format(addDays(today, 21), "yyyy-MM-dd"),
+  };
+}
+
 function createDataAccess() {
   return {
-    getEvents(): Promise<ScheduleEvent[]> {
+    getEvents(range?: { from?: string; to?: string }): Promise<ScheduleEvent[]> {
+      const query = range ?? (isHttpMode() ? agendaEventsRange() : undefined);
       return isHttpMode()
-        ? ScheduleRepositoryHttp.fetchEvents()
+        ? ScheduleRepositoryHttp.fetchEvents(query)
         : Promise.resolve(ScheduleRepositoryMock.getEvents());
     },
     getUpcomingDays() {
@@ -34,10 +45,39 @@ function createDataAccess() {
     },
     async getDefaultDate(): Promise<string> {
       if (isHttpMode()) {
-        const meta = await ScheduleRepositoryHttp.fetchMeta();
-        return meta.today;
+        return format(new Date(), "yyyy-MM-dd");
       }
       return ScheduleRepositoryMock.getToday();
+    },
+
+    cancelEvent(eventId: string, reason?: string): Promise<ScheduleEvent | undefined> {
+      return isHttpMode()
+        ? ScheduleRepositoryHttp.cancelEvent(eventId, reason)
+        : Promise.resolve(undefined);
+    },
+
+    swapKart(
+      eventId: string,
+      kartId: string,
+      reason?: string,
+    ): Promise<ScheduleEvent | undefined> {
+      return isHttpMode()
+        ? ScheduleRepositoryHttp.swapKart(eventId, kartId, reason)
+        : Promise.resolve(undefined);
+    },
+
+    confirmEvent(eventId: string): Promise<ScheduleEvent | undefined> {
+      if (isHttpMode()) {
+        return ScheduleRepositoryHttp.updateEvent(eventId, { status: "confirmado" });
+      }
+
+      const event = getScheduleEventById(eventId);
+      if (!event) return Promise.resolve(undefined);
+      if (event.status === "confirmado" || event.status === "em_andamento") {
+        return Promise.resolve(undefined);
+      }
+      confirmScheduleEvent(eventId);
+      return Promise.resolve(getScheduleEventById(eventId));
     },
   };
 }
@@ -69,6 +109,7 @@ export function createScheduleService() {
     formatDateLower: schedulePure.formatScheduleDateLower,
     formatDateShort: schedulePure.formatScheduleDateShort,
     buildDayTimeline: schedulePure.buildDayTimeline,
+    buildDayTimelineFromSlots: schedulePure.buildDayTimelineFromSlots,
     filterEvents: schedulePure.filterScheduleEvents,
     getEventDetailFromList: (
       events: ScheduleEvent[],
@@ -93,10 +134,6 @@ export function createScheduleService() {
       mockMetaAccessor("getAvailableKartsNow", () =>
         ScheduleRepositoryMock.getAvailableKartsNow(),
       ),
-    getAvailableInstructorsNow: () =>
-      mockMetaAccessor("getAvailableInstructorsNow", () =>
-        ScheduleRepositoryMock.getAvailableInstructorsNow(),
-      ),
     getOperationalSidebarAlerts: () =>
       mockMetaAccessor("getOperationalSidebarAlerts", () =>
         ScheduleRepositoryMock.getOperationalSidebarAlerts(),
@@ -104,10 +141,6 @@ export function createScheduleService() {
     getQuickActions: () =>
       mockMetaAccessor("getQuickActions", () =>
         ScheduleRepositoryMock.getQuickActions(),
-      ),
-    getInstructors: () =>
-      mockMetaAccessor("getInstructors", () =>
-        ScheduleRepositoryMock.getInstructors(),
       ),
     getKartScheduleRows: () =>
       mockMetaAccessor("getKartScheduleRows", () =>
@@ -126,10 +159,6 @@ export function createScheduleService() {
     getEventStatusOptions: () =>
       mockMetaAccessor("getEventStatusOptions", () =>
         ScheduleRepositoryMock.getEventStatusOptions(),
-      ),
-    getInstructorFilterOptions: () =>
-      mockMetaAccessor("getInstructorFilterOptions", () =>
-        ScheduleRepositoryMock.getInstructorFilterOptions(),
       ),
     getCategoryFilterOptions: () =>
       mockMetaAccessor("getCategoryFilterOptions", () =>

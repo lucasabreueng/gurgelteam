@@ -27,6 +27,8 @@ type Props = {
   className?: string;
   /** Sempre faixa horizontal (ex.: telemetria). */
   forceHorizontalStrip?: boolean;
+  /** Exibe badge de variação (delta) — desligado em karts/equipe/estoque/financeiro. */
+  showDeltaBadge?: boolean;
 };
 
 const STRIP_CLASSES =
@@ -36,10 +38,12 @@ function AdminKpiCard({
   kpi,
   Icon,
   noWrap,
+  showDeltaBadge,
 }: {
   kpi: AdminKpiItem;
   Icon?: IconType;
   noWrap: boolean;
+  showDeltaBadge: boolean;
 }) {
   return (
     <KpiCard
@@ -53,6 +57,7 @@ function AdminKpiCard({
       iconClassName={kpi.iconClassName}
       valueClassName={kpi.valueClassName}
       noWrap={noWrap}
+      showDeltaBadge={showDeltaBadge}
     />
   );
 }
@@ -65,6 +70,7 @@ export function AdminResponsiveKpis({
   desktopClassName = "admin-page-grid grid grid-cols-2 lg:grid-cols-4",
   className = "",
   forceHorizontalStrip = false,
+  showDeltaBadge = true,
 }: Props) {
   const { tabletLandscape } = useAdminPanelTabletLayout();
 
@@ -83,6 +89,7 @@ export function AdminResponsiveKpis({
                 kpi={kpi}
                 Icon={icons[kpi.id] ?? defaultIcon}
                 noWrap
+                showDeltaBadge={showDeltaBadge}
               />
             </li>
           ))}
@@ -101,6 +108,7 @@ export function AdminResponsiveKpis({
                 kpi={kpi}
                 Icon={icons[kpi.id] ?? defaultIcon}
                 noWrap
+                showDeltaBadge={showDeltaBadge}
               />
             </li>
           ))}
@@ -115,6 +123,7 @@ export function AdminResponsiveKpis({
                 kpi={kpi}
                 Icon={icons[kpi.id] ?? defaultIcon}
                 noWrap={false}
+                showDeltaBadge={showDeltaBadge}
               />
             </li>
           ))}

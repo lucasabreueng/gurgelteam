@@ -2,6 +2,7 @@
 
 import type { PurchaseStatus, PurchaseOrder } from "@/lib/contracts/inventory";
 
+import { useInventoryPurchaseOrders } from "@/lib/query/hooks/use-inventory-purchases";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 
 import { HiArrowDownTray, HiShoppingCart } from "react-icons/hi2";
@@ -10,6 +11,8 @@ import { InventoryTablePagination } from "./inventory-table-pagination";
 import {
   InventoryTableShell,
   TableIconButton,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -17,12 +20,17 @@ import {
   inventoryThFirstClass,
 } from "./inventory-table-shared";
 import { useInventoryTableState } from "./use-inventory-table-state";
+import {
+  adminBadgeInfoClass,
+  adminBadgeSuccessClass,
+  adminBadgeWarningClass,
+} from "@/lib/design";
 
 const STATUS_STYLE: Record<PurchaseStatus, string> = {
-  solicitado: "bg-amber-50 text-amber-900 ring-amber-200/60",
-  aprovado: "bg-sky-50 text-sky-900 ring-sky-200/60",
-  comprado: "bg-violet-50 text-violet-900 ring-violet-200/60",
-  entregue: "bg-emerald-50 text-emerald-800 ring-emerald-200/60",
+  solicitado: adminBadgeWarningClass,
+  aprovado: adminBadgeInfoClass,
+  comprado: adminBadgeInfoClass,
+  entregue: adminBadgeSuccessClass,
 };
 
 type Props = {
@@ -31,6 +39,7 @@ type Props = {
 };
 
 export function PurchaseOrders({ onRequestPurchase, onReceive }: Props) {
+  const { data: orders = [] } = useInventoryPurchaseOrders();
   const {
     page,
     setPage,
@@ -38,7 +47,7 @@ export function PurchaseOrders({ onRequestPurchase, onReceive }: Props) {
     handlePageSizeChange,
     paginatedItems,
     totalItems,
-  } = useInventoryTableState(InventoryServiceMock.getPurchaseOrders(), []);
+  } = useInventoryTableState(orders, []);
 
   return (
     <div className="admin-page-stack">
@@ -56,7 +65,7 @@ export function PurchaseOrders({ onRequestPurchase, onReceive }: Props) {
         }
       >
         <thead>
-          <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+          <tr className={adminTableHeadRowClass}>
             <th className={inventoryThFirstClass}>Código</th>
             <th className={inventoryThClass}>Descrição</th>
             <th className={inventoryThClass}>Fornecedor</th>
@@ -72,7 +81,7 @@ export function PurchaseOrders({ onRequestPurchase, onReceive }: Props) {
           {paginatedItems.map((po) => (
             <tr
               key={po.id}
-              className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+              className={adminTableBodyRowClass}
             >
               <td className={inventoryTdFirstClass}>{po.partCode}</td>
               <td className={inventoryTdDescClass}>{po.partName}</td>

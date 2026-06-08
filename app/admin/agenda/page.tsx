@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { SchedulePage } from "@/components/admin/schedule-page";
 
 export const metadata = {
@@ -7,5 +8,9 @@ export const metadata = {
 };
 
 export default function AdminAgendaPage() {
-  return <SchedulePage />;
+  return (
+    <Suspense fallback={null}>
+      <SchedulePage />
+    </Suspense>
+  );
 }

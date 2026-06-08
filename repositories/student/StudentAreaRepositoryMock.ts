@@ -18,7 +18,6 @@ export const StudentAreaRepositoryMock = {
   getVideoMaterials: () => mocks.VIDEO_MATERIALS,
   getQuickActions: () => mocks.QUICK_ACTIONS,
   getSidebarPlan: () => mocks.SIDEBAR_PLAN,
-  getSidebarCompete: () => mocks.SIDEBAR_COMPETE,
   getTelemetryStats: () => mocks.TELEMETRY_STATS,
   getTelemetryPilotSessions: () => mocks.TELEMETRY_PILOT_SESSIONS,
   getTelemetryDefaultSessionId: () => mocks.TELEMETRY_DEFAULT_SESSION_ID,

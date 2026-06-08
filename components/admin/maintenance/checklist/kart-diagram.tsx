@@ -1,14 +1,19 @@
 "use client";
 
-import { ChecklistServiceMock } from "@/services/maintenance/checklistServiceMock";
-
 import type { DiagramMark } from "@/lib/contracts/maintenance";
 
 import { useState } from "react";
 
+type DiagramViewKey = "frente" | "lateral" | "traseira";
 
-export function KartDiagram() {
-  const [view, setView] = useState<"frente" | "lateral" | "traseira">("lateral");
+type Props = {
+  views: readonly { key: DiagramViewKey; label: string }[];
+  zones: Record<DiagramViewKey, readonly string[]>;
+  loading?: boolean;
+};
+
+export function KartDiagram({ views, zones, loading = false }: Props) {
+  const [view, setView] = useState<DiagramViewKey>("lateral");
   const [marks, setMarks] = useState<DiagramMark[]>([]);
 
   const toggleZone = (zone: string) => {
@@ -23,14 +28,21 @@ export function KartDiagram() {
   const isMarked = (zone: string) =>
     marks.some((m) => m.view === view && m.zone === zone);
 
+  const activeViews = views.length > 0 ? views : [];
+  const activeZones = zones[view] ?? [];
+
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-sm md:p-5">
       <h3 className="text-sm font-bold text-[#0d1f3c]">Vista esquemática</h3>
       <p className="mt-1 text-xs text-neutral-500">
         Toque nas zonas para marcar problemas
       </p>
+      {loading ? (
+        <div className="mt-4 h-40 animate-pulse rounded-2xl bg-[#fafbfc]" />
+      ) : (
+        <>
       <div className="mt-3 flex gap-1 rounded-lg bg-[#fafbfc] p-1">
-        {ChecklistServiceMock.getDiagramViews().map((v) => (
+        {activeViews.map((v) => (
           <button
             key={v.key}
             type="button"
@@ -55,7 +67,7 @@ export function KartDiagram() {
           />
         </div>
         <ul className="absolute inset-0 grid grid-cols-2 gap-2 p-3">
-          {ChecklistServiceMock.getDiagramZones()[view].map((zone) => (
+          {activeZones.map((zone) => (
             <li key={zone}>
               <button
                 type="button"
@@ -77,6 +89,8 @@ export function KartDiagram() {
           {marks.length} marcação(ões) registrada(s)
         </p>
       ) : null}
+        </>
+      )}
     </section>
   );
 }

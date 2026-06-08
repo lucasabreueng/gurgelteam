@@ -1,12 +1,9 @@
 "use client";
 
-import { NewMaintenanceServiceMock } from "@/services/maintenance/newMaintenanceServiceMock";
-
+import { getAppServices } from "@/lib/data-source/app-services";
 import type { MaintenanceKartOption } from "@/lib/contracts/maintenance";
-
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-
 import { settingsInputClass } from "../../settings/settings-section";
 import { KartTechnicalCard } from "./kart-technical-card";
 
@@ -17,8 +14,19 @@ type Props = {
 
 export function KartSearchSelector({ selected, onSelect }: Props) {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<MaintenanceKartOption[]>([]);
 
-  const results = useMemo(() => NewMaintenanceServiceMock.searchKarts(query), [query]);
+  useEffect(() => {
+    let active = true;
+    void getAppServices()
+      .newMaintenance.searchKarts(query)
+      .then((rows) => {
+        if (active) setResults(rows);
+      });
+    return () => {
+      active = false;
+    };
+  }, [query]);
 
   return (
     <section className="space-y-4">

@@ -27,10 +27,10 @@ export function SettingsCheckbox({
       aria-label={ariaLabel}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition focus-visible:outline-none focus-visible:border-accent ${
         checked
           ? "border-accent bg-accent text-white"
-          : "border-[rgba(17,17,17,0.1)] bg-white hover:border-accent/30"
+          : "border-[var(--ds-border-field)] bg-[var(--ds-bg-input)] hover:border-accent/30"
       } disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {checked ? <HiCheck className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : null}

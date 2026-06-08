@@ -10,6 +10,7 @@ import {
   SECTOR_CARD,
   TABLE_HEAD,
 } from "./sectors-styles";
+import { adminTableBodyRowClass } from "@/lib/design";
 
 type SortKey = "lap" | "s1" | "s2" | "s3" | "total" | "delta" | "consistency";
 
@@ -26,8 +27,12 @@ function lapConsistency(lap: SectorsLapRecord, bestTotal: number): number {
 }
 
 function cellClass(highlight: ReturnType<typeof TelemetryServiceMock.getLapCellHighlight>): string {
-  if (highlight === "session_best") return "bg-emerald-50 font-semibold text-emerald-700";
-  if (highlight === "personal_best") return "bg-violet-50 font-semibold text-violet-700";
+  if (highlight === "session_best") {
+    return "bg-[var(--ds-success-bg)] font-semibold text-[var(--ds-success-text)]";
+  }
+  if (highlight === "personal_best") {
+    return "bg-violet-500/10 font-semibold text-violet-300";
+  }
   return "";
 }
 
@@ -72,11 +77,11 @@ export function SectorsLapsTable({
   };
 
   const thClass =
-    "cursor-pointer px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-neutral-600 transition hover:text-[#0d1f3c]";
+    "cursor-pointer px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--ds-text-muted)] transition hover:text-[var(--ds-text-primary)]";
 
   return (
     <article className={`${SECTOR_CARD} overflow-hidden`}>
-      <div className="border-b border-[rgba(17,17,17,0.08)] px-5 py-4 md:px-6">
+      <div className="border-b border-[var(--ds-border)] px-5 py-4 md:px-6">
         <h3 className={SECTION_TITLE}>Análise de voltas</h3>
       </div>
 
@@ -116,12 +121,12 @@ export function SectorsLapsTable({
               return (
                 <tr
                   key={lap.lap}
-                  className={`border-b border-dashed border-neutral-200 transition last:border-0 ${
+                  className={`${adminTableBodyRowClass} ${
                     lap.invalid
-                      ? "bg-red-50/80 text-red-700/90"
+                      ? "bg-[var(--ds-error-bg)] text-[var(--ds-error-text)]"
                       : selected
                         ? "bg-accent/5"
-                        : "hover:bg-white/90"
+                        : ""
                   }`}
                 >
                   <td className="px-4 py-3">
@@ -134,7 +139,7 @@ export function SectorsLapsTable({
                       aria-label={`Selecionar volta ${lap.lap}`}
                     />
                   </td>
-                  <td className="px-4 py-3 font-semibold text-neutral-800">
+                  <td className="px-4 py-3 font-semibold text-[var(--ds-text-primary)]">
                     V{lap.lap}
                     {lap.invalid ? (
                       <span className="ml-1 text-[9px] uppercase text-red-600">
@@ -148,7 +153,7 @@ export function SectorsLapsTable({
                     return (
                       <td
                         key={sector}
-                        className={`px-4 py-3 font-mono tabular-nums text-neutral-800 ${cellClass(hl)}`}
+                        className={`px-4 py-3 font-mono tabular-nums text-[var(--ds-text-secondary)] ${cellClass(hl)}`}
                         title={
                           hl === "session_best"
                             ? "Melhor setor da sessão"
@@ -161,17 +166,19 @@ export function SectorsLapsTable({
                       </td>
                     );
                   })}
-                  <td className="px-4 py-3 font-mono font-bold tabular-nums text-[#0d1f3c]">
+                  <td className="px-4 py-3 font-mono font-bold tabular-nums text-[var(--ds-text-primary)]">
                     {TelemetryServiceMock.formatSectorTime(lap.total)}
                   </td>
                   <td
                     className={`px-4 py-3 font-mono tabular-nums ${
-                      delta <= 0 ? "font-semibold text-accent" : "text-red-600"
+                      delta <= 0
+                        ? "font-semibold text-accent"
+                        : "text-[var(--ds-error-text)]"
                     }`}
                   >
                     {TelemetryServiceMock.formatDelta(delta)}
                   </td>
-                  <td className="px-4 py-3 font-mono tabular-nums text-neutral-600">
+                  <td className="px-4 py-3 font-mono tabular-nums text-[var(--ds-text-muted)]">
                     {lap.invalid ? "—" : `${consistency}%`}
                   </td>
                 </tr>
@@ -189,9 +196,9 @@ export function SectorsLapsTable({
               return (
                 <li key={lap.lap}>
                   <article
-                    className={`rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm ${
+                    className={`rounded-xl border border-[var(--ds-border)] bg-[var(--ds-bg-card)] p-3 shadow-[var(--ds-shadow-card)] ${
                       lap.invalid
-                        ? "bg-red-50/80 text-red-700/90"
+                        ? "bg-[var(--ds-error-bg)] text-[var(--ds-error-text)]"
                         : selected
                           ? "border-accent/30 bg-accent/5"
                           : ""
@@ -207,7 +214,7 @@ export function SectorsLapsTable({
                         aria-label={`Selecionar volta ${lap.lap}`}
                       />
                       <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
-                        <p className="text-[12px] font-bold text-[#0d1f3c]">
+                        <p className="text-[12px] font-bold text-[var(--ds-text-primary)]">
                           V{lap.lap}
                           {lap.invalid ? (
                             <span className="ml-1 text-[9px] uppercase text-red-600">
@@ -215,13 +222,15 @@ export function SectorsLapsTable({
                             </span>
                           ) : null}
                         </p>
-                        <p className="font-mono text-[13px] font-black tabular-nums text-[#0d1f3c]">
+                        <p className="font-mono text-[13px] font-black tabular-nums text-[var(--ds-text-primary)]">
                           {TelemetryServiceMock.formatSectorTime(lap.total)}
                         </p>
                       </div>
                       <span
                         className={`shrink-0 font-mono text-[11px] tabular-nums ${
-                          delta <= 0 ? "font-semibold text-accent" : "text-red-600"
+                          delta <= 0
+                        ? "font-semibold text-accent"
+                        : "text-[var(--ds-error-text)]"
                         }`}
                       >
                         {TelemetryServiceMock.formatDelta(delta)}
@@ -240,10 +249,10 @@ export function SectorsLapsTable({
                             key={sector}
                             className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums ring-1 ${
                               hl === "session_best"
-                                ? "bg-emerald-50 font-semibold text-emerald-700 ring-emerald-200"
+                                ? "bg-[var(--ds-success-bg)] font-semibold text-[var(--ds-success-text)] ring-[var(--ds-success-border)]"
                                 : hl === "personal_best"
-                                  ? "bg-violet-50 font-semibold text-violet-700 ring-violet-200"
-                                  : "bg-[#fafbfc] text-neutral-700 ring-[rgba(17,17,17,0.06)]"
+                                  ? "bg-violet-500/10 font-semibold text-violet-300 ring-violet-400/30"
+                                  : "bg-[var(--ds-bg-muted)] text-[var(--ds-text-secondary)] ring-[var(--ds-border-subtle)]"
                             }`}
                           >
                             {sector}{" "}
@@ -252,7 +261,7 @@ export function SectorsLapsTable({
                         );
                       })}
                       {!lap.invalid ? (
-                        <span className="rounded-md bg-[#fafbfc] px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 ring-1 ring-[rgba(17,17,17,0.06)]">
+                        <span className="rounded-md bg-[var(--ds-bg-muted)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ds-text-muted)] ring-1 ring-[var(--ds-border-subtle)]">
                           {consistency}%
                         </span>
                       ) : null}
@@ -264,17 +273,17 @@ export function SectorsLapsTable({
           </ul>
       </div>
 
-      <div className="flex flex-wrap gap-4 border-t border-[rgba(17,17,17,0.08)] px-5 py-3 text-[11px] text-neutral-600 md:px-6">
+      <div className="flex flex-wrap gap-4 border-t border-[var(--ds-border)] px-5 py-3 text-[11px] text-[var(--ds-text-secondary)] md:px-6">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-3 rounded bg-emerald-100 ring-1 ring-emerald-200" />
+          <span className="h-2 w-3 rounded bg-[var(--ds-success-bg)] ring-1 ring-[var(--ds-success-border)]" />
           Melhor da sessão
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-3 rounded bg-violet-100 ring-1 ring-violet-200" />
+          <span className="h-2 w-3 rounded bg-violet-500/20 ring-1 ring-violet-400/40" />
           Melhor pessoal (volta rápida)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-3 rounded bg-red-100 ring-1 ring-red-200" />
+          <span className="h-2 w-3 rounded bg-[var(--ds-error-bg)] ring-1 ring-[var(--ds-error-border)]" />
           Volta inválida
         </span>
       </div>

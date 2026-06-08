@@ -1,17 +1,12 @@
 "use client";
 
+import { resolveClientAvatarUrl } from "@/lib/client-avatar";
 import { StudentProfileServiceMock } from "@/services/student/studentProfileServiceMock";
 import type { StudentUserProfile, GuardianInfo, LinkedPilotCard } from "@/lib/contracts/student/profile";
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import {
-  HiArrowTopRightOnSquare,
-  HiDevicePhoneMobile,
-  HiLockClosed,
-} from "react-icons/hi2";
-import { SettingsDropdown } from "@/components/admin/settings/settings-dropdown";
+import { HiArrowTopRightOnSquare, HiComputerDesktop, HiLockClosed, HiMoon, HiSun } from "react-icons/hi2";
 import { SettingsToggle } from "@/components/admin/settings/settings-toggle";
 import { useTheme } from "@/components/theme-provider";
 
@@ -22,10 +17,9 @@ import {
   getHeightCmError,
   getWeightKgError,
 } from "@/lib/profile-field-formatters";
-import {
-  PROFILE_TERM_DOCUMENTS,
-  type ProfileTermKey,
-} from "@/lib/profile-terms-content";
+import type { ProfileLegalDocuments } from "@/lib/student-profile-mocks";
+import type { ProfileTermKey } from "@/lib/profile-terms-content";
+import { PROFILE_TERM_DOCUMENTS } from "@/lib/profile-terms-content";
 import {
   ProfileField,
   ProfileSection,
@@ -34,6 +28,13 @@ import {
 } from "./profile-section";
 import { FieldError } from "@/components/cadastro/field-error";
 import { ProfileTermModal } from "./profile-term-modal";
+import { ProfileChangePasswordModal } from "./profile-change-password-modal";
+import {
+  getSessionDeviceIcon,
+  resolveSessionBrowser,
+  resolveSessionDeviceKind,
+  resolveSessionDeviceLabel,
+} from "@/lib/student/session-display";
 
 type ProfileUpdater = (patch: Partial<StudentUserProfile>) => void;
 
@@ -46,8 +47,19 @@ const PROFILE_READONLY_SECTIONS = new Set([
   "profile-guardian",
 ]);
 
+const PROFILE_SAVEABLE_SECTIONS = new Set([
+  "profile-personal",
+  "profile-preferences",
+  "profile-emergency",
+  "profile-pilot",
+]);
+
 export function isProfileSectionReadonly(sectionId: string): boolean {
   return PROFILE_READONLY_SECTIONS.has(sectionId);
+}
+
+export function isProfileSectionSaveable(sectionId: string): boolean {
+  return PROFILE_SAVEABLE_SECTIONS.has(sectionId);
 }
 
 export function ProfilePersonalSection({
@@ -60,6 +72,8 @@ export function ProfilePersonalSection({
 } & SectionHeaderProps) {
   const [weightError, setWeightError] = useState<string | undefined>();
   const [heightError, setHeightError] = useState<string | undefined>();
+  const stateValue = profile.state?.trim() || "DF";
+  const stateOptions = StudentProfileServiceMock.getBrazilStates();
 
   return (
     <ProfileSection
@@ -88,14 +102,20 @@ export function ProfilePersonalSection({
           />
         </ProfileField>
         <ProfileField label="Data de nascimento">
-          <p className={`${profileReadonlyClass} capitalize`}>
-            {StudentProfileServiceMock.formatBirthDateDisplay(profile.birthDate)}
+          <p className={profileReadonlyClass}>
+            {profile.birthDate
+              ? StudentProfileServiceMock.formatBirthDateBrazil(profile.birthDate)
+              : "—"}
           </p>
         </ProfileField>
         <ProfileField label="CPF">
-          <p className={profileReadonlyClass}>{profile.cpf}</p>
+          <p className={profileReadonlyClass}>
+            {profile.cpf
+              ? StudentProfileServiceMock.formatCpf(profile.cpf)
+              : "—"}
+          </p>
         </ProfileField>
-        <ProfileField label="Peso (kg)" hint="Opcional — use vírgula automática (ex.: 72,50)">
+        <ProfileField label="Peso (kg)">
           <input
             type="text"
             inputMode="numeric"
@@ -116,7 +136,7 @@ export function ProfilePersonalSection({
           />
           {weightError ? <FieldError message={weightError} /> : null}
         </ProfileField>
-        <ProfileField label="Altura (cm)" hint="Opcional — 10 a 999 cm">
+        <ProfileField label="Altura (cm)">
           <input
             type="text"
             inputMode="numeric"
@@ -142,12 +162,18 @@ export function ProfilePersonalSection({
             />
           </ProfileField>
           <ProfileField label="Estado">
-            <SettingsDropdown
+            <select
               aria-label="Estado"
-              options={StudentProfileServiceMock.getBrazilStates()}
-              value={profile.state}
-              onSelect={(state) => onChange({ state })}
-            />
+              className={profileInputClass}
+              value={stateValue}
+              onChange={(e) => onChange({ state: e.target.value })}
+            >
+              {stateOptions.map((uf) => (
+                <option key={uf.value} value={uf.value}>
+                  {uf.label}
+                </option>
+              ))}
+            </select>
           </ProfileField>
         </div>
       </div>
@@ -252,160 +278,205 @@ export function ProfileLinkedPilotsSection({
     <ProfileSection
       id="profile-linked"
       title="Pilotos vinculados"
-      description="Gerencie os perfis dos pilotos associados à sua conta de responsável."
+      description="Gerencie os perfis de pilotos vinculados à sua conta."
     >
-      <ul className="grid gap-4 sm:grid-cols-2">
-        {pilots.map((p) => (
-          <li
-            key={p.profileId}
-            className="flex flex-col rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-5 transition hover:border-accent/20 hover:bg-white hover:shadow-[0_4px_20px_rgba(13,31,60,0.06)]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
-              <Image
-                src={p.avatarUrl}
-                alt=""
-                fill
-                sizes="56px"
-                className="object-cover"
-              />
-            </div>
-              <div className="min-w-0">
-                <p className="font-bold text-[#0d1f3c]">{p.fullName}</p>
-                <p className="text-[12px] font-medium text-neutral-500">
-                  {p.category}
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 text-[13px] text-neutral-600">
-              <span className="font-semibold text-[#0d1f3c]">Próximo treino:</span>{" "}
-              {p.nextTraining}
-            </p>
-            <button
-              type="button"
-              onClick={() => onManage(p.profileId)}
-              className="mt-4 w-full rounded-xl bg-accent py-2.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
-            >
-              Gerenciar perfil
-            </button>
-          </li>
-        ))}
-      </ul>
+      {pilots.length > 0 ? (
+        <div className="overflow-x-auto rounded-2xl border border-[rgba(17,17,17,0.08)]">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-[rgba(17,17,17,0.08)] bg-neutral-100/80 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
+                <th className="px-4 py-3.5">Piloto</th>
+                <th className="px-3 py-3.5">Categoria</th>
+                <th className="px-3 py-3.5">Nível</th>
+                <th className="px-3 py-3.5">Próxima aula</th>
+                <th className="px-3 py-3.5">Melhor tempo</th>
+                <th className="px-4 py-3.5 text-right" aria-label="Ações" />
+              </tr>
+            </thead>
+            <tbody>
+              {pilots.map((p) => (
+                <tr
+                  key={p.profileId}
+                  className="border-b border-dashed border-neutral-200 transition last:border-0 hover:bg-[#fafbfc]"
+                >
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+                        <Image
+                          src={resolveClientAvatarUrl(p.avatarUrl)}
+                          alt=""
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="font-semibold text-[#0d1f3c]">
+                        {p.fullName}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3.5 font-medium text-neutral-700">
+                    {p.category}
+                  </td>
+                  <td className="px-3 py-3.5 font-medium text-neutral-700">
+                    {p.level || "—"}
+                  </td>
+                  <td className="px-3 py-3.5 text-neutral-600">
+                    {p.nextTraining}
+                  </td>
+                  <td className="px-3 py-3.5 font-bold tabular-nums text-accent">
+                    {p.bestTime || "—"}
+                  </td>
+                  <td className="px-4 py-3.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onManage(p.profileId)}
+                      className="rounded-lg bg-accent px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                    >
+                      Gerenciar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafbfc] px-4 py-8 text-center text-[14px] text-neutral-600">
+          Nenhum piloto vinculado ainda. Use o botão &quot;Cadastrar piloto&quot; no
+          topo da página para adicionar um perfil.
+        </p>
+      )}
     </ProfileSection>
   );
 }
 
 export function ProfileSecuritySection({
   profile,
-  onChange,
+  onRevokeSession,
+  linkedClientId = null,
   headerActions,
 }: {
   profile: StudentUserProfile;
-  onChange: ProfileUpdater;
+  onRevokeSession?: (sessionId: string) => Promise<void>;
+  linkedClientId?: string | null;
 } & SectionHeaderProps) {
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  const handleRevokeSession = async (sessionId: string) => {
+    if (!onRevokeSession || revokingSessionId) return;
+    setSessionError(null);
+    setRevokingSessionId(sessionId);
+    try {
+      await onRevokeSession(sessionId);
+    } catch (error) {
+      setSessionError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível encerrar a sessão.",
+      );
+    } finally {
+      setRevokingSessionId(null);
+    }
+  };
+
   return (
-    <ProfileSection
-      id="profile-security"
-      title="Segurança da conta"
-      description="Proteja seu acesso e acompanhe onde sua conta está conectada."
-      headerActions={headerActions}
-    >
-      <ul className="divide-y divide-[rgba(17,17,17,0.06)]">
-        <li className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0">
-          <div className="flex gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(13,31,60,0.06)] text-accent">
-              <HiLockClosed className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <p className="text-[14px] font-semibold text-[#0d1f3c]">Alterar senha</p>
-              <p className="text-[13px] text-neutral-500">
-                Atualize sua senha periodicamente
-              </p>
+    <>
+      <ProfileSection
+        id="profile-security"
+        title="Segurança da conta"
+        description="Proteja seu acesso e acompanhe onde sua conta está conectada."
+        headerActions={headerActions}
+      >
+        <ul className="divide-y divide-[rgba(17,17,17,0.06)]">
+          <li className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0">
+            <div className="flex gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(13,31,60,0.06)] text-accent">
+                <HiLockClosed className="h-5 w-5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-[14px] font-semibold text-[#0d1f3c]">
+                  Alterar senha
+                </p>
+                <p className="text-[13px] text-neutral-500">
+                  {linkedClientId
+                    ? "Defina a senha de acesso do piloto vinculado"
+                    : "Informe a senha atual e defina uma nova senha"}
+                </p>
+              </div>
             </div>
-          </div>
-          <Link
-            href="/recuperar-senha"
-            className="rounded-xl border border-[rgba(17,17,17,0.1)] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/30"
-          >
-            Redefinir
-          </Link>
-        </li>
-        <li className="flex flex-wrap items-center justify-between gap-4 py-4">
-          <div className="flex gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(13,31,60,0.06)] text-accent">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-            </span>
-            <div>
-              <p className="text-[14px] font-semibold text-[#0d1f3c]">Login Google</p>
-              <p className="text-[13px] text-neutral-500">
-                {profile.googleConnected
-                  ? "Conta conectada"
-                  : "Não conectado"}
+            <button
+              type="button"
+              onClick={() => setPasswordModalOpen(true)}
+              className="rounded-xl border border-[rgba(17,17,17,0.1)] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/30"
+            >
+              Redefinir
+            </button>
+          </li>
+          {!linkedClientId ? (
+            <li className="py-4">
+              <p className="text-[14px] font-semibold text-[#0d1f3c]">
+                Sessões ativas
               </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="rounded-xl border border-[rgba(17,17,17,0.1)] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/30"
-            onClick={() =>
-              onChange({ googleConnected: !profile.googleConnected })
-            }
-          >
-            {profile.googleConnected ? "Desconectar" : "Conectar"}
-          </button>
-        </li>
-        <li className="py-4">
-          <p className="text-[14px] font-semibold text-[#0d1f3c]">Sessões ativas</p>
-          <ul className="mt-3 space-y-2">
-            {profile.sessions.map((s) => (
-              <li
-                key={s.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(17,17,17,0.06)] bg-[#fafbfc] px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <HiDevicePhoneMobile className="h-5 w-5 text-neutral-400" aria-hidden />
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#0d1f3c]">{s.device}</p>
-                    <p className="text-[12px] text-neutral-500">
-                      {s.location} · {s.lastActive}
-                    </p>
-                  </div>
-                </div>
-                {s.current ? (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                    Atual
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-[12px] font-semibold text-[#c41e3a] hover:underline"
-                  >
-                    Encerrar
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </li>
-      </ul>
-    </ProfileSection>
+              {sessionError ? (
+                <p className="mt-2 text-[12px] text-[#c41e3a]">{sessionError}</p>
+              ) : null}
+              <ul className="mt-3 space-y-2">
+                {profile.sessions.map((s) => {
+                  const deviceKind = resolveSessionDeviceKind(s);
+                  const DeviceIcon = getSessionDeviceIcon(deviceKind);
+                  const browser = resolveSessionBrowser(s);
+                  const deviceLabel = resolveSessionDeviceLabel(s);
+
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(17,17,17,0.06)] bg-[#fafbfc] px-4 py-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-accent ring-1 ring-[rgba(17,17,17,0.06)]">
+                          <DeviceIcon className="h-5 w-5" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-[#0d1f3c]">
+                            {deviceLabel}
+                          </p>
+                          <p className="text-[12px] text-neutral-500">
+                            {browser} · {s.lastActive}
+                          </p>
+                        </div>
+                      </div>
+                      {s.current ? (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                          Atual
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void handleRevokeSession(s.id)}
+                          disabled={!onRevokeSession || revokingSessionId === s.id}
+                          className="rounded-xl border border-[rgba(196,30,58,0.35)] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#c41e3a] transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                        >
+                          {revokingSessionId === s.id ? "Encerrando…" : "Encerrar"}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ) : null}
+        </ul>
+      </ProfileSection>
+
+      <ProfileChangePasswordModal
+        open={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        linkedClientId={linkedClientId}
+      />
+    </>
   );
 }
 
@@ -417,7 +488,7 @@ export function ProfilePreferencesSection({
   profile: StudentUserProfile;
   onChange: ProfileUpdater;
 } & SectionHeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const { preference, setPreference } = useTheme();
 
   return (
     <ProfileSection
@@ -438,30 +509,31 @@ export function ProfilePreferencesSection({
           onChange={(notifyEmail) => onChange({ notifyEmail })}
         />
         <div className="flex items-center justify-between gap-4 py-3">
-          <span className="text-[14px] font-medium text-neutral-700">Tema da interface</span>
-          <div className="flex rounded-xl border border-[rgba(17,17,17,0.1)] bg-[#fafbfc] p-1">
-            <button
-              type="button"
-              onClick={() => setTheme("light")}
-              className={`rounded-lg px-4 py-2 text-[12px] font-semibold transition ${
-                theme === "light"
-                  ? "bg-white text-[#0d1f3c] shadow-sm"
-                  : "text-neutral-500 hover:text-[#0d1f3c]"
-              }`}
-            >
-              Claro
-            </button>
-            <button
-              type="button"
-              onClick={() => setTheme("dark")}
-              className={`rounded-lg px-4 py-2 text-[12px] font-semibold transition ${
-                theme === "dark"
-                  ? "bg-white text-[#0d1f3c] shadow-sm"
-                  : "text-neutral-500 hover:text-[#0d1f3c]"
-              }`}
-            >
-              Escuro
-            </button>
+          <span className="text-[14px] font-medium text-[var(--ds-text-secondary)]">
+            Tema da interface
+          </span>
+          <div className="flex rounded-xl border border-[var(--ds-border-field)] bg-[var(--ds-bg-muted)] p-1">
+            {(
+              [
+                { value: "light" as const, label: "Claro", Icon: HiSun },
+                { value: "dark" as const, label: "Escuro", Icon: HiMoon },
+                { value: "system" as const, label: "Sistema", Icon: HiComputerDesktop },
+              ] as const
+            ).map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPreference(value)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold transition ${
+                  preference === value
+                    ? "bg-[var(--ds-bg-card)] text-[var(--ds-text-primary)] shadow-sm"
+                    : "text-[var(--ds-text-muted)] hover:text-[var(--ds-text-primary)]"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -484,7 +556,7 @@ export function ProfileEmergencySection({
       description="Pessoa a ser acionada em situações urgentes durante treinos e eventos."
       headerActions={headerActions}
     >
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <ProfileField label="Nome">
           <input
             className={profileInputClass}
@@ -515,35 +587,77 @@ export function ProfileEmergencySection({
 
 export function ProfileTermsSection({
   profile,
+  mediaConsentProfile,
+  legalDocuments,
   onChange,
+  onMediaConsentChange,
+  readOnlyMediaConsent = false,
   headerActions,
 }: {
   profile: StudentUserProfile;
+  mediaConsentProfile?: StudentUserProfile;
+  legalDocuments?: ProfileLegalDocuments;
   onChange: ProfileUpdater;
+  onMediaConsentChange?: (accepted: boolean) => Promise<void>;
+  readOnlyMediaConsent?: boolean;
 } & SectionHeaderProps) {
   const [openTerm, setOpenTerm] = useState<ProfileTermKey | null>(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   const docItems: { key: ProfileTermKey; label: string; date: string }[] = [
     {
       key: "privacy",
-      label: "Política de privacidade",
-      date: profile.privacyAcceptedAt,
+      label: legalDocuments?.privacy?.title ?? "Política de privacidade",
+      date: profile.privacyAcceptedAt || "—",
     },
     {
       key: "terms",
-      label: "Termos de uso",
-      date: profile.termsAcceptedAt,
+      label: legalDocuments?.terms?.title ?? "Termos de uso",
+      date: profile.termsAcceptedAt || "—",
     },
   ];
 
-  const activeDoc = openTerm ? PROFILE_TERM_DOCUMENTS[openTerm] : null;
+  const activeDoc = openTerm
+    ? legalDocuments?.[openTerm] ?? PROFILE_TERM_DOCUMENTS[openTerm]
+    : null;
 
   const handleMediaConsent = (accepted: boolean) => {
+    setMediaError(null);
+    if (onMediaConsentChange) {
+      setMediaLoading(true);
+      void onMediaConsentChange(accepted)
+        .catch((error) => {
+          setMediaError(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível atualizar a autorização.",
+          );
+        })
+        .finally(() => setMediaLoading(false));
+      return;
+    }
+
     onChange({
       mediaConsentAccepted: accepted,
-      mediaAcceptedAt: accepted ? StudentProfileServiceMock.formatProfileAcceptedDate() : "",
+      mediaAcceptedAt: accepted
+        ? StudentProfileServiceMock.formatProfileConsentDateTime()
+        : "",
+      mediaRevokedAt: accepted
+        ? ""
+        : StudentProfileServiceMock.formatProfileConsentDateTime(),
     });
   };
+
+  const mediaProfile = mediaConsentProfile ?? profile;
+
+  const mediaStatusText = mediaProfile.mediaConsentAccepted && mediaProfile.mediaAcceptedAt
+    ? `Aceito em ${mediaProfile.mediaAcceptedAt}`
+    : mediaProfile.mediaRevokedAt
+      ? `Revogado em ${mediaProfile.mediaRevokedAt}`
+      : readOnlyMediaConsent
+        ? "Pendente — o responsável deve aceitar no perfil dele"
+        : null;
 
   return (
     <>
@@ -566,7 +680,9 @@ export function ProfileTermsSection({
                     {item.label}
                   </p>
                   <p className="text-[12px] text-neutral-500">
-                    Aceito em {item.date}
+                    {item.date && item.date !== "—"
+                      ? `Aceito em ${item.date}`
+                      : "Data de aceite não registrada"}
                   </p>
                 </div>
                 <HiArrowTopRightOnSquare
@@ -589,30 +705,40 @@ export function ProfileTermsSection({
                 Autorização de uso de imagem
               </button>
               <p className="mt-1 text-[12px] text-neutral-500">
-                {profile.mediaConsentAccepted && profile.mediaAcceptedAt
-                  ? `Aceito em ${profile.mediaAcceptedAt}`
-                  : "Não obrigatório no cadastro — pode ser aceito aqui"}
+                {mediaStatusText}
               </p>
+              {mediaError ? (
+                <p className="mt-1 text-[12px] text-[#c41e3a]">{mediaError}</p>
+              ) : null}
+              {readOnlyMediaConsent ? (
+                <p className="mt-1 text-[12px] text-neutral-500">
+                  Gerenciado pelo perfil responsável vinculado a esta conta.
+                </p>
+              ) : null}
             </div>
+            {!readOnlyMediaConsent ? (
             <div className="shrink-0">
-              {profile.mediaConsentAccepted ? (
+              {mediaProfile.mediaConsentAccepted ? (
                 <button
                   type="button"
                   onClick={() => handleMediaConsent(false)}
-                  className="rounded-xl border border-[rgba(196,30,58,0.35)] bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#c41e3a] transition hover:bg-red-50"
+                  disabled={mediaLoading}
+                  className="rounded-xl border border-[rgba(196,30,58,0.35)] bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#c41e3a] transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
                 >
-                  Revogar
+                  {mediaLoading ? "Salvando…" : "Revogar"}
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => handleMediaConsent(true)}
-                  className="rounded-xl bg-accent px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  disabled={mediaLoading}
+                  className="rounded-xl bg-accent px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
                 >
-                  Aceitar
+                  {mediaLoading ? "Salvando…" : "Aceitar"}
                 </button>
               )}
             </div>
+            ) : null}
           </div>
         </div>
       </ProfileSection>

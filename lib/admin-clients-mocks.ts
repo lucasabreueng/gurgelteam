@@ -6,12 +6,13 @@ import {
   type KartCategory,
   type SkillLevel,
 } from "./admin-settings-mocks";
+import type { ClientStatus } from "@/lib/contracts/enums";
+import { CLIENT_STATUSES } from "@/lib/contracts/enums";
 
 export type { KartCategory, SkillLevel };
+export type { ClientStatus } from "@/lib/contracts/enums";
 
-export type ClientStatus = "Ativo" | "Inativo";
-
-export const CLIENT_FILTER_STATUSES: ClientStatus[] = ["Ativo", "Inativo"];
+export const CLIENT_FILTER_STATUSES: ClientStatus[] = [...CLIENT_STATUSES];
 
 /** Categorias de kart (mesma fonte que Configurações → Categorias e níveis) */
 export const CLIENT_KART_CATEGORIES = KART_CATEGORIES;
@@ -316,7 +317,7 @@ export type TimelineEventType =
   | "aula"
   | "treino"
   | "feedback"
-  | "campeonato"
+  | "evento"
   | "pagamento"
   | "conquista";
 
@@ -340,7 +341,7 @@ export type ClientFeedback = {
   id: string;
   date: string;
   time: string;
-  instructor: string;
+  authorName: string;
   note: string;
   scores: {
     braking: number;
@@ -412,7 +413,7 @@ export type ClientProfileDetail = {
     emotional: string;
     competitive: string;
     difficulties: string;
-    instructorNotes: string;
+    technicalNotes: string;
   };
   health: ClientHealthFlag[];
 };
@@ -508,7 +509,7 @@ const BASE_FEEDBACKS: ClientFeedback[] = [
     id: "f1",
     date: "20/05/2025",
     time: "15:20",
-    instructor: "Ricardo Gurgel",
+    authorName: "Ricardo Gurgel",
     note: "Sessão focada em consistência no setor 2. Piloto respondeu bem às correções de linha.",
     scores: { braking: 4, apex: 4, posture: 5, control: 4, strategy: 4 },
     aiInsight:
@@ -518,7 +519,7 @@ const BASE_FEEDBACKS: ClientFeedback[] = [
     id: "f2",
     date: "12/05/2025",
     time: "16:45",
-    instructor: "Ricardo Gurgel",
+    authorName: "Ricardo Gurgel",
     note: "Boa gestão de pneu. Trabalhar frenagem mais tardia na chicane.",
     scores: { braking: 3, apex: 4, posture: 4, control: 4, strategy: 3 },
   },
@@ -526,7 +527,7 @@ const BASE_FEEDBACKS: ClientFeedback[] = [
     id: "f3",
     date: "05/05/2025",
     time: "10:15",
-    instructor: "Rafael Costa",
+    authorName: "Rafael Costa",
     note: "Melhorou postura no volante. Manter foco na saída da curva 3.",
     scores: { braking: 4, apex: 3, posture: 4, control: 4, strategy: 3 },
   },
@@ -534,7 +535,7 @@ const BASE_FEEDBACKS: ClientFeedback[] = [
     id: "f4",
     date: "28/04/2025",
     time: "11:50",
-    instructor: "Ricardo Gurgel",
+    authorName: "Ricardo Gurgel",
     note: "Evolução consistente nas voltas de ritmo. Aumentar repetição no S2.",
     scores: { braking: 4, apex: 4, posture: 4, control: 5, strategy: 4 },
   },
@@ -624,7 +625,7 @@ function buildProfile(client: ClientListItem): ClientProfileDetail {
       emotional: "Mantém calma sob pressão; melhora após warm-up.",
       competitive: "Alto potencial para categorias Pro/Elite em 6 meses.",
       difficulties: "Ainda perde tempo na saída lenta de curvas longas.",
-      instructorNotes:
+      technicalNotes:
         "Priorizar simulador de frenagem + repetição setor 2 nas próximas 3 sessões.",
     },
     health: client.atRisk
@@ -638,6 +639,10 @@ function buildProfile(client: ClientListItem): ClientProfileDetail {
           { id: "h2", label: "Evolução forte", severity: "ok", detail: "+8% consistência no mês" },
         ],
   };
+}
+
+export function buildClientProfile(client: ClientListItem): ClientProfileDetail {
+  return buildProfile(client);
 }
 
 export function getClientProfile(clientId: string): ClientProfileDetail | null {

@@ -8,7 +8,7 @@ import {
   type DropdownProps,
 } from "react-day-picker";
 import { ptBR } from "date-fns/locale";
-import { startOfToday } from "date-fns";
+import { addDays, startOfToday } from "date-fns";
 import "react-day-picker/style.css";
 
 import { AppDropdown } from "@/components/ui/app-dropdown";
@@ -18,6 +18,8 @@ type Props = {
   onSelect: (date: Date) => void;
   month: Date;
   onMonthChange: (date: Date) => void;
+  /** Limita seleção aos próximos N dias (inclusive hoje). */
+  maxDaysFromToday?: number;
 };
 
 function fireSelectChange(
@@ -79,12 +81,16 @@ export function KartReservaDayPicker({
   onSelect,
   month,
   onMonthChange,
+  maxDaysFromToday,
 }: Props) {
   const today = startOfToday();
   const y = today.getFullYear();
+  const maxDate = maxDaysFromToday
+    ? addDays(today, maxDaysFromToday)
+    : new Date(y + 2, 11, 31);
 
   return (
-    <div className="kart-reserva-rdp w-full overflow-x-hidden overflow-y-visible rounded-xl bg-background dark:bg-[#080808]">
+    <div className="kart-reserva-rdp w-full overflow-x-auto overflow-y-visible rounded-xl bg-background ">
       <DayPicker
         mode="single"
         required
@@ -98,8 +104,12 @@ export function KartReservaDayPicker({
         captionLayout="dropdown"
         navLayout="around"
         startMonth={today}
-        endMonth={new Date(y + 2, 11, 31)}
-        disabled={[{ before: today }, (date) => date.getDay() === 1]}
+        endMonth={maxDate}
+        disabled={[
+          { before: today },
+          ...(maxDaysFromToday ? [{ after: maxDate }] : []),
+          (date) => date.getDay() === 1,
+        ]}
         showOutsideDays
         fixedWeeks
         components={{
@@ -114,9 +124,9 @@ export function KartReservaDayPicker({
           dropdowns:
             "flex w-full max-w-full flex-nowrap items-center justify-center gap-2",
           dropdown_root:
-            "relative flex min-h-[42px] flex-1 basis-0 items-stretch rounded-xl border-2 border-divider bg-background dark:bg-[#080808]",
+            "relative flex min-h-[42px] flex-1 basis-0 items-stretch rounded-xl border-2 border-divider bg-background transition-colors hover:bg-[var(--ds-bg-muted)]",
           dropdown:
-            "flex h-[42px] w-full min-w-0 cursor-pointer items-center justify-center rounded-[10px] border-0 bg-transparent p-0 text-primary outline-none transition hover:bg-[rgba(13,31,60,0.05)] dark:hover:bg-white/[0.05]",
+            "flex h-[42px] w-full min-w-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-primary outline-none",
           caption_label:
             "relative z-[1] flex h-[42px] w-full items-center justify-center gap-1.5 px-2 text-[14px] font-semibold text-primary pointer-events-none",
           months_dropdown:
@@ -125,13 +135,13 @@ export function KartReservaDayPicker({
             "app-dropdown__trigger font-sans text-[14px] font-semibold",
           button_previous: "kart-reserva-rdp__nav-btn",
           button_next: "kart-reserva-rdp__nav-btn",
-          weekdays: "px-1 pt-2",
+          weekdays: "px-0.5 pt-2",
           weekday:
-            "text-[11px] font-bold uppercase tracking-wider text-foreground opacity-100",
+            "min-w-0 text-[10px] font-bold uppercase tracking-wide text-foreground opacity-100",
           weeks: "mt-1",
-          day: "p-0.5 text-center",
+          day: "p-0.5 text-center min-w-0",
           day_button:
-            "mx-auto flex h-10 w-10 max-w-full items-center justify-center rounded-xl border-2 border-transparent text-[14px] font-semibold transition hover:border-[rgba(13,31,60,0.35)] hover:bg-[rgba(13,31,60,0.07)] dark:hover:border-white/20 dark:hover:bg-white/[0.07]",
+            "mx-auto flex h-9 w-full max-w-9 items-center justify-center rounded-xl border-2 border-transparent text-[13px] font-semibold transition hover:border-[rgba(13,31,60,0.35)] hover:bg-[rgba(13,31,60,0.07)] dark:hover:border-white/20 dark:hover:bg-white/[0.07]",
           outside: "opacity-40",
           disabled: "opacity-35",
           hidden: "invisible",

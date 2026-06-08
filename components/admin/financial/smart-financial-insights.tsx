@@ -1,11 +1,15 @@
+"use client";
+
 import { HiLightBulb } from "react-icons/hi2";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+
+import { adminAccentPanelClass } from "@/lib/design";
+import { useSmartInsights } from "@/lib/query/hooks/use-finance-charts";
 
 export function SmartFinancialInsights() {
-  const insights = FinancialServiceMock.getSmartInsights();
+  const { data: insights = [] } = useSmartInsights();
 
   return (
-    <section className="rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/[0.06] to-white p-5 shadow-sm md:p-6">
+    <section className={`${adminAccentPanelClass} p-5 md:p-6`}>
       <div className="flex items-center gap-2">
         <HiLightBulb className="h-5 w-5 text-accent" aria-hidden />
         <h3 className="text-sm font-bold text-[#0d1f3c]">

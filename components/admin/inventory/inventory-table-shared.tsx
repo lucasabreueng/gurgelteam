@@ -1,21 +1,28 @@
 "use client";
 
 import { HiEye, HiPencil, HiTrash } from "react-icons/hi2";
+import {
+  adminTableActionButtonClass,
+  adminTableBodyRowClass,
+  adminTableCellClass,
+  adminTableHeadRowClass,
+  adminTableHeaderLabelClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 
 export const inventoryTableClass = "w-full min-w-[720px] text-left text-sm";
 
-export const inventoryThClass =
-  "px-3 py-3.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500";
+export const inventoryThClass = `${adminTableHeaderLabelClass} px-3 py-3.5`;
 
-export const inventoryThFirstClass =
-  "px-4 py-3.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500";
+export const inventoryThFirstClass = `${adminTableHeaderLabelClass} px-4 py-3.5`;
 
-export const inventoryTdClass = "px-3 py-3.5 text-sm text-neutral-700";
+export const inventoryTdClass = `${adminTableCellClass} px-3 py-3.5`;
 
-export const inventoryTdFirstClass = "px-4 py-3.5 text-sm text-neutral-700";
+export const inventoryTdFirstClass = `${adminTableCellClass} px-4 py-3.5`;
 
 export const inventoryTdDescClass =
-  "px-3 py-3.5 text-sm font-semibold text-[#0d1f3c]";
+  "px-3 py-3.5 text-sm font-semibold text-[var(--ds-text-primary)]";
 
 export function InventoryTableSelectHeader({
   checked,
@@ -107,7 +114,7 @@ export function TableIconButton({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-[#0d1f3c]/5 hover:text-[#0d1f3c]"
+      className={adminTableActionButtonClass}
     >
       <Icon className="h-4 w-4" />
     </button>
@@ -126,12 +133,12 @@ export function InventoryTableShell({
   isEmpty: boolean;
 }) {
   return (
-    <div className="overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
-      <div className="overflow-x-auto rounded-t-2xl">
+    <div className={adminTableWrapClass}>
+      <div className={adminTableScrollClass}>
         <table className={inventoryTableClass}>{children}</table>
       </div>
       {isEmpty ? (
-        <p className="px-6 py-12 text-center text-sm text-neutral-500">
+        <p className="px-6 py-12 text-center text-sm text-[var(--ds-text-muted)]">
           {emptyMessage}
         </p>
       ) : pagination ? (
@@ -140,3 +147,6 @@ export function InventoryTableShell({
     </div>
   );
 }
+
+/** Classes reutilizáveis em `<thead>` / `<tbody>` de tabelas admin. */
+export { adminTableHeadRowClass, adminTableBodyRowClass };

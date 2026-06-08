@@ -12,7 +12,6 @@ export const DashboardRepositoryMock = {
   getTelemetryInsight: () => dashboardMocks.TELEMETRY_INSIGHT,
   getTelemetrySectors: () => dashboardMocks.TELEMETRY_SECTORS,
   getKartFleet: () => dashboardMocks.KART_FLEET,
-  getChampionship: () => dashboardMocks.CHAMPIONSHIP,
   getFinancial: () => dashboardMocks.FINANCIAL,
   getQuickActions: () => dashboardMocks.ADMIN_QUICK_ACTIONS,
 };

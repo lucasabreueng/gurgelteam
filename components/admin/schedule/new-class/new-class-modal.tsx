@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/admin/settings/confirm-dialog";
 import type { KartOwnershipMode } from "@/lib/contracts/schedule";
-import { NewClassServiceMock } from "@/services/schedule/newClassServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import type { NewClassFormCatalog } from "@/lib/schedule/new-class-catalog";
+import {
+  EMPTY_NEW_CLASS_FORM_CATALOG,
+} from "@/lib/schedule/new-class-catalog";
+import type { GurgelTimelineSlot } from "@/lib/schedule/gurgel-timeline";
+import { findGurgelTimelineSlot } from "@/lib/schedule/gurgel-timeline";
 import { SCHEDULE_DRAWER_PANEL_CLASS } from "../schedule-drawer-shell";
 import { NewClassHeader } from "./new-class-header";
 import { NewClassFooter } from "./new-class-footer";
@@ -16,7 +22,10 @@ type Props = {
   onClose: () => void;
   initialDate?: string;
   initialTime?: string;
+  initialStudentId?: string;
   onSuccess?: (message: string) => void;
+  onError?: (message: string) => void;
+  onScheduled?: () => void;
 };
 
 type LevelConfirmState = {
@@ -25,34 +34,40 @@ type LevelConfirmState = {
 };
 
 function resolveKartLabel(
+  catalog: NewClassFormCatalog,
   studentId: string,
   kartId: string,
-  kartMode: KartOwnershipMode
+  kartMode: KartOwnershipMode,
 ): string {
-  const student = NewClassServiceMock.getStudents().find((s) => s.id === studentId);
+  const student = catalog.students.find((s) => s.id === studentId);
   if (kartMode === "own" && student?.ownKartNumber) {
     return `Kart ${student.ownKartNumber} (próprio)`;
   }
   if (kartMode === "third_party") {
-    const third = NewClassServiceMock.getThirdPartyKarts().find((k) => k.id === kartId);
+    const third = catalog.thirdPartyKarts.find((k) => k.id === kartId);
     return third
       ? `Kart ${third.number} (terceiro — ${third.ownerName})`
       : "";
   }
-  const rental = NewClassServiceMock.getRentalKarts().find((k) => k.id === kartId);
+  const rental = catalog.rentalKarts.find((k) => k.id === kartId);
   return rental ? `Kart ${rental.number} (frota)` : "";
 }
 
 export function NewClassModal({
   open,
   onClose,
-  initialDate = NewClassServiceMock.getDefaultClassDate(),
+  initialDate,
   initialTime,
+  initialStudentId,
   onSuccess,
+  onError,
+  onScheduled,
 }: Props) {
-  const [date, setDate] = useState(initialDate);
+  const { newClass } = getAppServices();
+  const defaultDate = initialDate ?? newClass.getDefaultClassDate();
+  const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState(
-    typeof initialTime === "string" ? initialTime : NewClassServiceMock.getDefaultClassTime()
+    typeof initialTime === "string" ? initialTime : newClass.getDefaultClassTime(),
   );
   const [studentId, setStudentId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -64,76 +79,134 @@ export function NewClassModal({
   const [levelConfirm, setLevelConfirm] = useState<LevelConfirmState | null>(
     null
   );
+  const [submitting, setSubmitting] = useState(false);
+  const [timelineSlots, setTimelineSlots] = useState<GurgelTimelineSlot[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [catalog, setCatalog] = useState<NewClassFormCatalog>(
+    () => EMPTY_NEW_CLASS_FORM_CATALOG,
+  );
+  const [catalogLoading, setCatalogLoading] = useState(false);
 
   const timelineOptions = useMemo(
     () => ({
       categoryId: categoryId || undefined,
       studentLevelId: studentId
-        ? NewClassServiceMock.getStudents().find((s) => s.id === studentId)?.levelId
+        ? catalog.students.find((s) => s.id === studentId)?.levelId
         : undefined,
     }),
-    [categoryId, studentId]
+    [categoryId, studentId, catalog.students],
   );
 
   const reset = useCallback(() => {
-    setDate(initialDate);
+    setDate(defaultDate);
     const resolvedInitialTime =
       typeof initialTime === "string" ? initialTime : undefined;
     setTime(
-      resolvedInitialTime ??
-        NewClassServiceMock.getDefaultSlotForDate(initialDate, { categoryId: undefined })?.time ??
-        NewClassServiceMock.getDefaultClassTime()
+      resolvedInitialTime ?? newClass.getDefaultClassTime(),
     );
-    setStudentId("");
+    setStudentId(initialStudentId ?? "");
     setCategoryId("");
     setKartId("");
     setKartMode("rental");
     setLevelOverrideTimes(new Set());
     setLevelConfirm(null);
-  }, [initialDate, initialTime]);
+  }, [defaultDate, initialTime, initialStudentId, newClass]);
 
   useEffect(() => {
     if (!open) return;
     reset();
+    setCatalog(EMPTY_NEW_CLASS_FORM_CATALOG);
+    let cancelled = false;
+    setCatalogLoading(true);
+
+    void newClass
+      .loadFormCatalog()
+      .then((next) => {
+        if (!cancelled) setCatalog(next);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog(EMPTY_NEW_CLASS_FORM_CATALOG);
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogLoading(false);
+      });
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
+      cancelled = true;
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [open, onClose, reset]);
+  }, [open, onClose, reset, newClass]);
 
   useEffect(() => {
-    if (!open || !categoryId) return;
-    const slots = NewClassServiceMock.buildGurgelTimeline(date, timelineOptions);
-    const stillValid = slots.some(
+    if (!open || !categoryId) {
+      setTimelineSlots([]);
+      return;
+    }
+
+    let cancelled = false;
+    setTimelineLoading(true);
+
+    void newClass
+      .buildGurgelTimeline(date, timelineOptions)
+      .then((slots) => {
+        if (!cancelled) setTimelineSlots(slots);
+      })
+      .catch(() => {
+        if (!cancelled) setTimelineSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTimelineLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [date, open, categoryId, timelineOptions, newClass]);
+
+  useEffect(() => {
+    if (!open || !categoryId || timelineLoading || timelineSlots.length === 0) {
+      return;
+    }
+
+    const stillValid = timelineSlots.some(
       (s) =>
         s.time === time &&
         s.status !== "busy" &&
-        s.status !== "break"
+        s.status !== "break",
     );
-    if (!stillValid) {
-      const preferred =
-        typeof initialTime === "string" &&
-        initialTime &&
-        slots.find(
-          (s) =>
-            s.time === initialTime &&
-            s.status !== "busy" &&
-            s.status !== "break"
-        );
-      const next =
-        preferred ??
-        slots.find(
-          (s) => s.status === "available" || s.status === "level_mismatch"
-        ) ??
-        slots[0];
-      if (next) setTime(next.time);
-    }
-  }, [date, open, time, initialTime, categoryId, timelineOptions]);
+    if (stillValid) return;
+
+    const preferred =
+      typeof initialTime === "string" &&
+      initialTime &&
+      timelineSlots.find(
+        (s) =>
+          s.time === initialTime &&
+          s.status !== "busy" &&
+          s.status !== "break",
+      );
+    const next =
+      preferred ??
+      timelineSlots.find(
+        (s) => s.status === "available" || s.status === "level_mismatch",
+      ) ??
+      timelineSlots[0];
+    if (next) setTime(next.time);
+  }, [
+    date,
+    open,
+    time,
+    initialTime,
+    categoryId,
+    timelineSlots,
+    timelineLoading,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -141,11 +214,15 @@ export function NewClassModal({
   }, [categoryId, studentId, date, open]);
 
   const selectedSlot = useMemo(
-    () => NewClassServiceMock.getSlotStatusForTime(date, time, timelineOptions),
-    [date, time, timelineOptions]
+    () => findGurgelTimelineSlot(timelineSlots, time),
+    [timelineSlots, time],
   );
 
-  const student = NewClassServiceMock.getStudents().find((s) => s.id === studentId);
+  const categoryLabel = categoryId
+    ? newClass.getCategoryLabel(categoryId)
+    : "";
+
+  const student = catalog.students.find((s) => s.id === studentId);
 
   const hasKart = useMemo(() => {
     if (!studentId) return false;
@@ -166,16 +243,18 @@ export function NewClassModal({
     selectedSlot?.status !== "break";
 
   const durationLabel = selectedSlot?.durationLabel ?? "—";
-  const dateLabel = NewClassServiceMock.formatClassDateTime(date, time).split(",")[0];
+  const dateLabel = newClass.formatClassDateTime(date, time).split(",")[0];
   const timeRange = selectedSlot
     ? `${selectedSlot.time} – ${selectedSlot.end}`
     : typeof time === "string"
       ? time
-      : NewClassServiceMock.getDefaultClassTime();
-  const kartLabel = studentId ? resolveKartLabel(studentId, kartId, kartMode) : "";
+      : newClass.getDefaultClassTime();
+  const kartLabel = studentId
+    ? resolveKartLabel(catalog, studentId, kartId, kartMode)
+    : "";
 
   const handleSelectTime = (slotTime: string) => {
-    const slot = NewClassServiceMock.getSlotStatusForTime(date, slotTime, timelineOptions);
+    const slot = findGurgelTimelineSlot(timelineSlots, slotTime);
     if (!slot || slot.status === "busy" || slot.status === "break") return;
 
     if (
@@ -197,11 +276,31 @@ export function NewClassModal({
   };
 
   const confirm = () => {
-    if (!canConfirm || !student) return;
-    onSuccess?.(
-      `Aula agendada — ${student.name}, ${dateLabel} ${timeRange}, ${kartLabel}, ${durationLabel} (mock).`
-    );
-    onClose();
+    if (!canConfirm || !student || !selectedSlot || submitting) return;
+    setSubmitting(true);
+    void newClass
+      .scheduleNewClass({
+        studentId,
+        categoryId,
+        kartId,
+        kartMode,
+        date,
+        start: selectedSlot.time,
+        end: selectedSlot.end,
+      })
+      .then((result) => {
+        onScheduled?.();
+        onSuccess?.(result.message);
+        onClose();
+      })
+      .catch((err) => {
+        onError?.(
+          err instanceof Error ? err.message : "Não foi possível agendar a aula.",
+        );
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   };
 
   if (!open) return null;
@@ -226,6 +325,8 @@ export function NewClassModal({
           <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
             <div className="space-y-5">
               <ClassFormSection
+                catalog={catalog}
+                catalogLoading={catalogLoading}
                 studentId={studentId}
                 categoryId={categoryId}
                 kartId={kartId}
@@ -240,7 +341,9 @@ export function NewClassModal({
               <GurgelAvailabilityStatus
                 date={date}
                 categoryId={categoryId}
-                studentLevelId={student?.levelId}
+                categoryLabel={categoryLabel}
+                slots={timelineSlots}
+                loading={timelineLoading}
                 selectedTime={time}
                 levelOverrideTimes={levelOverrideTimes}
                 onSelectTime={handleSelectTime}
@@ -255,7 +358,10 @@ export function NewClassModal({
             </div>
           </div>
 
-          <NewClassFooter onConfirm={confirm} confirmDisabled={!canConfirm} />
+          <NewClassFooter
+            onConfirm={confirm}
+            confirmDisabled={!canConfirm || submitting}
+          />
         </aside>
       </div>
 
@@ -264,7 +370,7 @@ export function NewClassModal({
         title="Liberar horário"
         message={
           levelConfirm && student
-            ? `Este horário é destinado ao nível ${levelConfirm.slotLevelName}. O aluno ${student.name} está no nível ${NewClassServiceMock.getLevelLabel(student.levelId)}. Deseja liberar o agendamento neste horário?`
+            ? `Este horário é destinado ao nível ${levelConfirm.slotLevelName}. O aluno ${student.name} está no nível ${newClass.getLevelLabel(student.levelId)}. Deseja liberar o agendamento neste horário?`
             : ""
         }
         confirmLabel="Liberar e agendar"

@@ -1,13 +1,11 @@
 "use client";
 
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { useMaintenanceOrderDetail } from "@/lib/query/hooks/use-maintenance-order-detail";
 
 import { useEffect } from "react";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import { HiXMark } from "react-icons/hi2";
 
-import { ClientApprovalFlow } from "./client-approval-flow";
-import { EngineHoursCard } from "./engine-hours-card";
 import { MaintenanceHero } from "./maintenance-hero";
 import { MaintenanceMediaGallery } from "./maintenance-media-gallery";
 import { MaintenancePriorityBadge } from "./maintenance-priority-badge";
@@ -16,7 +14,6 @@ import { MaintenanceStatusFlow } from "./maintenance-status-flow";
 import { MaintenanceTimeline } from "./maintenance-timeline";
 import { PartsInventory } from "./parts-inventory";
 import { TechnicalChecklistAccordion } from "./technical-checklist-accordion";
-import { TrackReleaseCard } from "./track-release-card";
 
 function Section({
   title,
@@ -42,10 +39,9 @@ type Props = {
 };
 
 export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
-  const detail = orderId ? MaintenanceServiceMock.getDetail(orderId) : null;
+  const { data: detail, isLoading } = useMaintenanceOrderDetail(orderId);
   const open = Boolean(orderId);
   useDrawerBodyLock(open);
-
 
   useEffect(() => {
     if (!orderId) return;
@@ -55,10 +51,26 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      };
+    };
   }, [orderId, onClose]);
 
-  if (!orderId || !detail) return null;
+  if (!orderId) return null;
+
+  if (isLoading || !detail) {
+    return (
+      <div className="fixed inset-0 z-[100] flex justify-end">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          aria-label="Fechar"
+          onClick={onClose}
+        />
+        <aside className="app-drawer-panel relative flex h-full w-full max-w-3xl flex-col bg-[var(--ds-bg-panel)] p-8 shadow-2xl">
+          <div className="h-full animate-pulse rounded-2xl bg-white" />
+        </aside>
+      </div>
+    );
+  }
 
   const report = detail.problemReport;
   const order = detail.order;
@@ -71,8 +83,8 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
         aria-label="Fechar"
         onClick={onClose}
       />
-      <aside className="app-drawer-panel relative flex h-full w-full max-w-3xl flex-col bg-[#f3f5f9] shadow-2xl">
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+      <aside className="app-drawer-panel relative flex h-full w-full max-w-3xl flex-col bg-[var(--ds-bg-panel)] shadow-2xl">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--ds-border)] bg-[var(--ds-bg-card)] px-5 py-4">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <p className="text-lg font-bold text-[#0d1f3c]">{order.osNumber}</p>
             <MaintenanceStatusBadge status={order.status} />
@@ -101,7 +113,7 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
               <p className="text-sm leading-relaxed text-neutral-700">
                 {report.text}
               </p>
-              <dl className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-[10px] font-bold uppercase text-neutral-500">
                     Identificado por
@@ -115,37 +127,33 @@ export function MaintenanceDetailsDrawer({ orderId, onClose }: Props) {
                   <dd className="mt-1 font-semibold">{report.dateTime}</dd>
                 </div>
               </dl>
-              <MaintenanceMediaGallery items={report.media} />
-              <p className="mt-4 rounded-xl bg-[#fafbfc] p-4 text-sm italic text-neutral-700 ring-1 ring-[rgba(17,17,17,0.06)]">
-                {report.technicalNotes}
-              </p>
+              {report.media.length > 0 ? (
+                <MaintenanceMediaGallery items={report.media} />
+              ) : null}
+              {report.technicalNotes ? (
+                <p className="mt-4 rounded-xl bg-[#fafbfc] p-4 text-sm italic text-neutral-700 ring-1 ring-[rgba(17,17,17,0.06)]">
+                  {report.technicalNotes}
+                </p>
+              ) : null}
             </Section>
 
-            <Section title="Checklist técnico">
-              <TechnicalChecklistAccordion groups={detail.checklist} />
-            </Section>
-
-            <Section title="Peças e estoque">
-              <PartsInventory parts={detail.parts} />
-            </Section>
-
-            <Section title="Controle por horas">
-              <EngineHoursCard hours={detail.engineHours} />
-            </Section>
-
-            <Section title="Testes e liberação">
-              <TrackReleaseCard tests={detail.tests} />
-            </Section>
-
-            {detail.clientFlow ? (
-              <Section title="Kart de cliente" desc="Fluxo de aprovação e orçamento.">
-                <ClientApprovalFlow flow={detail.clientFlow} />
+            {detail.checklist.length > 0 ? (
+              <Section title="Checklist técnico">
+                <TechnicalChecklistAccordion groups={detail.checklist} />
               </Section>
             ) : null}
 
-            <Section title="Histórico técnico">
-              <MaintenanceTimeline items={detail.history} />
-            </Section>
+            {detail.parts.length > 0 ? (
+              <Section title="Peças e estoque">
+                <PartsInventory parts={detail.parts} />
+              </Section>
+            ) : null}
+
+            {detail.history.length > 0 ? (
+              <Section title="Histórico técnico">
+                <MaintenanceTimeline items={detail.history} />
+              </Section>
+            ) : null}
           </div>
         </div>
       </aside>

@@ -2,7 +2,8 @@
 
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import type { ReceivableStatus } from "@/lib/contracts/finance/finance.types";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useFinanceMeta } from "@/lib/query/hooks/use-finance-meta";
+import { FinancialRepositoryMock } from "@/repositories/finance/FinancialRepositoryMock";
 import {
   FilterBox,
   countActiveFilters,
@@ -32,6 +33,7 @@ export function ReceivableFilters({
   onClear,
   layout = "inline",
 }: Props) {
+  const { data: meta } = useFinanceMeta();
   const isStacked = layout === "stacked";
   const fieldWrap = isStacked ? "w-full" : "w-full min-w-[11rem] lg:max-w-[12rem] lg:flex-1";
   const active = filtersActive([
@@ -41,9 +43,14 @@ export function ReceivableFilters({
     filters.service,
   ]);
 
+  const statusOptions =
+    meta?.receivableFilterOptions ??
+    FinancialRepositoryMock.getReceivableStatusFilterOptions();
+
   const methodOptions = [
     { value: "", label: "Pagamento" },
-    ...FinancialServiceMock.getReceivablePaymentMethods().map((m) => ({
+    ...(meta?.receivablePaymentMethods ??
+      FinancialRepositoryMock.getReceivablePaymentMethods()).map((m) => ({
       value: m,
       label: m,
     })),
@@ -52,10 +59,12 @@ export function ReceivableFilters({
 
   const serviceOptions = [
     { value: "", label: "Serviço" },
-    ...FinancialServiceMock.getReceivableServices().map((s) => ({
-      value: s,
-      label: s,
-    })),
+    ...(meta?.receivableServices ?? FinancialRepositoryMock.getReceivableServices()).map(
+      (s) => ({
+        value: s,
+        label: s,
+      }),
+    ),
   ];
 
   const fields = (
@@ -77,7 +86,7 @@ export function ReceivableFilters({
       <div className={fieldWrap}>
         <SettingsDropdown
           aria-label="Status"
-          options={FinancialServiceMock.getReceivableFilterOptions().map((o) => ({
+          options={statusOptions.map((o) => ({
             value: o.value,
             label: o.label,
           }))}

@@ -1,6 +1,10 @@
 "use client";
 
 import { AppModal } from "@/components/ui/app-modal";
+import {
+  documentRichTextClassName,
+  isHtmlDocumentContent,
+} from "@/lib/legal/document-content";
 
 type Props = {
   open: boolean;
@@ -26,9 +30,16 @@ export function ProfileTermModal({ open, title, body, onClose }: Props) {
         </button>
       }
     >
-      <p className="whitespace-pre-line text-[14px] leading-relaxed text-neutral-700">
-        {body}
-      </p>
+      {isHtmlDocumentContent(body) ? (
+        <div
+          className={documentRichTextClassName}
+          dangerouslySetInnerHTML={{ __html: body }}
+        />
+      ) : (
+        <p className="whitespace-pre-line text-[14px] leading-relaxed text-neutral-700">
+          {body}
+        </p>
+      )}
     </AppModal>
   );
 }

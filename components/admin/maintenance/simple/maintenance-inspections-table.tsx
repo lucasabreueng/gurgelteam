@@ -1,6 +1,12 @@
 "use client";
 
 import type { SimpleInspectionRow } from "@/lib/contracts/maintenance/complete-checklist";
+import {
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 import { MaintenanceTablePagination } from "../maintenance-table-pagination";
 
 type Props = {
@@ -26,11 +32,11 @@ export function MaintenanceInspectionsTable({
 }: Props) {
   return (
     <>
-      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
-        <div className="overflow-x-auto rounded-t-2xl">
+      <div className={`hidden lg:block ${adminTableWrapClass}`}>
+        <div className={adminTableScrollClass}>
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
-              <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <tr className={adminTableHeadRowClass}>
                 <th className="px-4 py-3.5">Data</th>
                 <th className="px-3 py-3.5">Kart</th>
                 <th className="px-3 py-3.5">Responsável</th>
@@ -41,7 +47,7 @@ export function MaintenanceInspectionsTable({
               {rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[rgba(17,17,17,0.05)] last:border-0 hover:bg-[#fafbfc]/80"
+                  className={adminTableBodyRowClass}
                 >
                   <td className="px-4 py-3.5 text-neutral-700">{row.date}</td>
                   <td className="px-3 py-3.5 font-semibold tabular-nums text-[#0d1f3c]">

@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons/lib";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
 
@@ -70,7 +70,7 @@ export function InventoryKpiCard({
         {value}
       </p>
       <div className="mt-3 h-10 w-full">
-        <ReactECharts
+        <ThemedECharts
           option={chartOption}
           style={{ height: 40, width: "100%" }}
           opts={{ renderer: "svg" }}

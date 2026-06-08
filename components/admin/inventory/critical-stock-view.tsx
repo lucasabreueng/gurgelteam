@@ -1,6 +1,12 @@
 "use client";
 
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import {
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 
 import { StockStatusBadge } from "./stock-status-badge";
 
@@ -19,11 +25,11 @@ export function CriticalStockView({ onRequestPurchase, onOpenPart }: Props) {
         </p>
       </div>
 
-      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
-        <div className="overflow-x-auto rounded-t-2xl">
+      <div className={`hidden lg:block ${adminTableWrapClass}`}>
+        <div className={adminTableScrollClass}>
           <table className="w-full min-w-[960px] text-left text-sm">
             <thead>
-              <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <tr className={adminTableHeadRowClass}>
                 <th className="px-4 py-3.5">Peça</th>
                 <th className="px-3 py-3.5">Código</th>
                 <th className="px-3 py-3.5">Estoque</th>
@@ -39,7 +45,7 @@ export function CriticalStockView({ onRequestPurchase, onOpenPart }: Props) {
               {InventoryServiceMock.getCriticalStock().map((item) => (
                 <tr
                   key={item.partId}
-                  className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+                  className={adminTableBodyRowClass}
                 >
                   <td className="px-4 py-3.5">
                     <button

@@ -6,7 +6,7 @@ import {
 } from "@/lib/auth-accounts-mocks";
 
 export const LOGIN_MOCK = {
-  defaultIdentifier: "lucas.mendes",
+  defaultIdentifier: "",
   signupPrompt: "Ainda não tem conta?",
   signupCta: "Criar cadastro",
   signupHref: "/cadastro",

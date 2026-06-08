@@ -11,6 +11,9 @@ export type CadastroDTO = {
   cpf: string;
   email: string;
   password: string;
+  acceptedPrivacy: boolean;
+  acceptedTerms: boolean;
+  acceptedImageUsage: boolean;
 };
 
 export type PasswordRecoveryIdentifierDTO = {

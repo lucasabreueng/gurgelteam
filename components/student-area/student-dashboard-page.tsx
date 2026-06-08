@@ -1,12 +1,12 @@
 "use client";
 
 import { StudentDashboardServiceMock } from "@/services/student/studentDashboardServiceMock";
-import type { NavItemKey } from "@/lib/contracts/student-area";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useStudentDashboardView } from "@/lib/query/hooks/use-student-dashboard";
 
 import { StudentShell } from "./student-shell";
 import { StudentDashboardHeader } from "./student-dashboard-header";
@@ -18,25 +18,14 @@ import {
 } from "react-icons/hi2";
 import { AdminResponsiveKpis } from "@/components/admin/admin-responsive-kpis";
 import { TimelineCard } from "./timeline-card";
-import { InstructorFeedback } from "./instructor-feedback";
-import { DevelopmentPlan } from "./development-plan";
+import { SessionFeedback } from "./session-feedback";
 import { AchievementsCard } from "./achievements-card";
 import { ResultsCard } from "./results-card";
 import { MaterialsCard } from "./materials-card";
 import { EvolutionTimeChart } from "./evolution-time-chart";
 import { EvolutionGoalCard } from "./evolution-goal-card";
-
-const NAV_TO_SECTION: Partial<Record<NavItemKey, string>> = {
-  dashboard: "section-dashboard",
-  agenda: "section-agenda",
-  evolucao: "section-evolucao",
-  feedbacks: "section-feedbacks",
-  plano: "section-plano",
-  resultados: "section-resultados",
-  materiais: "section-materiais",
-  conquistas: "section-conquistas",
-  ranking: "section-resultados",
-};
+import { StudentDashboardSkeleton } from "./student-dashboard-skeleton";
+import { PageErrorState } from "@/components/ui/page-error-state";
 
 const KPI_ICONS = {
   best: HiFlag,
@@ -44,15 +33,6 @@ const KPI_ICONS = {
   consistency: HiChartBar,
   evolution: HiSparkles,
 } as const;
-
-function scrollToSection(id: string) {
-  requestAnimationFrame(() => {
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
-}
 
 export function StudentDashboardPage() {
   const searchParams = useSearchParams();
@@ -65,45 +45,26 @@ export function StudentDashboardPage() {
   const [activePilotViewId, setActivePilotViewId] = useState(() =>
     StudentDashboardServiceMock.getDefaultPilotViewId(sessionKind)
   );
-  const [activeNav, setActiveNav] = useState<NavItemKey>("dashboard");
+
+  const { data: viewData, isPending: viewLoading, isError: viewError, refetch } =
+    useStudentDashboardView(activePilotViewId);
 
   useEffect(() => {
     setActivePilotViewId(StudentDashboardServiceMock.getDefaultPilotViewId(sessionKind));
   }, [sessionKind]);
 
-  const viewData = useMemo(
-    () => StudentDashboardServiceMock.getDashboardViewData(activePilotViewId),
-    [activePilotViewId]
-  );
-
-  const headerFirstName = viewData.profile.firstName.split(" ")[0];
-  const headerSubtitle = `Piloto desde ${viewData.profile.pilotSinceYear} · Nível ${viewData.heroLevel.title} · ${viewData.profile.tag}`;
-
-  useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, "");
-    if (!hash) return;
-    const key = Object.entries(NAV_TO_SECTION).find(([, id]) => id === hash)?.[0] as
-      | NavItemKey
-      | undefined;
-    if (key) setActiveNav(key);
-    scrollToSection(hash);
-  }, []);
-
-  const onNav = useCallback((key: NavItemKey | null) => {
-    if (!key) return;
-    setActiveNav(key);
-    const id = NAV_TO_SECTION[key];
-    if (id) scrollToSection(id);
-  }, []);
+  const displayName = viewData?.profile.firstName ?? "…";
+  const headerSubtitle = viewData
+    ? `Piloto desde ${viewData.profile.pilotSinceYear} · Nível ${viewData.heroLevel.title} · ${viewData.profile.tag}`
+    : "Carregando perfil…";
 
   return (
     <StudentShell
-      activeNav={activeNav}
-      onNav={onNav}
-      mobileTitle={`Olá, ${headerFirstName}`}
+      activeNav="dashboard"
+      mobileTitle={`Olá, ${displayName}`}
       pageHeader={
         <StudentDashboardHeader
-          firstName={headerFirstName}
+          displayName={displayName}
           subtitle={headerSubtitle}
           pilotViewOptions={
             pilotViewOptions.length > 0 ? pilotViewOptions : undefined
@@ -113,6 +74,12 @@ export function StudentDashboardPage() {
         />
       }
     >
+      {viewError ? (
+        <PageErrorState onRetry={() => void refetch()} />
+      ) : viewLoading || !viewData ? (
+        <StudentDashboardSkeleton />
+      ) : (
+        <>
       <section id="section-dashboard" className="scroll-mt-28" aria-hidden />
 
       <section
@@ -148,7 +115,7 @@ export function StudentDashboardPage() {
         </div>
       </section>
 
-      <section className="admin-page-grid scroll-mt-28 grid lg:grid-cols-3 lg:items-stretch">
+      <section className="admin-page-grid scroll-mt-28 grid lg:grid-cols-2 lg:items-stretch">
         <div id="section-agenda" className="scroll-mt-28 flex min-h-0">
           <TimelineCard
             className="w-full min-w-0"
@@ -156,10 +123,7 @@ export function StudentDashboardPage() {
           />
         </div>
         <div id="section-feedbacks" className="scroll-mt-28 flex min-h-0">
-          <InstructorFeedback className="w-full min-w-0" {...viewData.feedback} />
-        </div>
-        <div id="section-plano" className="scroll-mt-28 flex min-h-0">
-          <DevelopmentPlan className="w-full min-w-0" />
+          <SessionFeedback className="w-full min-w-0" {...viewData.feedback} />
         </div>
       </section>
 
@@ -201,6 +165,8 @@ export function StudentDashboardPage() {
           </p>
         </div>
       </footer>
+        </>
+      )}
     </StudentShell>
   );
 }

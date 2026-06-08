@@ -5,6 +5,12 @@ import { HiXMark } from "react-icons/hi2";
 import { useDrawerBodyLock } from "@/lib/hooks/use-drawer-body-lock";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import {
+  adminDividerTopClass,
+  adminDrawerTitleClass,
+  adminOutlineButtonClass,
+  adminPanelBgClass,
+} from "@/lib/design";
+import {
   ClientsFilters,
   type ClientsFilterState,
 } from "./clients-filters";
@@ -55,12 +61,12 @@ export function ClientsFiltersSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="clients-filters-title"
-        className="app-drawer-panel absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-[#f3f5f9] p-4 shadow-2xl"
+        className={`app-drawer-panel absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl p-4 shadow-2xl ${adminPanelBgClass}`}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2
             id="clients-filters-title"
-            className="text-base font-bold text-[#0d1f3c]"
+            className={`text-base ${adminDrawerTitleClass}`}
           >
             Filtros
           </h2>
@@ -82,18 +88,18 @@ export function ClientsFiltersSheet({
           layout="stacked"
         />
 
-        <div className="mt-4 flex flex-col gap-2 border-t border-[rgba(17,17,17,0.08)] pt-4">
+        <div className={`mt-4 flex flex-col gap-2 pt-4 ${adminDividerTopClass}`}>
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl bg-[#0d1f3c] py-3.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_4px_16px_rgba(13,31,60,0.25)] transition hover:brightness-110"
+            className="btn-primary-md w-full"
           >
             Ver {resultCount} cliente{resultCount === 1 ? "" : "s"}
           </button>
           <button
             type="button"
             onClick={onClear}
-            className="w-full rounded-xl border border-[rgba(13,31,60,0.2)] bg-transparent py-3 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:bg-white"
+            className={`w-full py-3 ${adminOutlineButtonClass}`}
           >
             Limpar filtros
           </button>

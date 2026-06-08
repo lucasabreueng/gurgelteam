@@ -2,7 +2,7 @@
 
 export type InspectionItemStatus = "ok" | "warn" | "fail" | null;
 
-export type ChecklistTypeKey = "pre" | "post" | "revisao" | "campeonato";
+export type ChecklistTypeKey = "pre" | "post" | "revisao" | "evento";
 
 export type OverallInspectionStatus = "liberado" | "restrito" | "bloqueado";
 
@@ -10,7 +10,7 @@ export const CHECKLIST_TYPES: { key: ChecklistTypeKey; label: string }[] = [
   { key: "pre", label: "Pré-treino" },
   { key: "post", label: "Pós-treino" },
   { key: "revisao", label: "Revisão técnica" },
-  { key: "campeonato", label: "Liberação campeonato" },
+  { key: "evento", label: "Liberação para evento" },
 ];
 
 export type ChecklistKartContext = {
@@ -189,6 +189,7 @@ export type ChecklistMediaPreview = {
   id: string;
   label: string;
   type: "foto" | "video";
+  url?: string;
 };
 
 export const MOCK_MEDIA_PREVIEWS: ChecklistMediaPreview[] = [

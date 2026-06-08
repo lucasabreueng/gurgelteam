@@ -36,34 +36,48 @@ export function InventoryHeader({
       title={title}
       subtitle={subtitle}
       actions={
-        <>
-          <RegisterPartButton onClick={onRegisterPart} />
-          <RegisterSupplierButton onClick={onRegisterSupplier} />
-          <button
-            type="button"
-            onClick={onRegisterEntry}
-            className="btn-outline-sm bg-white"
-          >
-            <HiArrowDownTray className="h-4 w-4" aria-hidden />
-            {tabletLandscape ? "Entrada" : "Registrar entrada"}
-          </button>
-          <button
-            type="button"
-            onClick={onRegisterExit}
-            className="btn-outline-sm bg-white"
-          >
-            <HiArrowUpTray className="h-4 w-4" aria-hidden />
-            {tabletLandscape ? "Saída" : "Registrar saída"}
-          </button>
-          <button
-            type="button"
-            onClick={onRequestPurchase}
-            className="btn-primary-sm"
-          >
-            <HiShoppingCart className="h-4 w-4" aria-hidden />
-            {tabletLandscape ? "Compra" : "Solicitar compra"}
-          </button>
-        </>
+        onRegisterPart ||
+        onRegisterSupplier ||
+        onRegisterEntry ||
+        onRegisterExit ||
+        onRequestPurchase ? (
+          <>
+            {onRegisterPart ? <RegisterPartButton onClick={onRegisterPart} /> : null}
+            {onRegisterSupplier ? (
+              <RegisterSupplierButton onClick={onRegisterSupplier} />
+            ) : null}
+            {onRegisterEntry ? (
+              <button
+                type="button"
+                onClick={onRegisterEntry}
+                className="btn-outline-sm bg-white"
+              >
+                <HiArrowDownTray className="h-4 w-4" aria-hidden />
+                {tabletLandscape ? "Entrada" : "Registrar entrada"}
+              </button>
+            ) : null}
+            {onRegisterExit ? (
+              <button
+                type="button"
+                onClick={onRegisterExit}
+                className="btn-outline-sm bg-white"
+              >
+                <HiArrowUpTray className="h-4 w-4" aria-hidden />
+                {tabletLandscape ? "Saída" : "Registrar saída"}
+              </button>
+            ) : null}
+            {onRequestPurchase ? (
+              <button
+                type="button"
+                onClick={onRequestPurchase}
+                className="btn-primary-sm"
+              >
+                <HiShoppingCart className="h-4 w-4" aria-hidden />
+                {tabletLandscape ? "Compra" : "Solicitar compra"}
+              </button>
+            ) : null}
+          </>
+        ) : undefined
       }
       actionsClassName="admin-page-header-actions--tablet-compact"
     />

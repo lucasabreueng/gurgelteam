@@ -45,7 +45,7 @@ export function RegisterPartDrawerFooter({
           <button
             type="button"
             onClick={onRequestPurchase}
-            className={`${btnClass} border border-[rgba(13,31,60,0.2)] bg-white text-[#0d1f3c] hover:border-accent/40`}
+            className={`${btnClass} border border-[var(--ds-border-field)] bg-[var(--ds-bg-card)] text-[var(--ds-text-primary)] hover:border-accent/40`}
           >
             Solicitar compra
           </button>

@@ -481,7 +481,7 @@ const DETAIL_BASE: Omit<MaintenanceOrderDetail, "order"> = {
   eta: "24 mai, 17:00",
   problemReport: {
     text: "Piloto relatou perda de tração na saída de curva lenta e ruído metálico intermitente.",
-    identifiedBy: "Instrutor Lucas Mendes",
+    identifiedBy: "Equipe Gurgel — Lucas Mendes",
     dateTime: "18 mai 2026, 08:15",
     media: [
       {
@@ -675,7 +675,7 @@ export function getMaintenanceDetail(
     eta: order.status === "liberado" ? "Concluído" : DETAIL_BASE.eta,
     tests: {
       performed: order.status === "em_testes" || order.status === "liberado",
-      pilot: order.status === "liberado" ? "Lucas Mendes" : order.status === "em_testes" ? "Instrutor teste" : "—",
+      pilot: order.status === "liberado" ? "Lucas Mendes" : order.status === "em_testes" ? "Equipe teste" : "—",
       notes:
         order.status === "liberado"
           ? "Kart aprovado em 3 voltas de validação. Sem anomalias."

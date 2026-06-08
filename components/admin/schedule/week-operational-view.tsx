@@ -1,7 +1,7 @@
 "use client";
 
 import type { ScheduleEvent, UpcomingDaySummary } from "@/lib/contracts/schedule";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 type Props = {
   days: UpcomingDaySummary[];
@@ -16,10 +16,11 @@ export function WeekOperationalView({
   selectedDate,
   onSelectDate,
 }: Props) {
+  const schedule = getAppServices().schedule;
   return (
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
       {days.map((day) => {
-        const dayEvents = ScheduleServiceMock.getEventsForDate(events, day.date);
+        const dayEvents = schedule.getEventsForDate(events, day.date);
         const empty = day.bookingCount === 0;
         return (
           <button

@@ -24,7 +24,8 @@ import type {
   MaintenanceSimpleFilterState,
 } from "@/lib/contracts/maintenance/simple";
 import { useMaintenanceSimplePage } from "@/lib/query/hooks/use-maintenance";
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { AdminShell } from "./admin-shell";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
@@ -41,6 +42,7 @@ import {
   InspectionListFilters,
   MaintenanceListFilters,
 } from "./maintenance/simple/maintenance-tab-filters";
+import { AdminMaintenancePageSkeleton } from "./admin-page-skeletons";
 
 const KPI_ICONS: Record<string, IconType> = {
   disponiveis: HiCheckCircle,
@@ -77,10 +79,10 @@ const CompleteChecklistDrawer = dynamic(
   { ssr: false },
 );
 
-const KartHistoryDrawer = dynamic(
+const KartDetailDrawer = dynamic(
   () =>
-    import("./maintenance/simple/kart-history-drawer").then((m) => ({
-      default: m.KartHistoryDrawer,
+    import("./karts/kart-detail-drawer").then((m) => ({
+      default: m.KartDetailDrawer,
     })),
   { ssr: false },
 );
@@ -89,6 +91,22 @@ const ChecklistDetailDrawer = dynamic(
   () =>
     import("./maintenance/simple/checklist-detail-drawer").then((m) => ({
       default: m.ChecklistDetailDrawer,
+    })),
+  { ssr: false },
+);
+
+const NewInspectionModal = dynamic(
+  () =>
+    import("./maintenance/new-inspection/new-inspection-modal").then((m) => ({
+      default: m.NewInspectionModal,
+    })),
+  { ssr: false },
+);
+
+const MaintenanceDetailsDrawer = dynamic(
+  () =>
+    import("./maintenance/maintenance-details-drawer").then((m) => ({
+      default: m.MaintenanceDetailsDrawer,
     })),
   { ssr: false },
 );
@@ -135,7 +153,8 @@ function paginate<T>(items: T[], page: number, pageSize: number): T[] {
 }
 
 export function MaintenancePage() {
-  const { data } = useMaintenanceSimplePage();
+  const { data, isPending: isPageLoading } = useMaintenanceSimplePage();
+  const { canEdit } = useModuleAccess("manutencao");
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MaintenancePageTabKey>("karts");
   const [kartFilters, setKartFilters] =
@@ -155,10 +174,12 @@ export function MaintenancePage() {
   const [checklistsPage, setChecklistsPage] = useState(1);
 
   const [inspectionOpen, setInspectionOpen] = useState(false);
+  const [advancedInspectionOpen, setAdvancedInspectionOpen] = useState(false);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [historyKartId, setHistoryKartId] = useState<string | null>(null);
   const [checklistDetailId, setChecklistDetailId] = useState<string | null>(null);
+  const [orderDetailId, setOrderDetailId] = useState<string | null>(null);
 
   const [inspectionKartId, setInspectionKartId] = useState("");
   const [maintenanceKartId, setMaintenanceKartId] = useState("");
@@ -205,19 +226,19 @@ export function MaintenancePage() {
   );
 
   const filteredFleet = useMemo(
-    () => MaintenanceServiceMock.filterFleet(fleet, kartFilters),
+    () => getAppServices().maintenance.filterFleet(fleet, kartFilters),
     [fleet, kartFilters],
   );
 
   const filteredInspections = useMemo(
     () =>
-      MaintenanceServiceMock.filterInspectionsList(inspections, inspectionFilters),
+      getAppServices().maintenance.filterInspectionsList(inspections, inspectionFilters),
     [inspections, inspectionFilters],
   );
 
   const filteredMaintenances = useMemo(
     () =>
-      MaintenanceServiceMock.filterMaintenancesList(
+      getAppServices().maintenance.filterMaintenancesList(
         maintenances,
         maintenanceListFilters,
       ),
@@ -226,7 +247,7 @@ export function MaintenancePage() {
 
   const filteredChecklists = useMemo(
     () =>
-      MaintenanceServiceMock.filterChecklistsList(
+      getAppServices().maintenance.filterChecklistsList(
         checklistHistory,
         checklistFilters,
       ),
@@ -431,9 +452,17 @@ export function MaintenancePage() {
         mobileTitle="Manutenção"
         pageHeader={
           <MaintenanceSimpleHeader
-            onNewInspection={() => openInspection()}
-            onNewMaintenance={() => openMaintenance()}
-            onNewCompleteChecklist={() => openCompleteChecklist()}
+            onNewInspection={canEdit ? () => openInspection() : undefined}
+            onAdvancedInspection={
+              canEdit
+                ? () => {
+                    setInspectionKartId("");
+                    setAdvancedInspectionOpen(true);
+                  }
+                : undefined
+            }
+            onNewMaintenance={canEdit ? () => openMaintenance() : undefined}
+            onNewCompleteChecklist={canEdit ? () => openCompleteChecklist() : undefined}
             onOpenFilters={() => setFiltersOpen(true)}
             activeFilterCount={activeFilterCount}
           />
@@ -451,6 +480,10 @@ export function MaintenancePage() {
           </p>
         ) : null}
 
+        {isPageLoading ? (
+          <AdminMaintenancePageSkeleton />
+        ) : (
+          <>
         {activeTab === "karts" ? (
           <AdminResponsiveKpis
             kpis={kpisDisplay}
@@ -571,6 +604,7 @@ export function MaintenancePage() {
               totalItems={filteredMaintenances.length}
               onPageChange={setMaintenancesPage}
               onPageSizeChange={setPageSize}
+              onViewDetails={setOrderDetailId}
             />
           ) : null}
 
@@ -599,6 +633,8 @@ export function MaintenancePage() {
             />
           ) : null}
         </div>
+          </>
+        )}
       </AdminShell>
 
       <SimpleInspectionDrawer
@@ -612,6 +648,14 @@ export function MaintenancePage() {
           setInspectionOpen(false);
           openMaintenance(draft.kartId, draft);
         }}
+      />
+
+      <NewInspectionModal
+        open={advancedInspectionOpen}
+        karts={fleet}
+        initialKartId={inspectionKartId}
+        onClose={() => setAdvancedInspectionOpen(false)}
+        onSuccess={handleSuccess}
       />
 
       <SimpleMaintenanceDrawer
@@ -633,8 +677,9 @@ export function MaintenancePage() {
         onRequestMaintenances={processMaintenanceQueue}
       />
 
-      <KartHistoryDrawer
+      <KartDetailDrawer
         kartId={historyKartId}
+        focusHistory
         onClose={() => setHistoryKartId(null)}
       />
 
@@ -647,6 +692,11 @@ export function MaintenancePage() {
           if (row) openCompleteChecklist(row.kartId);
         }}
         onExportPdf={(id) => handleSuccess(`PDF do checklist ${id} gerado (mock).`)}
+      />
+
+      <MaintenanceDetailsDrawer
+        orderId={orderDetailId}
+        onClose={() => setOrderDetailId(null)}
       />
     </>
   );

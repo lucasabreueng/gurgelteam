@@ -5,8 +5,8 @@ import type { ClientStatus } from "@/lib/contracts/clients";
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import { FilterBox, filterFieldHeightClass, filtersActive } from "@/components/ui/filter-box";
+import { adminCardClass, adminInputClass } from "@/lib/design";
 import { SettingsDropdown } from "../settings/settings-dropdown";
-import { settingsInputClass } from "../settings/settings-section";
 
 export type ClientsFilterState = {
   search: string;
@@ -68,7 +68,7 @@ export function ClientsFilters({
           placeholder="Buscar por nome…"
           value={filters.search}
           onChange={(e) => onChange({ search: e.target.value })}
-            className={`${settingsInputClass} ${filterFieldHeightClass} w-full pl-10`}
+            className={`${adminInputClass} ${filterFieldHeightClass} w-full pl-10`}
           aria-label="Busca global"
         />
       </div>
@@ -103,7 +103,7 @@ export function ClientsFilters({
 
   if (isStacked) {
     return (
-      <div className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(13,31,60,0.04)]">
+      <div className={`${adminCardClass} p-4`}>
         <div className="flex flex-col gap-4">{fields}</div>
       </div>
     );

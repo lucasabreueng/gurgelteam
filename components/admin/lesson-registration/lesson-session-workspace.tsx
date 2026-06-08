@@ -23,7 +23,15 @@ import {
   runTimingSheetOcr,
   TimingSheetOcrError,
 } from "@/lib/lesson-registration-ocr";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import {
+  useLessonRegistration,
+  useSaveLessonRegistration,
+} from "@/lib/query/hooks/use-lessons";
+import {
+  getKartBlockReason,
+  isKartBlockedForOperation,
+} from "@/lib/karts-runtime-store";
 import { OcrUploadZone } from "./ocr-upload-zone";
 import { OcrReviewPanel } from "./ocr-review-panel";
 import { TelemetryLinkPanel } from "./telemetry-link-panel";
@@ -31,7 +39,6 @@ import { LapsTable } from "./laps-table";
 import { RegistrationSummaryCards } from "./registration-summary-cards";
 import { GurgelNotesCard } from "./gurgel-notes-card";
 import { lessonRegistrationSelectionClass } from "./lesson-registration-selection";
-import { LessonServiceMock } from "@/services/lessons/lessonServiceMock";
 
 type RegistrationMethod = "ocr" | "telemetry" | "manual";
 
@@ -82,9 +89,16 @@ export function LessonSessionWorkspace({
   hideTitleHeader = false,
   onHeaderActionsChange,
 }: Props) {
-  const saved = LessonServiceMock.getLessonRegistration(session.id);
+  const { data: saved } = useLessonRegistration(session.id);
+  const saveRegistration = useSaveLessonRegistration();
+  const { lessons, schedule } = getAppServices();
   const isConcluded = session.status === "concluida";
   const hasSavedRegistration = Boolean(saved);
+  const kartBlocked =
+    session.kartNumber > 0 && isKartBlockedForOperation(session.kartNumber);
+  const kartBlockReason = kartBlocked
+    ? getKartBlockReason(session.kartNumber)
+    : null;
 
   const [editingConcluded, setEditingConcluded] = useState(false);
   const locked = isConcluded && !editingConcluded;
@@ -114,7 +128,7 @@ export function LessonSessionWorkspace({
   const lapSummary = useMemo(() => computeLapSummary(laps), [laps]);
 
   const telemetrySummary = useMemo((): LapSummary | null => {
-    const tel = LessonServiceMock.getTelemetrySessionOptions().find(
+    const tel = lessons.getTelemetrySessionOptions().find(
       (t) => t.id === telemetryId,
     );
     if (!tel) return null;
@@ -127,22 +141,21 @@ export function LessonSessionWorkspace({
       idealLap: `${tel.idealLap}s`,
       lapCount: tel.lapCount,
     };
-  }, [telemetryId]);
+  }, [telemetryId, lessons]);
 
   const summary =
     method === "telemetry" && telemetrySummary ? telemetrySummary : lapSummary;
 
   useEffect(() => {
-    const savedReg = LessonServiceMock.getLessonRegistration(session.id);
     setEditingConcluded(false);
-    setMethod(savedReg?.method ?? null);
-    setLaps(savedReg?.laps ?? createDefaultLaps(5));
-    setNotes(savedReg?.notes ?? EMPTY_NOTES);
-    setTelemetryId(savedReg?.telemetryId ?? null);
-    setOcrPhase(savedReg?.method === "ocr" ? "done" : "upload");
+    setMethod(saved?.method ?? null);
+    setLaps(saved?.laps ?? createDefaultLaps(5));
+    setNotes(saved?.notes ?? EMPTY_NOTES);
+    setTelemetryId(saved?.telemetryId ?? null);
+    setOcrPhase(saved?.method === "ocr" ? "done" : "upload");
     setOcrImage("");
     setOcrError(null);
-  }, [session.id]);
+  }, [session.id, saved]);
 
   useEffect(() => {
     if (locked) return;
@@ -197,28 +210,40 @@ export function LessonSessionWorkspace({
   };
 
   const handleFinalize = useCallback(async () => {
+    if (kartBlocked) return;
     if (issues.length > 0 && method !== "telemetry") return;
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    LessonServiceMock.saveLessonRegistration({
-      sessionId: session.id,
-      laps,
-      notes,
-      method: method ?? "manual",
-      telemetryId: telemetryId ?? undefined,
-      savedAt: new Date().toISOString(),
-    });
     try {
-      localStorage.removeItem(`lesson-reg-draft-${session.id}`);
-    } catch {
-      /* ignore */
+      await saveRegistration.mutateAsync({
+        sessionId: session.id,
+        laps,
+        notes,
+        method: method ?? "manual",
+        telemetryId: telemetryId ?? undefined,
+      });
+      try {
+        localStorage.removeItem(`lesson-reg-draft-${session.id}`);
+      } catch {
+        /* ignore */
+      }
+      setEditingConcluded(false);
+      onFinalized(
+        `Registro de ${session.studentName} finalizado e vinculado ao histórico.`,
+      );
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setEditingConcluded(false);
-    onFinalized(
-      `Registro de ${session.studentName} finalizado e vinculado ao histórico.`,
-    );
-  }, [issues.length, method, session, laps, notes, telemetryId, onFinalized]);
+  }, [
+    kartBlocked,
+    issues.length,
+    method,
+    session,
+    laps,
+    notes,
+    telemetryId,
+    onFinalized,
+    saveRegistration,
+  ]);
 
   const renderMethodPicker = () => (
     <div>
@@ -389,6 +414,7 @@ export function LessonSessionWorkspace({
             type="button"
             disabled={
               saving ||
+              kartBlocked ||
               !method ||
               (method !== "telemetry" && issues.length > 0) ||
               (method === "telemetry" && !telemetryId)
@@ -412,6 +438,7 @@ export function LessonSessionWorkspace({
       </button>
     );
   }, [
+    kartBlocked,
     isConcluded,
     hasSavedRegistration,
     editingConcluded,
@@ -437,6 +464,16 @@ export function LessonSessionWorkspace({
 
   return (
     <div className="min-w-0 space-y-6">
+      {kartBlocked ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+        >
+          Kart {session.kartNumber} bloqueado
+          {kartBlockReason ? ` (${kartBlockReason})` : ""}. Resolva a manutenção
+          antes de finalizar o registro.
+        </p>
+      ) : null}
       {!hideTitleHeader ? (
         <header className="-mx-4 border-b border-[rgba(17,17,17,0.08)] px-4 pb-4 md:-mx-6 md:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -455,7 +492,7 @@ export function LessonSessionWorkspace({
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-neutral-600">
-                {ScheduleServiceMock.formatDateShort(session.date)} ·{" "}
+                {schedule.formatDateShort(session.date)} ·{" "}
                 {session.start}–{session.end}
               </p>
             </div>
@@ -506,6 +543,7 @@ export function LessonSessionWorkspace({
                 type="button"
                 disabled={
                   saving ||
+                  kartBlocked ||
                   !method ||
                   (method !== "telemetry" && issues.length > 0) ||
                   (method === "telemetry" && !telemetryId)

@@ -1,9 +1,9 @@
 "use client";
 
-import { StudentAreaServiceMock } from "@/services/student/studentAreaServiceMock";
 import type { DevTabKey } from "@/lib/contracts/student-area";
+import { usePilotHome } from "@/lib/query/hooks/use-pilot-home";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { HiCheck } from "react-icons/hi2";
 
 
@@ -11,7 +11,13 @@ type Props = { className?: string };
 
 export function DevelopmentPlan({ className = "" }: Props) {
   const [tab, setTab] = useState<DevTabKey>("foco");
-  const data = StudentAreaServiceMock.getDevelopmentByTab()[tab];
+  const { data: home, isLoading } = usePilotHome();
+  const developmentByTab = home?.developmentByTab;
+  const tabs = home?.developmentTabs ?? [];
+  const data = useMemo(
+    () => developmentByTab?.[tab],
+    [developmentByTab, tab],
+  );
 
   return (
     <div
@@ -25,7 +31,7 @@ export function DevelopmentPlan({ className = "" }: Props) {
       </h3>
 
       <div className="relative z-10 mt-3 flex flex-wrap gap-1.5">
-        {StudentAreaServiceMock.getDevelopmentTabs().map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -42,14 +48,22 @@ export function DevelopmentPlan({ className = "" }: Props) {
       </div>
 
       <div className="mt-3 flex-shrink-0">
+        {isLoading || !data ? (
+          <p className="text-sm text-neutral-500">Carregando plano…</p>
+        ) : (
+          <>
         <p className="text-[15px] font-semibold leading-snug text-[#111]">
           {data.title}
         </p>
         <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-neutral-600">
           {data.description}
         </p>
+          </>
+        )}
       </div>
 
+      {data ? (
+      <>
       <ul className="mt-3 min-h-0 flex-1 space-y-0 overflow-y-auto overflow-x-visible pr-1">
         {data.checklist.map((item) => (
           <li
@@ -102,6 +116,8 @@ export function DevelopmentPlan({ className = "" }: Props) {
           </div>
         </div>
       </div>
+      </>
+      ) : null}
     </div>
   );
 }

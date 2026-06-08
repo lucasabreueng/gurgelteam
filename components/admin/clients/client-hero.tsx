@@ -10,6 +10,10 @@ import Image from "next/image";
 
 
 import {
+  adminHeroOverlayClass,
+  adminHeroSectionClass,
+} from "@/lib/design";
+import {
   ClientCategoriesBadges,
   ClientLevelBadge,
   ClientStatusBadge,
@@ -30,7 +34,7 @@ export function ClientHero({ client, profile }: Props) {
     SettingsServiceMock.getSkillLevels(),
   );
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-[rgba(17,17,17,0.08)] shadow-[0_8px_32px_rgba(13,31,60,0.12)]">
+    <section className={adminHeroSectionClass}>
       <div className="absolute inset-0">
         <Image
           src={profile.heroBg}
@@ -40,7 +44,7 @@ export function ClientHero({ client, profile }: Props) {
           sizes="(max-width: 768px) 100vw, 720px"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1f3c]/95 via-[#0d1f3c]/85 to-[#0d1f3c]/55" />
+        <div className={adminHeroOverlayClass} />
         <div className="absolute inset-0 bg-[url('/images/tracado.svg')] bg-cover bg-center opacity-[0.06]" />
       </div>
 

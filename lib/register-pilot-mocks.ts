@@ -1,7 +1,9 @@
 import { generateAvailableUsername } from "@/lib/auth-accounts-mocks";
+import { brazilDateToIso, isCompleteBrazilDate } from "@/lib/brazil-date-input";
 import { formatCpf } from "@/lib/cadastro-mocks";
 import {
   formatPhoneBr,
+  getAgeFromBirthDate,
   getAutoPilotCategory,
   getCategoryLabel,
 } from "@/lib/student-profile-mocks";
@@ -28,6 +30,9 @@ export type RegisterPilotFormValues = {
   city: string;
   state: string;
   phone: string;
+  password: string;
+  confirmPassword: string;
+  avatarUrl: string;
 };
 
 export type RegisterPilotFieldErrors = Partial<
@@ -45,13 +50,24 @@ export function getRegisterPilotFieldErrors(
     errors.relationship = "Selecione o grau de parentesco.";
   }
   if (!values.birthDate) {
-    errors.birthDate = "Selecione a data de nascimento.";
+    errors.birthDate = "Informe a data de nascimento.";
+  } else if (!isCompleteBrazilDate(values.birthDate)) {
+    errors.birthDate = "Informe uma data válida (dd/mm/aaaa).";
   } else {
-    const category = getAutoPilotCategory(values.birthDate);
-    if (!category) {
+    const birthIso = brazilDateToIso(values.birthDate);
+    const age = getAgeFromBirthDate(birthIso);
+    if (age === null) {
+      errors.birthDate = "Informe uma data válida (dd/mm/aaaa).";
+    } else if (age > 18) {
       errors.birthDate =
-        "O piloto deve ter mais de 6 anos para ser cadastrado.";
-      errors.category = "Idade fora da faixa permitida.";
+        "O piloto vinculado deve ter 18 anos ou menos.";
+    } else {
+      const category = getAutoPilotCategory(birthIso);
+      if (!category) {
+        errors.birthDate =
+          "O piloto deve ter mais de 6 anos para ser cadastrado.";
+        errors.category = "Idade fora da faixa permitida.";
+      }
     }
   }
 
@@ -65,6 +81,20 @@ export function getRegisterPilotFieldErrors(
   const phoneDigits = values.phone.replace(/\D/g, "");
   if (phoneDigits.length > 0 && phoneDigits.length < 10) {
     errors.phone = "Telefone incompleto.";
+  }
+
+  if (!values.password) {
+    errors.password = "Informe a senha de acesso.";
+  } else if (values.password.length < 8) {
+    errors.password = "A senha deve ter no mínimo 8 caracteres.";
+  } else if (values.password.includes(" ")) {
+    errors.password = "Senha não pode conter espaços.";
+  }
+
+  if (!values.confirmPassword) {
+    errors.confirmPassword = "Confirme a senha.";
+  } else if (values.password !== values.confirmPassword) {
+    errors.confirmPassword = "As senhas não coincidem.";
   }
 
   return errors;

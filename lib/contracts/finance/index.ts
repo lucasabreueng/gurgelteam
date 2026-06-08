@@ -3,14 +3,14 @@ export type {
   RevenueSource,
   RevenueSourceKey,
   PackageCredit,
-  PackageCreditStatus,
   DelinquencyItem,
   KartFinancial,
   ClientFinancial,
 } from "@/lib/admin-financial-mocks";
 
+export type { PackageCreditStatus, ReceivableStatus } from "../enums";
+
 export type {
-  ReceivableStatus,
   FinancialTabKey,
   FinancialTabMetaDTO,
   FinancialKpiDTO,

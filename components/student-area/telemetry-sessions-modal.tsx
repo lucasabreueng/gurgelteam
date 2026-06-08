@@ -8,12 +8,24 @@ import {
   TABLE_HEAD,
 } from "@/components/student-area/telemetry/sectors/sectors-styles";
 import {
+  adminBadgeInfoClass,
+  adminTableBodyRowClass,
+  adminTableDangerActionButtonClass,
+} from "@/lib/design";
+import {
   deleteProcessedSession,
   formatLapTime,
   listProcessedSessions,
   type SessionListEntry,
 } from "@/lib/telemetry-engine";
 import { setStoredTelemetrySessionId } from "@/lib/telemetry-active-session";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { TelemetryRepositoryHttp } from "@/repositories/telemetry/TelemetryRepositoryHttp";
+import {
+  isApiSessionId,
+  toApiSessionStorageId,
+} from "@/lib/telemetry-api-session";
+import { mapTelemetrySessionToPilotSession } from "@/services/telemetry/map-telemetry-api";
 
 type Props = {
   open: boolean;
@@ -30,6 +42,7 @@ type SessionRow = {
   totalLaps: number;
   bestLap: string;
   subtitle?: string;
+  cloud?: boolean;
 };
 
 export function TelemetrySessionsModal({
@@ -39,30 +52,60 @@ export function TelemetrySessionsModal({
   onSelectProcessed,
   onSessionRemoved,
 }: Props) {
-  const [sessions, setSessions] = useState<SessionListEntry[]>([]);
+  const [processed, setProcessed] = useState<SessionListEntry[]>([]);
+  const [cloudRows, setCloudRows] = useState<SessionRow[]>([]);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const httpMode = getDataSourceMode() === "http";
 
-  const reloadSessions = useCallback(() => {
-    void listProcessedSessions().then(setSessions);
-  }, []);
+  const reloadSessions = useCallback(async () => {
+    const local = await listProcessedSessions();
+    setProcessed(local);
+
+    if (!httpMode) {
+      setCloudRows([]);
+      return;
+    }
+
+    try {
+      const apiSessions = await TelemetryRepositoryHttp.listSessions();
+      setCloudRows(
+        apiSessions.map((s) => {
+          const pilot = mapTelemetrySessionToPilotSession(s);
+          return {
+            id: toApiSessionStorageId(s.id),
+            dateLabel: pilot.dateLabel,
+            trackName: pilot.trackName,
+            totalLaps: pilot.totalLaps,
+            bestLap: pilot.bestLap,
+            subtitle: s.sourceFileName ?? s.source,
+            cloud: true,
+          };
+        }),
+      );
+    } catch {
+      setCloudRows([]);
+    }
+  }, [httpMode]);
 
   useEffect(() => {
     if (!open) return;
-    reloadSessions();
+    void reloadSessions();
   }, [open, activeSessionId, reloadSessions]);
 
-  const rows = useMemo<SessionRow[]>(
-    () =>
-      sessions.map((s) => ({
-        id: s.id,
-        dateLabel: s.dateLabel,
-        trackName: s.trackName,
-        totalLaps: s.validLapCount,
-        bestLap: s.bestLapTime != null ? formatLapTime(s.bestLapTime) : "—",
-        subtitle: s.sourceFileName,
-      })),
-    [sessions],
-  );
+  const rows = useMemo<SessionRow[]>(() => {
+    const local: SessionRow[] = processed.map((s) => ({
+      id: s.id,
+      dateLabel: s.dateLabel,
+      trackName: s.trackName,
+      totalLaps: s.validLapCount,
+      bestLap: s.bestLapTime != null ? formatLapTime(s.bestLapTime) : "—",
+      subtitle: s.sourceFileName,
+      cloud: false,
+    }));
+    const cloudIds = new Set(cloudRows.map((r) => r.id));
+    const localOnly = local.filter((r) => !cloudIds.has(r.id));
+    return [...cloudRows, ...localOnly];
+  }, [processed, cloudRows]);
 
   const handleSelect = (row: SessionRow) => {
     setStoredTelemetrySessionId(row.id);
@@ -71,6 +114,8 @@ export function TelemetrySessionsModal({
   };
 
   const handleRemove = async (row: SessionRow) => {
+    if (row.cloud || isApiSessionId(row.id)) return;
+
     const ok = window.confirm(
       `Remover a sessão de ${row.dateLabel} (${row.trackName})? Esta ação não pode ser desfeita.`,
     );
@@ -79,7 +124,7 @@ export function TelemetrySessionsModal({
     setRemovingId(row.id);
     try {
       await deleteProcessedSession(row.id);
-      setSessions((prev) => prev.filter((s) => s.id !== row.id));
+      setProcessed((prev) => prev.filter((s) => s.id !== row.id));
       onSessionRemoved?.(row.id);
     } finally {
       setRemovingId(null);
@@ -91,13 +136,13 @@ export function TelemetrySessionsModal({
       open={open}
       onClose={onClose}
       title="Sessões do piloto"
-      description="Clique na sessão para abrir. Use o ícone à direita para excluir."
+      description="Clique na sessão para abrir. Sessões na nuvem vêm do servidor; importações locais podem ser excluídas."
       maxWidth="2xl"
     >
       {rows.length === 0 ? (
-        <p className="py-8 text-center text-sm text-neutral-500">
-          Nenhuma sessão importada. Use &quot;Carregar telemetria&quot; para
-          adicionar uma sessão.
+        <p className="py-8 text-center text-sm text-[var(--ds-text-muted)]">
+          Nenhuma sessão disponível. Use &quot;Carregar telemetria&quot; para
+          importar um arquivo ou aguarde sincronização com o servidor.
         </p>
       ) : (
         <div className={INNER_TABLE}>
@@ -145,8 +190,8 @@ function SessionsTable({
             return (
               <tr
                 key={row.id}
-                className={`border-b border-dashed border-neutral-200 transition last:border-0 ${
-                  active ? "bg-accent/5" : "hover:bg-white/90"
+                className={`${adminTableBodyRowClass} ${
+                  active ? "bg-accent/5" : ""
                 }`}
               >
                 <td className="px-4 py-3">
@@ -156,45 +201,54 @@ function SessionsTable({
                     className="w-full text-left transition hover:opacity-90"
                   >
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-[#0d1f3c]">
+                      <span className="font-semibold text-[var(--ds-text-primary)]">
                         {row.dateLabel}
                       </span>
+                      {row.cloud ? (
+                        <span
+                          className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ring-1 ${adminBadgeInfoClass}`}
+                        >
+                          Nuvem
+                        </span>
+                      ) : null}
                       {active ? (
                         <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
                           Ativa
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 block text-[12px] text-neutral-600">
+                    <span className="mt-0.5 block text-[12px] text-[var(--ds-text-secondary)]">
                       {row.trackName}
                     </span>
                     {row.subtitle ? (
-                      <span className="mt-0.5 block truncate text-[11px] text-neutral-400">
+                      <span className="mt-0.5 block truncate text-[11px] text-[var(--ds-text-muted)]">
                         {row.subtitle}
                       </span>
                     ) : null}
                   </button>
                 </td>
-                <td className="px-4 py-3 text-center font-mono tabular-nums text-neutral-800">
+                <td className="px-4 py-3 text-center font-mono tabular-nums text-[var(--ds-text-secondary)]">
                   {row.totalLaps}
                 </td>
-                <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-emerald-700">
+                <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-[var(--ds-success-text)]">
                   {row.bestLap}
                 </td>
                 <td className="px-2 py-3 text-right">
-                  <button
-                    type="button"
-                    title="Remover sessão"
-                    aria-label="Remover sessão"
-                    disabled={isRemoving}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void onRemove(row);
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <HiTrash className="h-4 w-4" />
-                  </button>
+                  {!row.cloud ? (
+                    <button
+                      type="button"
+                      title="Remover sessão"
+                      aria-label="Remover sessão"
+                      disabled={isRemoving}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void onRemove(row);
+                      }}
+                      className={`${adminTableDangerActionButtonClass} inline-flex h-8 w-8`}
+                    >
+                      <HiTrash className="h-4 w-4" />
+                    </button>
+                  ) : null}
                 </td>
               </tr>
             );
@@ -210,8 +264,8 @@ function SessionsTable({
             return (
               <li key={row.id}>
                 <article
-                  className={`rounded-xl border border-[rgba(17,17,17,0.08)] p-3 ${
-                    active ? "bg-accent/5" : "bg-white"
+                  className={`rounded-xl border border-[var(--ds-border)] p-3 ${
+                    active ? "bg-accent/5" : "bg-[var(--ds-bg-card)]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -221,47 +275,56 @@ function SessionsTable({
                       className="min-w-0 flex-1 text-left"
                     >
                       <p className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-[#0d1f3c]">
+                        <span className="font-semibold text-[var(--ds-text-primary)]">
                           {row.dateLabel}
                         </span>
+                        {row.cloud ? (
+                          <span
+                            className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ring-1 ${adminBadgeInfoClass}`}
+                          >
+                            Nuvem
+                          </span>
+                        ) : null}
                         {active ? (
                           <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
                             Ativa
                           </span>
                         ) : null}
                       </p>
-                      <p className="mt-0.5 text-[12px] text-neutral-600">
+                      <p className="mt-0.5 text-[12px] text-[var(--ds-text-secondary)]">
                         {row.trackName}
                       </p>
                       {row.subtitle ? (
-                        <p className="mt-0.5 truncate text-[11px] text-neutral-400">
+                        <p className="mt-0.5 truncate text-[11px] text-[var(--ds-text-muted)]">
                           {row.subtitle}
                         </p>
                       ) : null}
-                      <p className="mt-1 text-[11px] text-neutral-600">
-                        <span className="font-semibold text-[#111]">
+                      <p className="mt-1 text-[11px] text-[var(--ds-text-secondary)]">
+                        <span className="font-semibold text-[var(--ds-text-primary)]">
                           {row.totalLaps} voltas
                         </span>
-                        <span className="mx-1.5 text-neutral-300">·</span>
-                        <span className="font-mono font-bold tabular-nums text-emerald-700">
+                        <span className="mx-1.5 text-[var(--ds-text-muted)]">·</span>
+                        <span className="font-mono font-bold tabular-nums text-[var(--ds-success-text)]">
                           {row.bestLap}
                         </span>
                       </p>
                     </button>
 
-                    <button
-                      type="button"
-                      title="Remover sessão"
-                      aria-label="Remover sessão"
-                      disabled={isRemoving}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void onRemove(row);
-                      }}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-red-600 disabled:opacity-40"
-                    >
-                      <HiTrash className="h-4 w-4" />
-                    </button>
+                    {!row.cloud ? (
+                      <button
+                        type="button"
+                        title="Remover sessão"
+                        aria-label="Remover sessão"
+                        disabled={isRemoving}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void onRemove(row);
+                        }}
+                        className={`${adminTableDangerActionButtonClass} inline-flex h-10 w-10 shrink-0 rounded-xl border border-[var(--ds-border-field)]`}
+                      >
+                        <HiTrash className="h-4 w-4" />
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               </li>

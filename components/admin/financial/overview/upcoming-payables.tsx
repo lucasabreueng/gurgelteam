@@ -1,9 +1,12 @@
 "use client";
 
 import type { FinancialTabKey } from "@/lib/contracts/finance/finance.types";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
 
+import { useUpcomingPayables } from "@/lib/query/hooks/use-finance-charts";
+import { adminOutlineButtonClass, adminTableCellClass } from "@/lib/design";
 import {
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTableClass,
   inventoryTdClass,
   inventoryTdDescClass,
@@ -19,7 +22,7 @@ type Props = {
 };
 
 export function UpcomingPayables({ onTabChange }: Props) {
-  const rows = FinancialServiceMock.getUpcomingPayables();
+  const { data: rows = [] } = useUpcomingPayables();
 
   return (
     <FinancialChartCard
@@ -29,16 +32,16 @@ export function UpcomingPayables({ onTabChange }: Props) {
         <button
           type="button"
           onClick={() => onTabChange("payables")}
-          className="rounded-xl border border-[rgba(13,31,60,0.2)] px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[#0d1f3c] transition hover:border-accent/30"
+          className={adminOutlineButtonClass}
         >
           Ver Contas a Pagar
         </button>
       }
     >
-      <div className="overflow-x-auto rounded-xl ring-1 ring-[rgba(17,17,17,0.06)]">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-[var(--ds-border-subtle)]">
         <table className={inventoryTableClass}>
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={inventoryThFirstClass}>Descrição</th>
               <th className={inventoryThClass}>Categoria</th>
               <th className={inventoryThClass}>Valor</th>
@@ -46,19 +49,31 @@ export function UpcomingPayables({ onTabChange }: Props) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-[rgba(17,17,17,0.05)] last:border-0"
-              >
-                <td className={inventoryTdDescClass}>{row.description}</td>
-                <td className={inventoryTdClass}>{row.category}</td>
-                <td className={`${inventoryTdClass} font-semibold tabular-nums text-[#0d1f3c]`}>
-                  {row.amount}
+            {rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-8 text-center text-sm text-[var(--ds-text-muted)]"
+                >
+                  Nenhum vencimento pendente.
                 </td>
-                <td className={inventoryTdFirstClass}>{row.dueDate}</td>
               </tr>
-            ))}
+            ) : (
+              rows.map((row) => (
+                <tr key={row.id} className={adminTableBodyRowClass}>
+                  <td className={inventoryTdDescClass}>{row.description}</td>
+                  <td className={inventoryTdClass}>{row.category}</td>
+                  <td
+                    className={`${inventoryTdClass} font-semibold tabular-nums text-[var(--ds-text-primary)]`}
+                  >
+                    {row.amount}
+                  </td>
+                  <td className={`${inventoryTdFirstClass} ${adminTableCellClass}`}>
+                    {row.dueDate}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

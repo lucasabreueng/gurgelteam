@@ -1,11 +1,9 @@
-import { NextResponse } from "next/server";
-import { ScheduleRepositoryMock } from "@/repositories/schedule/ScheduleRepositoryMock";
+import type { NextRequest } from "next/server";
+
+import { handleLegacyAdminScheduleEvents } from "@/lib/server/api/legacy-admin-schedule-handlers";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    data: ScheduleRepositoryMock.getEvents(),
-  });
+export async function GET(request: NextRequest) {
+  return handleLegacyAdminScheduleEvents(request);
 }

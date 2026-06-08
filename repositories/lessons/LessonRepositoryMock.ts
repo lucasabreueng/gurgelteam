@@ -1,5 +1,5 @@
 import {
-  LESSON_SESSIONS,
+  buildLessonSessionsFromEvents,
   NOTE_TEMPLATES,
   TELEMETRY_SESSION_OPTIONS,
   getPilotRecentSessions,
@@ -12,6 +12,7 @@ import type {
   LessonNoteTemplateDTO,
   PilotRecentSessionDTO,
 } from "@/lib/contracts/lessons/lesson-registration.types";
+import { getMergedScheduleEvents } from "@/lib/schedule-runtime-store";
 import { ScheduleRepositoryMock } from "@/repositories/schedule/ScheduleRepositoryMock";
 import { applyStatusOverrides, getLessonRegistration, saveLessonRegistration } from "@/lib/lesson-registration-store";
 import type { LessonSessionDTO, LessonRegistrationQueryDTO } from "@/lib/contracts/lessons/lesson.types";
@@ -46,7 +47,7 @@ function toLessonSessionDTO(s: LessonSession): LessonSessionDTO {
     avatar: s.avatar,
     category: s.category,
     typeLabel: s.typeLabel,
-    instructorName: s.instructorName,
+    registeredByName: s.registeredByName,
     kartNumber: s.kartNumber,
     status: mapLegacyStatus(s.status),
     objective: s.objective,
@@ -75,7 +76,8 @@ export const LessonRepositoryMock = {
   },
 
   getSessionsWithOverrides(): LessonSessionDTO[] {
-    const withOverrides = applyStatusOverrides(LESSON_SESSIONS);
+    const sessions = buildLessonSessionsFromEvents(getMergedScheduleEvents());
+    const withOverrides = applyStatusOverrides(sessions);
     return withOverrides.map(toLessonSessionDTO);
   },
 

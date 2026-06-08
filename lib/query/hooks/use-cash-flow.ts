@@ -16,7 +16,8 @@ export function useCashFlowDataset(filter: CashFlowPeriodFilter) {
 export function useCashFlowKpis() {
   return useQuery({
     queryKey: queryKeys.cashFlow.kpis(),
-    queryFn: () =>
-      getAppServices().cashFlow.getCashFlowDataset({ key: "current-month" }).summaryKpis,
+    queryFn: async () =>
+      (await getAppServices().cashFlow.getCashFlowDataset({ key: "current-month" }))
+        .summaryKpis,
   });
 }

@@ -6,7 +6,7 @@ import type {
   CashFlowPeriodFilter,
 } from "@/lib/contracts/cashflow";
 
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
 
@@ -107,7 +107,7 @@ export function CashFlowEvolutionChart({
       subtitle={`${periodLabel} — entradas, saídas e saldo acumulado (R$ mil)`}
       className="w-full"
     >
-      <ReactECharts option={option} style={{ height: 320 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 320 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }

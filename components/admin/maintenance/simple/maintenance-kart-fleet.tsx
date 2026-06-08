@@ -8,7 +8,14 @@ import {
   HiWrench,
 } from "react-icons/hi2";
 import type { MaintenanceFleetKart } from "@/lib/contracts/maintenance/simple";
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import {
+  adminTableActionButtonClass,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 import { MaintenanceKartStatusBadge } from "./maintenance-kart-status-badge";
 import { MaintenanceTablePagination } from "../maintenance-table-pagination";
 
@@ -25,6 +32,55 @@ type Props = {
   onNewMaintenance: (kartId: string) => void;
 };
 
+function PreventiveMaintenanceCell({
+  kart,
+}: {
+  kart: MaintenanceFleetKart;
+}) {
+  const { mostUrgent } = kart.preventiveMaintenance;
+  const tone = mostUrgent.overdue
+    ? "text-red-700"
+    : mostUrgent.hoursRemaining <= 2
+      ? "text-amber-800"
+      : "text-[#0d1f3c]";
+
+  return (
+    <div className="min-w-[180px]">
+      <p className={`text-[13px] font-semibold leading-snug ${tone}`}>
+        {mostUrgent.displayLabel}
+      </p>
+      <p className="mt-0.5 text-[11px] text-neutral-500">
+        Motor: {kart.engineHours.toLocaleString("pt-BR")}h · próx. em{" "}
+        {mostUrgent.nextDueHours.toLocaleString("pt-BR")}h
+      </p>
+    </div>
+  );
+}
+
+function CorrectiveMaintenanceCell({
+  kart,
+}: {
+  kart: MaintenanceFleetKart;
+}) {
+  const { correctiveMaintenance } = kart;
+  if (correctiveMaintenance.status === "none") {
+    return <span className="text-neutral-500">—</span>;
+  }
+
+  const tone =
+    correctiveMaintenance.status === "checklist_aberto"
+      ? "text-amber-900 bg-amber-50 ring-amber-200/60"
+      : "text-sky-900 bg-sky-50 ring-sky-200/60";
+
+  return (
+    <span
+      className={`inline-flex max-w-[220px] rounded-lg px-2 py-1 text-[11px] font-semibold leading-snug ring-1 ${tone}`}
+    >
+      {correctiveMaintenance.label}
+    </span>
+  );
+}
+
 function KartActions({
   kartId,
   onViewHistory,
@@ -39,8 +95,8 @@ function KartActions({
   compact?: boolean;
 }) {
   const btn = compact
-    ? "flex h-9 flex-1 items-center justify-center gap-1 rounded-lg border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wide text-[#0d1f3c]"
-    : "flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-[#0d1f3c]/5 hover:text-[#0d1f3c]";
+    ? "flex h-9 flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--ds-border)] bg-[var(--ds-bg-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ds-text-primary)]"
+    : adminTableActionButtonClass;
 
   return (
     <div className={compact ? "mt-2 flex gap-1.5" : "flex items-center justify-end gap-1"}>
@@ -90,28 +146,28 @@ export function MaintenanceKartFleet({
   onNewInspection,
   onNewMaintenance,
 }: Props) {
+  const formatCurrency = getAppServices().maintenance.formatCurrency;
+
   return (
     <div>
-      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
-        <div className="overflow-x-auto rounded-t-2xl">
-          <table className="w-full min-w-[900px] text-left text-sm">
+      <div className={`hidden lg:block ${adminTableWrapClass}`}>
+        <div className={adminTableScrollClass}>
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead>
-              <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <tr className={adminTableHeadRowClass}>
                 <th className="px-4 py-3.5">Kart</th>
                 <th className="px-3 py-3.5">Status</th>
                 <th className="px-3 py-3.5">Última inspeção</th>
                 <th className="px-3 py-3.5">Última manutenção</th>
-                <th className="px-3 py-3.5">Próxima revisão</th>
+                <th className="px-3 py-3.5">Manutenção preventiva</th>
+                <th className="px-3 py-3.5">Manutenção corretiva</th>
                 <th className="px-3 py-3.5">Custo no mês</th>
                 <th className="px-4 py-3.5 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {karts.map((kart) => (
-                <tr
-                  key={kart.id}
-                  className="border-b border-[rgba(17,17,17,0.05)] last:border-0 hover:bg-[#fafbfc]/80"
-                >
+                <tr key={kart.id} className={adminTableBodyRowClass}>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl ring-2 ring-white shadow-sm">
@@ -137,11 +193,14 @@ export function MaintenanceKartFleet({
                   <td className="px-3 py-3.5 text-neutral-700">
                     {kart.lastMaintenance}
                   </td>
-                  <td className="px-3 py-3.5 font-medium text-[#0d1f3c]">
-                    {kart.nextRevision}
+                  <td className="px-3 py-3.5">
+                    <PreventiveMaintenanceCell kart={kart} />
+                  </td>
+                  <td className="px-3 py-3.5">
+                    <CorrectiveMaintenanceCell kart={kart} />
                   </td>
                   <td className="px-3 py-3.5 font-semibold tabular-nums text-[#0d1f3c]">
-                    {MaintenanceServiceMock.formatCurrency(kart.monthlyCostCents)}
+                    {formatCurrency(kart.monthlyCostCents)}
                   </td>
                   <td className="px-4 py-3.5">
                     <KartActions
@@ -198,31 +257,37 @@ export function MaintenanceKartFleet({
                         </span>
                         <MaintenanceKartStatusBadge status={kart.status} />
                       </div>
-                      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                      <dl className="mt-2 grid grid-cols-1 gap-y-2 text-[11px]">
+                        <div className="grid grid-cols-2 gap-x-3">
+                          <div>
+                            <dt className="text-neutral-500">Última inspeção</dt>
+                            <dd className="font-semibold text-[#111]">
+                              {kart.lastInspection}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-neutral-500">Última manutenção</dt>
+                            <dd className="font-semibold text-[#111]">
+                              {kart.lastMaintenance}
+                            </dd>
+                          </div>
+                        </div>
                         <div>
-                          <dt className="text-neutral-500">Última inspeção</dt>
-                          <dd className="font-semibold text-[#111]">
-                            {kart.lastInspection}
+                          <dt className="text-neutral-500">Manutenção preventiva</dt>
+                          <dd className="mt-0.5">
+                            <PreventiveMaintenanceCell kart={kart} />
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-neutral-500">Última manutenção</dt>
-                          <dd className="font-semibold text-[#111]">
-                            {kart.lastMaintenance}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-neutral-500">Próxima revisão</dt>
-                          <dd className="font-semibold text-[#111]">
-                            {kart.nextRevision}
+                          <dt className="text-neutral-500">Manutenção corretiva</dt>
+                          <dd className="mt-0.5">
+                            <CorrectiveMaintenanceCell kart={kart} />
                           </dd>
                         </div>
                         <div>
                           <dt className="text-neutral-500">Custo no mês</dt>
                           <dd className="font-bold tabular-nums text-[#0d1f3c]">
-                            {MaintenanceServiceMock.formatCurrency(
-                              kart.monthlyCostCents,
-                            )}
+                            {formatCurrency(kart.monthlyCostCents)}
                           </dd>
                         </div>
                       </dl>

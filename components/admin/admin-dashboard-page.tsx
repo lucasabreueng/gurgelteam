@@ -17,6 +17,8 @@ import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { OperationalAgenda } from "./operational-agenda";
 import { StudentsOverview } from "./students-overview";
 import { KartStatusGrid } from "./kart-status-grid";
+import { AdminDashboardSkeleton } from "./admin-page-skeletons";
+import { AdminErrorState } from "./admin-error-state";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -42,7 +44,13 @@ const KPI_ICONS: Record<string, IconType> = {
 };
 
 export function AdminDashboardPage() {
-  const { data: dashboardKpis = [] } = useDashboardKpis();
+  const {
+    data: dashboardKpis = [],
+    isPending: kpisLoading,
+    isError: kpisError,
+    refetch: refetchDashboard,
+  } = useDashboardKpis();
+  const isPageLoading = kpisLoading;
   const router = useRouter();
   const [activeNav, setActiveNav] = useState<AdminNavKey>("dashboard");
 
@@ -74,6 +82,16 @@ export function AdminDashboardPage() {
       mobileTitle="Dashboard"
       pageHeader={<DashboardHeader />}
     >
+      {kpisError ? (
+        <AdminErrorState
+          onRetry={() => {
+            void refetchDashboard();
+          }}
+        />
+      ) : isPageLoading ? (
+        <AdminDashboardSkeleton />
+      ) : (
+        <>
       <section id="section-dashboard" className="scroll-mt-28 min-w-0">
         <AdminResponsiveKpis
           kpis={dashboardKpis}
@@ -96,6 +114,8 @@ export function AdminDashboardPage() {
       <section id="section-karts" className="scroll-mt-28">
         <KartStatusGrid />
       </section>
+        </>
+      )}
     </AdminShell>
   );
 }

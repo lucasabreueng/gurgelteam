@@ -1,0 +1,18 @@
+---
+description: Retomar trabalho em chat novo — ler handoff antes de implementar
+alwaysApply: true
+---
+
+# Continuidade entre sessões
+
+Ao iniciar trabalho neste repositório:
+
+1. Leia **`docs/SESSION_HANDOFF.md`** (contexto da última sessão, quick start, armadilhas).
+2. Consulte **`docs/MIGRATION_STATUS.md`** para matriz mock vs HTTP.
+3. Para validação manual, use **`docs/VALIDATION_CHECKLIST.md`**.
+
+Credenciais demo: `ana.silva@gurgelteam.com.br` / `Gurgel@123` (admin) · `piloto@gurgelteam.com.br` / `Gurgel@123` (piloto) com `NEXT_PUBLIC_DATA_SOURCE=http`.
+
+Se admin retornar 403 no dashboard: `npm run repair:staff-permissions` e relogin.
+
+Área piloto: `/piloto/reservar` (consulta horários); POST confirmar reserva ainda pendente — ver `SESSION_HANDOFF.md` §9.

@@ -11,6 +11,12 @@ import {
   formatTimeHundredths,
   parseTimeHundredths,
 } from "@/lib/plan-package-utils";
+import {
+  adminAccordionItemClass,
+  adminAccordionPanelClass,
+  adminAccordionTitleClass,
+  adminAccordionTriggerIconClass,
+} from "@/lib/design";
 import { ConfirmDialog } from "./confirm-dialog";
 import { SettingsSection, settingsInputClass } from "./settings-section";
 
@@ -257,11 +263,7 @@ export function CategoriesLevelsPanel({
               return (
                 <li
                   key={level.id}
-                  className={`overflow-hidden rounded-2xl border transition ${
-                    isOpen
-                      ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                      : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-                  }`}
+                  className={adminAccordionItemClass(isOpen)}
                 >
                   <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
                     <button
@@ -271,11 +273,7 @@ export function CategoriesLevelsPanel({
                       aria-controls={panelId}
                       onClick={() => toggleLevel(level.id)}
                       disabled={categories.length === 0}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                        isOpen
-                          ? "bg-accent text-white"
-                          : "bg-[rgba(13,31,60,0.07)] text-accent"
-                      } disabled:opacity-40`}
+                      className={`${adminAccordionTriggerIconClass(isOpen)} disabled:opacity-40`}
                     >
                       <HiChevronDown
                         className={`h-5 w-5 transition-transform duration-200 ${

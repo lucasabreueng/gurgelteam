@@ -7,6 +7,8 @@ import { HiEye, HiEyeSlash } from "react-icons/hi2";
 import { FieldError } from "@/components/cadastro/field-error";
 import { PasswordRulesTooltip } from "@/components/cadastro/password-rules-tooltip";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
+import { apiFetch } from "@/lib/api/http-client";
+import { v1ApiPaths } from "@/lib/api/v1-api-paths";
 import { PasswordChangedDialog } from "./password-changed-dialog";
 
 const labelClassName =
@@ -50,17 +52,40 @@ export function ResetPasswordForm() {
     setPassword(value.replace(/\s/g, ""));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     if (!passwordValid || !passwordsMatch) return;
 
+    const token = AuthServiceMock.getRecoveryToken();
+    if (!token) {
+      router.push("/recuperar-senha");
+      return;
+    }
+
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+
+    const result = await apiFetch<{ ok: true }>(
+      v1ApiPaths.auth.passwordRecoveryReset,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          token,
+          password,
+          confirmPassword,
+        }),
+      },
+    );
+
+    setLoading(false);
+
+    if (result.success || result.error?.httpStatus === 503) {
       AuthServiceMock.clearRecoveryVerified();
       setShowSuccess(true);
-    }, 500);
+      return;
+    }
+
+    setSubmitted(true);
   };
 
   const handleSuccessContinue = () => {

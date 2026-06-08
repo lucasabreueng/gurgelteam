@@ -23,9 +23,15 @@ const KPI_ICONS: Record<string, IconType> = {
 
 const TONE_STYLES: Record<CashFlowKpiTone, { icon: string; value: string }> = {
   neutral: { icon: "", value: "" },
-  positive: { icon: "bg-emerald-50 text-emerald-700", value: "text-emerald-800" },
-  negative: { icon: "bg-red-50 text-red-700", value: "text-red-800" },
-  accent: { icon: "bg-[#0d1f3c] text-white", value: "" },
+  positive: {
+    icon: "bg-[var(--ds-success-bg)] text-[var(--ds-success-text)]",
+    value: "text-[var(--ds-success-text)]",
+  },
+  negative: {
+    icon: "bg-[var(--ds-error-bg)] text-[var(--ds-error-text)]",
+    value: "text-[var(--ds-error-text)]",
+  },
+  accent: { icon: "bg-accent text-white", value: "" },
 };
 
 type Props = {
@@ -54,6 +60,7 @@ export function CashFlowKpiCards({ kpis }: Props) {
       icons={KPI_ICONS}
       defaultIcon={HiWallet}
       desktopClassName="admin-page-grid grid grid-cols-2 xl:grid-cols-5"
+      showDeltaBadge={false}
     />
   );
 }

@@ -1,47 +1,5 @@
-import type {
-  MaintenanceOrderListItem,
-  MaintenanceTabKey,
-} from "@/lib/contracts/maintenance";
-import { MaintenanceRepositoryMock } from "@/repositories/maintenance/MaintenanceRepositoryMock";
-
-export const MaintenanceServiceMock = {
-  getKpis: () => MaintenanceRepositoryMock.getKpis(),
-  getOrders: () => MaintenanceRepositoryMock.getOrders(),
-  getAlerts: () => MaintenanceRepositoryMock.getAlerts(),
-  getPageMetrics: () => MaintenanceRepositoryMock.getPageMetrics(),
-  getTablePageSizes: () => MaintenanceRepositoryMock.getTablePageSizes(),
-  getFilterPriorities: () => MaintenanceRepositoryMock.getFilterPriorities(),
-  getFilterStatuses: () => MaintenanceRepositoryMock.getFilterStatuses(),
-  getFilterTypes: () => MaintenanceRepositoryMock.getFilterTypes(),
-  getMechanics: () => MaintenanceRepositoryMock.getMechanics(),
-  getKartCategories: () => MaintenanceRepositoryMock.getKartCategories(),
-  getStatusLabels: () => MaintenanceRepositoryMock.getStatusLabels(),
-  getPriorityLabels: () => MaintenanceRepositoryMock.getPriorityLabels(),
-  getTypeLabels: () => MaintenanceRepositoryMock.getTypeLabels(),
-  getFlowStatuses: () => MaintenanceRepositoryMock.getFlowStatuses(),
-  getHistoryLines: () => MaintenanceRepositoryMock.getHistoryLines(),
-  getDetail: MaintenanceRepositoryMock.getDetail,
-  filterOrdersByTab: (
-    orders: MaintenanceOrderListItem[],
-    tab: MaintenanceTabKey,
-  ) => MaintenanceRepositoryMock.filterOrdersByTab(orders, tab),
-  getSimpleKpis: () => MaintenanceRepositoryMock.getSimpleKpis(),
-  getSimpleFleet: () => MaintenanceRepositoryMock.getSimpleFleet(),
-  getRecentActivity: () => MaintenanceRepositoryMock.getRecentActivity(),
-  getResponsibles: () => MaintenanceRepositoryMock.getResponsibles(),
-  getSimpleFilterOptions: () => MaintenanceRepositoryMock.getSimpleFilterOptions(),
-  getKartHistory: MaintenanceRepositoryMock.getKartHistory,
-  getKartById: MaintenanceRepositoryMock.getKartById,
-  formatCurrency: MaintenanceRepositoryMock.formatCurrency,
-  filterFleet: MaintenanceRepositoryMock.filterFleet,
-  filterInspectionsList: MaintenanceRepositoryMock.filterInspectionsList,
-  filterMaintenancesList: MaintenanceRepositoryMock.filterMaintenancesList,
-  filterChecklistsList: MaintenanceRepositoryMock.filterChecklistsList,
-  getMaintenancePageTabs: MaintenanceRepositoryMock.getMaintenancePageTabs,
-  getInspectionsList: MaintenanceRepositoryMock.getInspectionsList,
-  getMaintenancesList: MaintenanceRepositoryMock.getMaintenancesList,
-  getChecklistHistory: MaintenanceRepositoryMock.getChecklistHistory,
-  getChecklistRecordById: MaintenanceRepositoryMock.getChecklistRecordById,
-  getKartTechnicalTimeline: MaintenanceRepositoryMock.getKartTechnicalTimeline,
-  getCompleteChecklistTemplate: MaintenanceRepositoryMock.getCompleteChecklistTemplate,
-};
+export {
+  createMaintenanceService,
+  MaintenanceServiceMock,
+  type MaintenanceService,
+} from "./maintenanceService";

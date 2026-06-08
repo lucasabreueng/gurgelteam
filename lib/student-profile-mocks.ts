@@ -8,10 +8,14 @@ export type AccountRole = "piloto" | "responsavel";
 
 export type ProfileId = string;
 
+export type SessionDeviceKind = "desktop" | "mobile" | "tablet";
+
 export type ActiveSession = {
   id: string;
   device: string;
-  location: string;
+  deviceKind?: SessionDeviceKind;
+  browser?: string;
+  location?: string;
   lastActive: string;
   current?: boolean;
 };
@@ -52,6 +56,7 @@ export type StudentUserProfile = {
   /** Aceito no cadastro ou posteriormente no perfil */
   mediaConsentAccepted: boolean;
   mediaAcceptedAt: string;
+  mediaRevokedAt: string;
   guardian?: GuardianInfo;
   /** Conta de responsável que também compete como piloto */
   alsoPilot?: boolean;
@@ -67,14 +72,24 @@ export type LinkedPilotCard = {
   fullName: string;
   avatarUrl: string;
   category: string;
+  level: string;
   nextTraining: string;
+  bestTime: string;
 };
 
+export type ProfileLegalDocuments = Partial<
+  Record<
+    "privacy" | "terms" | "media",
+    { title: string; body: string }
+  >
+>;
+
 export type StudentAccountBundle = {
-  kind: "piloto" | "responsavel";
+  kind: "piloto";
   selfId: ProfileId;
   profiles: Record<ProfileId, StudentUserProfile>;
   linkedPilots?: LinkedPilotCard[];
+  legalDocuments?: ProfileLegalDocuments;
 };
 
 export const PROFILE_CATEGORIES = [
@@ -101,9 +116,9 @@ export function getLevelLabel(value: string): string {
   return PROFILE_LEVELS.find((l) => l.value === value)?.label ?? value;
 }
 
-/** Exibe seção e dados de piloto (piloto ou responsável que também pilota) */
-export function shouldShowPilotData(profile: StudentUserProfile): boolean {
-  return profile.role === "piloto" || Boolean(profile.alsoPilot);
+/** Exibe seção e dados de piloto */
+export function shouldShowPilotData(_profile: StudentUserProfile): boolean {
+  return true;
 }
 
 /**
@@ -132,6 +147,14 @@ export function formatBirthDateDisplay(isoDate: string): string {
   const d = parseISO(isoDate);
   if (!isValid(d)) return isoDate;
   return format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+}
+
+/** Data de nascimento no perfil (dd/mm/aaaa). */
+export function formatBirthDateBrazil(isoDate: string): string {
+  if (!isoDate) return "—";
+  const d = parseISO(isoDate);
+  if (!isValid(d)) return isoDate;
+  return format(d, "dd/MM/yyyy");
 }
 
 export function getProfileNavSections(options: {
@@ -194,22 +217,31 @@ export function getAgeFromBirthDate(isoDate: string): number | null {
 
 export function isMinorProfile(profile: StudentUserProfile): boolean {
   const age = getAgeFromBirthDate(profile.birthDate);
-  return age !== null && age < 14;
+  return age !== null && age < 18;
 }
 
 const SESSIONS_MOCK: ActiveSession[] = [
   {
     id: "s1",
-    device: "Chrome · Windows",
-    location: "Brasília, DF",
-    lastActive: "Agora",
+    device: "Windows",
+    deviceKind: "desktop",
+    browser: "Chrome",
+    lastActive: "Hoje, 14:32",
     current: true,
   },
   {
     id: "s2",
-    device: "Safari · iPhone",
-    location: "Brasília, DF",
-    lastActive: "Há 2 dias",
+    device: "iPhone",
+    deviceKind: "mobile",
+    browser: "Safari",
+    lastActive: "Seg., 10/06 · 09:15",
+  },
+  {
+    id: "s3",
+    device: "iPad",
+    deviceKind: "tablet",
+    browser: "Safari",
+    lastActive: "Dom., 08/06 · 18:40",
   },
 ];
 
@@ -221,6 +253,7 @@ const GUARDIAN_INFO: GuardianInfo = {
 };
 
 const PROFILE_DEFAULTS = {
+  state: "DF",
   weightKg: "",
   heightCm: "",
   notifyWhatsapp: true,
@@ -231,6 +264,7 @@ const PROFILE_DEFAULTS = {
   termsAcceptedAt: "12/03/2024",
   mediaConsentAccepted: false,
   mediaAcceptedAt: "",
+  mediaRevokedAt: "",
 } as const satisfies Partial<StudentUserProfile>;
 
 function formatAcceptedDate(): string {
@@ -240,7 +274,17 @@ function formatAcceptedDate(): string {
   return `${day}/${month}/${d.getFullYear()}`;
 }
 
+function formatConsentDateTime(date = new Date()): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} às ${hours}:${minutes}`;
+}
+
 export { formatAcceptedDate as formatProfileAcceptedDate };
+export { formatConsentDateTime as formatProfileConsentDateTime };
 
 function baseProfile(
   partial: Partial<StudentUserProfile> & Pick<StudentUserProfile, "id">
@@ -251,10 +295,30 @@ function baseProfile(
   } as StudentUserProfile;
 }
 
-/** Conta piloto adulto (sem seletor de perfis) */
+/** Conta piloto adulto com pilotos vinculados */
 export const PILOT_ADULT_ACCOUNT: StudentAccountBundle = {
   kind: "piloto",
   selfId: "pilot-lucas",
+  linkedPilots: [
+    {
+      profileId: "pilot-theo",
+      fullName: "Theo Mendes",
+      avatarUrl: "/images/team-4.png",
+      category: "Cadete",
+      level: "Intermediário",
+      nextTraining: "Sáb., 24 mai · 14:30",
+      bestTime: "58.432",
+    },
+    {
+      profileId: "pilot-lara",
+      fullName: "Lara Mendes",
+      avatarUrl: "/images/team-2.png",
+      category: "Mirim",
+      level: "Iniciante",
+      nextTraining: "Dom., 25 mai · 10:00",
+      bestTime: "1:02.180",
+    },
+  ],
   profiles: {
     "pilot-lucas": baseProfile({
       id: "pilot-lucas",
@@ -279,14 +343,6 @@ export const PILOT_ADULT_ACCOUNT: StudentAccountBundle = {
       emergencyPhone: "(61) 99876-5432",
       emergencyRelation: "Mãe",
     }),
-  },
-};
-
-/** Piloto menor de 14 anos — exibe card do responsável */
-export const PILOT_MINOR_ACCOUNT: StudentAccountBundle = {
-  kind: "piloto",
-  selfId: "pilot-theo",
-  profiles: {
     "pilot-theo": baseProfile({
       id: "pilot-theo",
       role: "piloto",
@@ -295,72 +351,7 @@ export const PILOT_MINOR_ACCOUNT: StudentAccountBundle = {
       lastName: "Mendes",
       email: "theo.mendes@email.com",
       phone: "(61) 99876-5432",
-      birthDate: "2014-08-22",
-      cpf: "987.654.321-00",
-      city: "Brasília",
-      state: "DF",
-      mainCategory: "cadete",
-      experienceLevel: "iniciante",
-      favoriteNumber: "12",
-      guardian: GUARDIAN_INFO,
-      emergencyName: "Mariana Mendes",
-      emergencyPhone: "(61) 99876-5432",
-      emergencyRelation: "Mãe",
-    }),
-  },
-};
-
-/** Conta responsável com pilotos vinculados */
-export const GUARDIAN_ACCOUNT: StudentAccountBundle = {
-  kind: "responsavel",
-  selfId: "guardian-mariana",
-  linkedPilots: [
-    {
-      profileId: "pilot-theo",
-      fullName: "Theo Mendes",
-      avatarUrl: "/images/team-4.png",
-      category: "Cadete",
-      nextTraining: "Sáb., 24 mai · 14:30",
-    },
-    {
-      profileId: "pilot-lara",
-      fullName: "Lara Mendes",
-      avatarUrl: "/images/team-2.png",
-      category: "Mirim",
-      nextTraining: "Dom., 25 mai · 10:00",
-    },
-  ],
-  profiles: {
-    "guardian-mariana": baseProfile({
-      id: "guardian-mariana",
-      role: "responsavel",
-      alsoPilot: true,
-      avatarUrl: "/images/team-1.png",
-      firstName: "Mariana",
-      lastName: "Mendes",
-      email: "mariana.mendes@email.com",
-      phone: "(61) 99876-5432",
-      birthDate: "1985-03-10",
-      cpf: "456.789.123-00",
-      city: "Brasília",
-      state: "DF",
-      mainCategory: "f400",
-      experienceLevel: "intermediario",
-      favoriteNumber: "15",
-      googleConnected: false,
-      emergencyName: "Carlos Mendes",
-      emergencyPhone: "(61) 98765-4321",
-      emergencyRelation: "Cônjuge",
-    }),
-    "pilot-theo": baseProfile({
-      id: "pilot-theo",
-      role: "piloto",
-      avatarUrl: "/images/team-4.png",
-      firstName: "Theo",
-      lastName: "Mendes",
-      email: "theo.mendes@email.com",
-      phone: "(61) 99876-5432",
-      birthDate: "2014-08-22",
+      birthDate: "2010-08-22",
       cpf: "987.654.321-00",
       city: "Brasília",
       state: "DF",
@@ -380,7 +371,7 @@ export const GUARDIAN_ACCOUNT: StudentAccountBundle = {
       lastName: "Mendes",
       email: "lara.mendes@email.com",
       phone: "(61) 99876-5432",
-      birthDate: "2016-11-05",
+      birthDate: "2012-11-05",
       cpf: "111.222.333-44",
       city: "Brasília",
       state: "DF",
@@ -395,38 +386,70 @@ export const GUARDIAN_ACCOUNT: StudentAccountBundle = {
   },
 };
 
-export type ProfileDemoKey = "responsavel" | "piloto" | "menor";
+/** Piloto menor de 18 anos — exibe dados do responsável */
+export const PILOT_MINOR_ACCOUNT: StudentAccountBundle = {
+  kind: "piloto",
+  selfId: "pilot-theo",
+  profiles: {
+    "pilot-theo": baseProfile({
+      id: "pilot-theo",
+      role: "piloto",
+      avatarUrl: "/images/team-4.png",
+      firstName: "Theo",
+      lastName: "Mendes",
+      email: "theo.mendes@email.com",
+      phone: "(61) 99876-5432",
+      birthDate: "2010-08-22",
+      cpf: "987.654.321-00",
+      city: "Brasília",
+      state: "DF",
+      mainCategory: "cadete",
+      experienceLevel: "iniciante",
+      favoriteNumber: "12",
+      guardian: GUARDIAN_INFO,
+      emergencyName: "Mariana Mendes",
+      emergencyPhone: "(61) 99876-5432",
+      emergencyRelation: "Mãe",
+    }),
+  },
+};
 
-export function getProfileAccount(demo: ProfileDemoKey = "responsavel"): StudentAccountBundle {
+export type ProfileDemoKey = "piloto" | "menor";
+
+export function getProfileAccount(demo: ProfileDemoKey = "piloto"): StudentAccountBundle {
   switch (demo) {
-    case "piloto":
-      return structuredClone(PILOT_ADULT_ACCOUNT);
     case "menor":
       return structuredClone(PILOT_MINOR_ACCOUNT);
     default:
-      return structuredClone(GUARDIAN_ACCOUNT);
+      return structuredClone(PILOT_ADULT_ACCOUNT);
   }
 }
 
 export function getSwitcherOptions(account: StudentAccountBundle) {
-  if (account.kind !== "responsavel" || !account.linkedPilots) return [];
   const self = account.profiles[account.selfId];
-  return [
+  if (!self) return [];
+
+  const options = [
     {
       id: account.selfId,
       label: formatProfileName(self),
-      sublabel: "Responsável",
+      sublabel: "Meu perfil",
       avatarUrl: self.avatarUrl,
-      role: "responsavel" as const,
-    },
-    ...account.linkedPilots.map((p) => ({
-      id: p.profileId,
-      label: p.fullName,
-      sublabel: p.category,
-      avatarUrl: p.avatarUrl,
       role: "piloto" as const,
-    })),
+    },
   ];
+
+  for (const pilot of account.linkedPilots ?? []) {
+    options.push({
+      id: pilot.profileId,
+      label: pilot.fullName,
+      sublabel: pilot.category,
+      avatarUrl: pilot.avatarUrl,
+      role: "piloto" as const,
+    });
+  }
+
+  return options;
 }
 
 export { formatCpf };

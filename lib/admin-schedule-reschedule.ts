@@ -11,6 +11,10 @@ import {
   SCHEDULE_EVENTS,
   type ScheduleEvent,
 } from "./admin-schedule-mocks";
+import {
+  formatScheduleCategoryLabels,
+  slotMatchesAnyCategory,
+} from "@/lib/schedule/schedule-slot-selection";
 
 export type RescheduleSlotOption = {
   slot: ScheduleTimeSlot;
@@ -19,8 +23,8 @@ export type RescheduleSlotOption = {
   reason?: string;
 };
 
-function categoryName(categoryId: string): string {
-  return KART_CATEGORIES.find((c) => c.id === categoryId)?.name ?? categoryId;
+function categoryName(categoryIds: string[]): string {
+  return formatScheduleCategoryLabels(categoryIds, KART_CATEGORIES);
 }
 
 function eventCategoryToSlotIds(category?: string): string[] {
@@ -68,13 +72,12 @@ export function getRescheduleSlotOptions(
 ): RescheduleSlotOption[] {
   let slots = getAllScheduleSlotsForDate(date);
   if (pilotCategoryIds && pilotCategoryIds.length > 0) {
-    const allowed = new Set(pilotCategoryIds);
-    slots = slots.filter((s) => allowed.has(s.categoryId));
+    slots = slots.filter((s) => slotMatchesAnyCategory(s, pilotCategoryIds));
   }
   const blocked = getBlockedSlotIdsForDate(date);
 
   return slots.map((slot) => {
-    const label = `${slot.start} – ${slot.end} · ${categoryName(slot.categoryId)}`;
+    const label = `${slot.start} – ${slot.end} · ${categoryName(slot.categoryIds)}`;
     if (blocked.has(slot.id)) {
       return { slot, label, available: false, reason: "Horário bloqueado" };
     }

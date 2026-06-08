@@ -10,6 +10,15 @@ import { useCallback, useState } from "react";
 import { HiChevronDown } from "react-icons/hi2";
 
 import {
+  adminAccordionItemClass,
+  adminAccordionPanelClass,
+  adminAccordionSubtitleClass,
+  adminAccordionTitleClass,
+  adminAccordionTriggerIconClass,
+  adminNoteDashedClass,
+  adminTextAccentBoldClass,
+} from "@/lib/design";
+import {
   SettingsField,
   SettingsSection,
   settingsInputClass,
@@ -46,9 +55,9 @@ export function PricesPanel({ prices, onPricesChange, onDirty }: Props) {
       description="Valor da aula avulsa por categoria de kart. As categorias são definidas em Categorias e níveis."
     >
       {prices.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-[rgba(17,17,17,0.12)] bg-[#fafbfc] px-4 py-8 text-center text-sm text-neutral-500">
+        <p className={`px-4 py-8 text-center text-sm text-[var(--ds-text-muted)] ${adminNoteDashedClass}`}>
           Nenhuma categoria cadastrada. Adicione categorias em{" "}
-          <strong className="text-[#0d1f3c]">Categorias e níveis</strong>.
+          <strong className={adminTextAccentBoldClass}>Categorias e níveis</strong>.
         </p>
       ) : (
         <ul className="space-y-3" role="list">
@@ -60,11 +69,7 @@ export function PricesPanel({ prices, onPricesChange, onDirty }: Props) {
             return (
               <li
                 key={row.id}
-                className={`overflow-hidden rounded-2xl border transition ${
-                  isOpen
-                    ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                    : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-                }`}
+                className={adminAccordionItemClass(isOpen)}
               >
                 <button
                   id={triggerId}
@@ -74,13 +79,7 @@ export function PricesPanel({ prices, onPricesChange, onDirty }: Props) {
                   onClick={() => toggleCategory(row.id)}
                   className="flex w-full items-center gap-3 px-3 py-3 text-left md:px-4 md:py-4"
                 >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                      isOpen
-                        ? "bg-accent text-white"
-                        : "bg-[rgba(13,31,60,0.07)] text-accent"
-                    }`}
-                  >
+                  <span className={adminAccordionTriggerIconClass(isOpen)}>
                     <HiChevronDown
                       className={`h-5 w-5 transition-transform duration-200 ${
                         isOpen ? "rotate-180" : ""
@@ -89,10 +88,10 @@ export function PricesPanel({ prices, onPricesChange, onDirty }: Props) {
                     />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-base font-bold text-[#0d1f3c] md:text-lg">
+                    <span className={`block ${adminAccordionTitleClass}`}>
                       {row.name}
                     </span>
-                    <span className="mt-0.5 block text-[12px] text-neutral-500">
+                    <span className={adminAccordionSubtitleClass}>
                       Aula avulsa · {formatCentsToBRL(row.singleLessonPriceCents)}
                     </span>
                   </span>
@@ -105,7 +104,7 @@ export function PricesPanel({ prices, onPricesChange, onDirty }: Props) {
                   hidden={!isOpen}
                   className={isOpen ? "block" : "hidden"}
                 >
-                  <div className="space-y-4 border-t border-[rgba(17,17,17,0.08)] px-4 pb-5 pt-4 md:px-5 md:pb-6">
+                  <div className={`space-y-4 md:pb-6 ${adminAccordionPanelClass}`}>
                     <SettingsField label="Preço da aula avulsa">
                       <input
                         className={settingsInputClass}

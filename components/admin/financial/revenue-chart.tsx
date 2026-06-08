@@ -1,53 +1,57 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+import { useMemo } from "react";
+
+import { ThemedECharts } from "@/components/charts/themed-echarts";
+import { useChartTheme } from "@/lib/hooks/use-chart-theme";
+import { useMonthlyRevenueChart } from "@/lib/query/hooks/use-finance-charts";
 import { FinancialChartCard } from "./financial-chart-card";
 
 export function RevenueChart() {
-  const monthlyRevenueChart = FinancialServiceMock.getMonthlyRevenueChart();
-  const option: EChartsOption = {
-    grid: { left: 44, right: 16, top: 24, bottom: 32 },
-    tooltip: { trigger: "axis" },
-    legend: {
-      bottom: 0,
-      textStyle: { fontSize: 10, color: "#666" },
-    },
-    xAxis: {
-      type: "category",
-      data: monthlyRevenueChart.months,
-      axisLine: { lineStyle: { color: "rgba(17,17,17,0.12)" } },
-      axisLabel: { color: "#666", fontSize: 10 },
-    },
-    yAxis: {
-      type: "value",
-      splitLine: { lineStyle: { color: "rgba(17,17,17,0.06)" } },
-      axisLabel: { color: "#666", fontSize: 10, formatter: "R$ {value}k" },
-    },
-    series: [
-      {
-        name: "Realizado",
-        type: "bar",
-        data: monthlyRevenueChart.revenue,
-        itemStyle: { color: "#0d1f3c", borderRadius: [6, 6, 0, 0] },
-        barMaxWidth: 28,
+  const { data: monthlyRevenueChart } = useMonthlyRevenueChart();
+  const chartTheme = useChartTheme();
+
+  const option: EChartsOption = useMemo(() => {
+    if (!monthlyRevenueChart) return {};
+    return {
+      grid: { left: 44, right: 16, top: 24, bottom: 32 },
+      tooltip: { trigger: "axis" },
+      legend: { bottom: 0, textStyle: { fontSize: 10 } },
+      xAxis: {
+        type: "category",
+        data: monthlyRevenueChart.months,
       },
-      {
-        name: "Previsto",
-        type: "line",
-        smooth: true,
-        data: monthlyRevenueChart.forecast,
-        lineStyle: { color: "var(--color-accent, #c41e3a)", width: 2 },
-        symbol: "circle",
-        symbolSize: 6,
+      yAxis: {
+        type: "value",
+        axisLabel: { fontSize: 10, formatter: "R$ {value}k" },
       },
-    ],
-  };
+      series: [
+        {
+          name: "Realizado",
+          type: "bar",
+          data: monthlyRevenueChart.revenue,
+          itemStyle: { color: chartTheme.line, borderRadius: [6, 6, 0, 0] },
+          barMaxWidth: 28,
+        },
+        {
+          name: "Previsto",
+          type: "line",
+          smooth: true,
+          data: monthlyRevenueChart.forecast,
+          lineStyle: { color: chartTheme.accent, width: 2 },
+          symbol: "circle",
+          symbolSize: 6,
+        },
+      ],
+    };
+  }, [monthlyRevenueChart, chartTheme]);
+
+  if (!monthlyRevenueChart) return null;
 
   return (
     <FinancialChartCard title="Receita mensal" subtitle="Realizado vs. previsto (R$ mil)">
-      <ReactECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
+      <ThemedECharts option={option} style={{ height: 220 }} opts={{ renderer: "svg" }} />
     </FinancialChartCard>
   );
 }

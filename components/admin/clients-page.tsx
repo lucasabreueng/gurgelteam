@@ -2,19 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { IconType } from "react-icons/lib";
 import {
   HiArrowTrendingUp,
-  HiBanknotes,
+  HiCurrencyDollar,
   HiExclamationTriangle,
   HiUsers,
 } from "react-icons/hi2";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { ClientListItem } from "@/lib/contracts/clients";
-import { useClientsKpis, useClientsList } from "@/lib/query/hooks/use-clients";
+import { useClientsKpis, useClientsList, useClientsReference } from "@/lib/query/hooks/use-clients";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { queryKeys } from "@/lib/query/keys";
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 import { exportClientsToExcel } from "@/lib/export-clients-excel";
 import { AdminShell } from "./admin-shell";
+import { ConfirmDialog } from "./settings/confirm-dialog";
 import { ClientProfileDrawer } from "./clients/client-profile-drawer";
 import { ClientEditDrawer } from "./clients/client-edit-drawer";
 import { NewClientDrawer } from "./clients/new-client-drawer";
@@ -24,10 +29,15 @@ import {
   ClientsFilters,
   type ClientsFilterState,
 } from "./clients/clients-filters";
-import { ClientsFiltersSheet } from "./clients/clients-filters-sheet";
 import { ClientsHeader } from "./clients/clients-header";
+import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { EvolutionRanking } from "./clients/evolution-ranking";
+import {
+  AdminKpiStripSkeleton,
+  AdminTableSkeleton,
+} from "./admin-page-skeletons";
+import { AdminErrorState } from "./admin-error-state";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -42,8 +52,9 @@ const KPI_ICONS: Record<string, IconType> = {
   ativos: HiUsers,
   novos: HiArrowTrendingUp,
   retencao: HiArrowTrendingUp,
-  ticket: HiBanknotes,
+  ticket: HiCurrencyDollar,
   risco: HiExclamationTriangle,
+  menores: HiUsers,
 };
 
 const DEFAULT_FILTERS: ClientsFilterState = {
@@ -90,10 +101,21 @@ function countActiveFilters(filters: ClientsFilterState): number {
 }
 
 export function ClientsPage() {
-  const { data: clientsList = [] } = useClientsList();
-  const { data: clientsKpis = [] } = useClientsKpis();
-  const kartCategories = ClientsServiceMock.getKartCategories();
-  const skillLevels = ClientsServiceMock.getSkillLevels();
+  const queryClient = useQueryClient();
+  const { data: clientsList = [], isPending: listLoading, isError: listError, refetch: refetchList } = useClientsList();
+  const { data: clientsKpis = [], isPending: kpisLoading, isError: kpisError, refetch: refetchKpis } = useClientsKpis();
+  const isPageLoading = listLoading || kpisLoading;
+  const isPageError = listError || kpisError;
+  const { data: reference } = useClientsReference();
+  const { canEdit, canDelete } = useModuleAccess("alunos");
+  const kartCategories = useMemo(
+    () => reference?.categories ?? [],
+    [reference?.categories],
+  );
+  const skillLevels = useMemo(
+    () => reference?.skillLevels ?? [],
+    [reference?.skillLevels],
+  );
   const router = useRouter();
   const [filters, setFilters] = useState<ClientsFilterState>(DEFAULT_FILTERS);
   const [profileClientId, setProfileClientId] = useState<string | null>(null);
@@ -103,12 +125,17 @@ export function ClientsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [clientOverrides, setClientOverrides] = useState<
     Record<
       string,
       Partial<Pick<ClientListItem, "categoryIds" | "levelId" | "status">>
     >
   >({});
+  const [lastRegisteredClientId, setLastRegisteredClientId] = useState<
+    string | null
+  >(null);
 
   const onNav = useCallback(
     (key: AdminNavKey) => {
@@ -150,19 +177,44 @@ export function ClientsPage() {
     setPage(1);
   };
 
+  const pendingDeleteClient =
+    resolvedClients.find((c) => c.id === pendingDeleteId) ?? null;
+
+  const handleDelete = async (id: string) => {
+    const target = resolvedClients.find((c) => c.id === id);
+    if (!target) return;
+    setDeleting(true);
+    try {
+      await getAppServices().clients.removeClient(id);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients.list() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients.kpis() });
+      if (profileClientId === id) setProfileClientId(null);
+      if (editClientId === id) setEditClientId(null);
+      setFeedback(`${target.name} foi excluído.`);
+      window.setTimeout(() => setFeedback(null), 5000);
+    } catch (e) {
+      setFeedback(
+        e instanceof Error ? e.message : "Não foi possível excluir o cliente.",
+      );
+      window.setTimeout(() => setFeedback(null), 5000);
+    } finally {
+      setDeleting(false);
+      setPendingDeleteId(null);
+    }
+  };
+
   const handleExport = useCallback(() => {
-    exportClientsToExcel(
-      filteredClients,
-      ClientsServiceMock.getKartCategories(),
-      ClientsServiceMock.getSkillLevels()
+    void exportClientsToExcel(filteredClients, kartCategories, skillLevels).then(
+      () => {
+        setFeedback(
+          filteredClients.length > 0
+            ? `Lista exportada (${filteredClients.length} cliente${filteredClients.length === 1 ? "" : "s"}).`
+            : "Planilha gerada sem registros — ajuste os filtros ou cadastre clientes.",
+        );
+        window.setTimeout(() => setFeedback(null), 5000);
+      },
     );
-    setFeedback(
-      filteredClients.length > 0
-        ? `Lista exportada (${filteredClients.length} cliente${filteredClients.length === 1 ? "" : "s"}).`
-        : "Planilha gerada sem registros — ajuste os filtros ou cadastre clientes."
-    );
-    window.setTimeout(() => setFeedback(null), 5000);
-  }, [filteredClients]);
+  }, [filteredClients, kartCategories, skillLevels]);
 
   return (
     <>
@@ -172,7 +224,7 @@ export function ClientsPage() {
         mobileTitle="Clientes"
         pageHeader={
           <ClientsHeader
-            onNewClient={() => setNewClientOpen(true)}
+            onNewClient={canEdit ? () => setNewClientOpen(true) : undefined}
             onExport={handleExport}
             onOpenFilters={() => setFiltersOpen(true)}
             activeFilterCount={countActiveFilters(filters)}
@@ -188,6 +240,20 @@ export function ClientsPage() {
           </p>
         ) : null}
 
+        {isPageError ? (
+          <AdminErrorState
+            onRetry={() => {
+              void refetchList();
+              void refetchKpis();
+            }}
+          />
+        ) : isPageLoading ? (
+          <>
+            <AdminKpiStripSkeleton count={5} />
+            <AdminTableSkeleton rows={8} />
+          </>
+        ) : (
+          <>
         <AdminResponsiveKpis
           kpis={clientsKpis}
           icons={KPI_ICONS}
@@ -195,17 +261,25 @@ export function ClientsPage() {
           desktopClassName="admin-page-grid grid grid-cols-2 min-[900px]:grid-cols-5"
         />
 
-        <section className="hidden lg:block">
-          <ClientsFilters
-            filters={filters}
-            onChange={(patch) =>
-              setFilters((prev) => ({ ...prev, ...patch }))
-            }
-            onClear={() => setFilters(DEFAULT_FILTERS)}
-            kartCategories={kartCategories}
-            skillLevels={skillLevels}
-          />
-        </section>
+        <ResponsiveTableFilters
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          onClear={() => setFilters(DEFAULT_FILTERS)}
+          resultCount={filteredClients.length}
+          resultUnit="cliente"
+          renderFilters={(layout) => (
+            <ClientsFilters
+              layout={layout}
+              filters={filters}
+              onChange={(patch) =>
+                setFilters((prev) => ({ ...prev, ...patch }))
+              }
+              onClear={() => setFilters(DEFAULT_FILTERS)}
+              kartCategories={kartCategories}
+              skillLevels={skillLevels}
+            />
+          )}
+        />
 
         <section className="hidden lg:block">
           <ClientTable
@@ -218,7 +292,8 @@ export function ClientsPage() {
             onPageChange={setPage}
             onPageSizeChange={handlePageSizeChange}
             onViewProfile={setProfileClientId}
-            onEdit={setEditClientId}
+            onEdit={canEdit ? setEditClientId : undefined}
+            onDelete={canDelete ? setPendingDeleteId : undefined}
           />
         </section>
 
@@ -232,6 +307,8 @@ export function ClientsPage() {
         <section className="hidden rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-6 lg:block md:p-8">
           <EvolutionRanking />
         </section>
+          </>
+        )}
       </AdminShell>
 
       <NewClientDrawer
@@ -239,11 +316,41 @@ export function ClientsPage() {
         onClose={() => setNewClientOpen(false)}
         categories={kartCategories}
         skillLevels={skillLevels}
+        onSuccess={async (payload) => {
+          const client = await ClientsServiceMock.registerClient(payload);
+          setLastRegisteredClientId(client.id);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.clients.list() });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.clients.kpis() });
+          setFeedback(
+            `${client.name} cadastrado. Use "Agendar aula" no perfil ou gere a cobrança.`,
+          );
+          window.setTimeout(() => setFeedback(null), 6000);
+        }}
+        onGenerateCharge={() => {
+          if (!lastRegisteredClientId) return;
+          router.push(`/admin/financeiro?clientId=${lastRegisteredClientId}`);
+        }}
       />
 
       <ClientProfileDrawer
         clientId={profileClientId}
         onClose={() => setProfileClientId(null)}
+        onScheduleClass={(clientId) => {
+          setProfileClientId(null);
+          router.push(`/admin/agenda?studentId=${clientId}`);
+        }}
+        onOpenRegistration={(clientId) => {
+          setProfileClientId(null);
+          router.push(`/admin/registro-aulas?studentId=${clientId}`);
+        }}
+        onGenerateCharge={(clientId) => {
+          setProfileClientId(null);
+          router.push(`/admin/financeiro?clientId=${clientId}`);
+        }}
+        onOpenTelemetry={(clientId) => {
+          setProfileClientId(null);
+          router.push(`/admin/telemetria?studentId=${clientId}`);
+        }}
       />
 
       <ClientEditDrawer
@@ -260,15 +367,20 @@ export function ClientsPage() {
         }}
       />
 
-      <ClientsFiltersSheet
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        filters={filters}
-        onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
-        onClear={() => setFilters(DEFAULT_FILTERS)}
-        resultCount={filteredClients.length}
-        kartCategories={kartCategories}
-        skillLevels={skillLevels}
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Excluir cliente?"
+        message={
+          pendingDeleteClient
+            ? `Tem certeza que deseja excluir ${pendingDeleteClient.name}? Esta ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel={deleting ? "Excluindo…" : "Excluir"}
+        cancelLabel="Cancelar"
+        onConfirm={() => {
+          if (pendingDeleteId) void handleDelete(pendingDeleteId);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
       />
     </>
   );

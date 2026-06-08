@@ -1,5 +1,10 @@
 /** Controle Financeiro — mocks (sem backend) */
 
+import { getMergedReceivables } from "./finance-runtime-store";
+import type { PackageCreditStatus, ReceivableStatus } from "@/lib/contracts/enums";
+
+export type { PackageCreditStatus, ReceivableStatus } from "@/lib/contracts/enums";
+
 export type FinancialKpi = {
   id: string;
   label: string;
@@ -222,7 +227,7 @@ export const REVENUE_SOURCES: RevenueSource[] = [
   },
   {
     key: "eventos",
-    label: "Campeonatos/eventos",
+    label: "Eventos",
     revenue: "R$ 3.200",
     growth: "-2%",
     growthPositive: false,
@@ -306,8 +311,6 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   },
 ];
 
-export type ReceivableStatus = "pago" | "pendente" | "vencido" | "parcial";
-
 export type AccountReceivable = {
   id: string;
   clientId: string;
@@ -371,8 +374,6 @@ export const ACCOUNTS_RECEIVABLE: AccountReceivable[] = [
     service: "Aluguel kart",
   },
 ];
-
-export type PackageCreditStatus = "ativo" | "expirando" | "esgotado";
 
 export type PackageCredit = {
   id: string;
@@ -913,6 +914,10 @@ export const PAYABLE_CATEGORIES = [
   "Motor",
 ] as const;
 
+export function getMergedAccountsReceivable(): AccountReceivable[] {
+  return getMergedReceivables(ACCOUNTS_RECEIVABLE);
+}
+
 export function filterAccountsReceivable(
   items: AccountReceivable[],
   filters: {
@@ -1209,7 +1214,7 @@ export const PAYMENT_SERVICE_OPTIONS = [
   { value: "pacote", label: "Pacote" },
   { value: "aluguel", label: "Aluguel de kart" },
   { value: "manutencao", label: "Manutenção" },
-  { value: "evento", label: "Evento/campeonato" },
+  { value: "evento", label: "Evento" },
 ];
 
 export const PAYMENT_METHOD_OPTIONS = [

@@ -1,7 +1,13 @@
 "use client";
 
 import type { SimpleMaintenanceRow } from "@/lib/contracts/maintenance/complete-checklist";
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
+import {
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 import { MaintenanceTablePagination } from "../maintenance-table-pagination";
 
 const STATUS_LABEL = {
@@ -24,6 +30,7 @@ type Props = {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  onViewDetails?: (orderId: string) => void;
 };
 
 export function MaintenanceMaintenancesTable({
@@ -34,14 +41,17 @@ export function MaintenanceMaintenancesTable({
   totalItems,
   onPageChange,
   onPageSizeChange,
+  onViewDetails,
 }: Props) {
+  const formatCurrency = getAppServices().maintenance.formatCurrency;
+
   return (
     <>
-      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
-        <div className="overflow-x-auto rounded-t-2xl">
+      <div className={`hidden lg:block ${adminTableWrapClass}`}>
+        <div className={adminTableScrollClass}>
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
-              <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              <tr className={adminTableHeadRowClass}>
                 <th className="px-4 py-3.5">Data</th>
                 <th className="px-3 py-3.5">Kart</th>
                 <th className="px-3 py-3.5">Tipo</th>
@@ -55,7 +65,8 @@ export function MaintenanceMaintenancesTable({
               {rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[rgba(17,17,17,0.05)] last:border-0 hover:bg-[#fafbfc]/80"
+                  className={`${adminTableBodyRowClass} ${onViewDetails ? "cursor-pointer" : ""}`}
+                  onClick={onViewDetails ? () => onViewDetails(row.id) : undefined}
                 >
                   <td className="px-4 py-3.5 text-neutral-700">{row.date}</td>
                   <td className="px-3 py-3.5 font-semibold tabular-nums text-[#0d1f3c]">
@@ -76,7 +87,7 @@ export function MaintenanceMaintenancesTable({
                     </span>
                   </td>
                   <td className="px-3 py-3.5 font-semibold tabular-nums">
-                    {MaintenanceServiceMock.formatCurrency(row.costCents)}
+                    {formatCurrency(row.costCents)}
                   </td>
                 </tr>
               ))}
@@ -106,7 +117,19 @@ export function MaintenanceMaintenancesTable({
         ) : (
           mobileRows.map((row) => (
             <li key={row.id}>
-              <article className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm">
+              <article
+                className={`rounded-xl border border-[rgba(17,17,17,0.08)] bg-white p-3 shadow-sm ${onViewDetails ? "cursor-pointer" : ""}`}
+                onClick={onViewDetails ? () => onViewDetails(row.id) : undefined}
+                onKeyDown={
+                  onViewDetails
+                    ? (e) => {
+                        if (e.key === "Enter") onViewDetails(row.id);
+                      }
+                    : undefined
+                }
+                role={onViewDetails ? "button" : undefined}
+                tabIndex={onViewDetails ? 0 : undefined}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-bold text-[#0d1f3c]">
                     Kart {String(row.kartNumber).padStart(2, "0")}
@@ -124,7 +147,7 @@ export function MaintenanceMaintenancesTable({
                   {row.description}
                 </p>
                 <p className="mt-1 text-sm font-bold tabular-nums text-[#0d1f3c]">
-                  {MaintenanceServiceMock.formatCurrency(row.costCents)}
+                  {formatCurrency(row.costCents)}
                 </p>
               </article>
             </li>

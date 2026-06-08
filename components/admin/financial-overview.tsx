@@ -1,7 +1,7 @@
-import { DashboardServiceMock } from "@/services/dashboard/dashboardServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 export function FinancialOverview() {
-  const financial = DashboardServiceMock.getFinancial();
+  const financial = getAppServices().dashboard.getFinancial();
   const items = [
     { label: "Receita mensal", value: financial.monthlyRevenue, highlight: true },
     { label: "Ticket médio", value: financial.ticketAvg },

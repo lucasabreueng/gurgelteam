@@ -1,8 +1,13 @@
 import type { ClientStatus } from "@/lib/contracts/clients";
 
+import {
+  adminBadgeNeutralClass,
+  adminBadgeNeutralStatusClass,
+  adminBadgeSuccessClass,
+} from "@/lib/design";
+
 /** Badge compartilhado para categoria e nível */
-export const clientMetaBadgeClass =
-  "inline-flex rounded-md border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-2 py-0.5 text-[11px] font-semibold uppercase text-[#0d1f3c]";
+export const clientMetaBadgeClass = adminBadgeNeutralClass;
 
 export function ClientLevelBadge({ label }: { label: string }) {
   if (!label || label === "—") {
@@ -14,10 +19,10 @@ export function ClientLevelBadge({ label }: { label: string }) {
 export function statusBadgeClass(status: ClientStatus) {
   switch (status) {
     case "Ativo":
-      return "bg-emerald-50 text-emerald-800 ring-emerald-200/60";
+      return adminBadgeSuccessClass;
     case "Inativo":
     default:
-      return "bg-neutral-100 text-neutral-600 ring-neutral-200/60";
+      return adminBadgeNeutralStatusClass;
   }
 }
 

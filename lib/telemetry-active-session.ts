@@ -1,3 +1,5 @@
+import { isStoredTelemetrySessionId } from "@/lib/telemetry-api-session";
+
 const STORAGE_KEY = "gurgel-telemetry-active-session";
 
 /** Nenhuma sessão selecionada — não exibir dados mockados. */
@@ -7,7 +9,7 @@ export function getStoredTelemetrySessionId(): string {
   if (typeof window === "undefined") return TELEMETRY_NO_SESSION;
   const stored = sessionStorage.getItem(STORAGE_KEY);
   if (!stored) return TELEMETRY_NO_SESSION;
-  if (stored.startsWith("proc-")) return stored;
+  if (isStoredTelemetrySessionId(stored)) return stored;
   sessionStorage.removeItem(STORAGE_KEY);
   return TELEMETRY_NO_SESSION;
 }

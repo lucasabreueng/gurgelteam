@@ -1,34 +1,63 @@
-import type { PackageCreditStatus } from "@/lib/contracts/finance";
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+"use client";
 
+import type { PackageCreditStatus } from "@/lib/contracts/finance";
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
+import { getAppServices } from "@/lib/data-source/app-services";
+import {
+  adminBadgeNeutralStatusClass,
+  adminBadgeSuccessClass,
+  adminBadgeWarningClass,
+  adminCardClass,
+  adminEmptyStateClass,
+} from "@/lib/design";
 
 const STATUS_STYLES: Record<PackageCreditStatus, string> = {
-  ativo: "bg-emerald-50 text-emerald-800",
-  expirando: "bg-amber-50 text-amber-900",
-  esgotado: "bg-neutral-100 text-neutral-600",
+  ativo: adminBadgeSuccessClass,
+  expirando: adminBadgeWarningClass,
+  esgotado: adminBadgeNeutralStatusClass,
 };
 
 export function PackageCreditsCard() {
+  const { data, isLoading } = useFinanceInsights();
+  const packages = data?.packageCredits ?? [];
+  const statusLabels = getAppServices().finance.getPackageStatusLabels();
+
+  if (isLoading) {
+    return (
+      <section className={`${adminCardClass} p-5 md:p-6`}>
+        <div className="h-32 animate-pulse rounded-xl bg-[var(--ds-bg-muted)]" />
+      </section>
+    );
+  }
+
+  if (packages.length === 0) {
+    return (
+      <section className={`${adminCardClass} p-5 md:p-6`}>
+        <p className={adminEmptyStateClass}>Nenhum pacote ativo no momento.</p>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-6">
+    <section className={`${adminCardClass} p-5 md:p-6`}>
       <ul className="space-y-4">
-        {FinancialServiceMock.getPackageCredits().map((pkg) => {
+        {packages.map((pkg) => {
           const pct = Math.round((pkg.lessonsUsed / pkg.lessonsTotal) * 100);
           const remaining = pkg.lessonsTotal - pkg.lessonsUsed;
           return (
             <li
               key={pkg.id}
-              className="rounded-xl border border-[rgba(17,17,17,0.06)] p-4"
+              className="rounded-xl border border-[var(--ds-border-subtle)] bg-[var(--ds-bg-muted)] p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="font-bold text-[#0d1f3c]">{pkg.clientName}</p>
-                  <p className="text-sm text-neutral-600">{pkg.packageName}</p>
+                  <p className="font-bold text-[var(--ds-text-primary)]">{pkg.clientName}</p>
+                  <p className="text-sm text-[var(--ds-text-secondary)]">{pkg.packageName}</p>
                 </div>
                 <span
-                  className={`rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLES[pkg.status]}`}
+                  className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ${STATUS_STYLES[pkg.status]}`}
                 >
-                  {FinancialServiceMock.getPackageStatusLabels()[pkg.status]}
+                  {statusLabels[pkg.status]}
                 </span>
               </div>
               <div className="mt-3">

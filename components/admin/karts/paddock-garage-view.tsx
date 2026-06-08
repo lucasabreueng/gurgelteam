@@ -2,21 +2,30 @@
 
 import type { KartStatus } from "@/lib/contracts/karts";
 
+import { useKartsFleet } from "@/lib/query/hooks/use-karts";
+import { useKartsPaddock } from "@/lib/query/hooks/use-karts-paddock";
 import { KartsServiceMock } from "@/services/karts/kartsServiceMock";
 
 import { statusStyle } from "./kart-status-badge";
 
 export function PaddockGarageView() {
+  const { data: fleet = [] } = useKartsFleet();
+  const { data: paddock, isLoading } = useKartsPaddock();
+  const boxes = paddock?.boxes ?? [];
+
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-5 md:p-6">
       <h3 className="text-lg font-bold text-[#0d1f3c]">Vista de garagem</h3>
       <p className="mt-1 text-sm text-neutral-600">
-        Boxes do paddock em tempo real (mock).
+        Boxes do paddock em tempo real.
       </p>
+      {isLoading ? (
+        <p className="mt-5 text-sm text-neutral-500">Carregando paddock…</p>
+      ) : null}
       <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {KartsServiceMock.getPadlockBoxes().map((box) => {
+        {boxes.map((box) => {
           const kart = box.kartId
-            ? KartsServiceMock.getFleet().find((k) => k.id === box.kartId)
+            ? fleet.find((k) => k.id === box.kartId)
             : null;
           const status = box.status === "empty" ? null : box.status;
           return (

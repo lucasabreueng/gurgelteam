@@ -2,6 +2,7 @@
 
 import type { CashFlowAlert } from "@/lib/contracts/cashflow";
 
+import { adminAccentPanelClass } from "@/lib/design";
 import { FinancialChartCard } from "../financial-chart-card";
 
 const PRIORITY_STYLES = {
@@ -19,7 +20,7 @@ export function CashFlowAlerts({ alerts }: Props) {
     <FinancialChartCard
       title="Alertas de caixa"
       subtitle="Situações que exigem atenção no fluxo de caixa"
-      className="border-accent/20 bg-gradient-to-br from-accent/[0.04] to-white"
+      className={adminAccentPanelClass}
     >
       <ul className="space-y-3">
         {alerts.map((alert) => (

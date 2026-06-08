@@ -18,8 +18,17 @@ import type { KartCategory, SkillLevel } from "@/lib/contracts/clients";
 import { SettingsDropdown } from "../settings/settings-dropdown";
 import { SettingsCheckbox } from "../settings/settings-checkbox";
 import {
+  adminCardInnerClass,
+  adminChoiceTileClass,
+  adminDrawerHeaderSimpleClass,
+  adminDrawerOverlayLightClass,
+  adminDrawerPanelFormClass,
+  adminDrawerTitleClass,
+  adminInputClass,
+  adminInputReadonlyClass,
+} from "@/lib/design";
+import {
   SettingsField,
-  settingsInputClass,
 } from "../settings/settings-section";
 
 export type NewClientFormData = {
@@ -101,6 +110,7 @@ type Props = {
   categories: KartCategory[];
   skillLevels: SkillLevel[];
   onSuccess?: (data: NewClientFormData) => void;
+  onGenerateCharge?: () => void;
 };
 
 export function NewClientDrawer({
@@ -109,6 +119,7 @@ export function NewClientDrawer({
   categories,
   skillLevels,
   onSuccess,
+  onGenerateCharge,
 }: Props) {
   const [form, setForm] = useState<NewClientFormData>(EMPTY_FORM);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -244,14 +255,14 @@ export function NewClientDrawer({
     ...skillLevels.map((level) => ({ value: level.id, label: level.name })),
   ];
 
-  const usernameReadonlyClass = `${settingsInputClass} cursor-default bg-neutral-50 text-neutral-700`;
+  const usernameReadonlyClass = adminInputReadonlyClass;
 
   return (
     <>
       <div className="fixed inset-0 z-[228] flex justify-end">
         <button
           type="button"
-          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          className={adminDrawerOverlayLightClass}
           aria-label="Fechar"
           onClick={onClose}
         />
@@ -259,14 +270,14 @@ export function NewClientDrawer({
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-client-drawer-title"
-          className="app-drawer-panel relative flex h-full w-full max-w-full flex-col bg-[#f3f5f9] shadow-2xl lg:max-w-[min(520px,92vw)]"
+          className={adminDrawerPanelFormClass}
         >
-          <header className="shrink-0 border-b border-[rgba(17,17,17,0.08)] bg-white px-5 py-4">
+          <header className={adminDrawerHeaderSimpleClass}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1
                   id="new-client-drawer-title"
-                  className="text-xl font-bold text-[#0d1f3c]"
+                  className={adminDrawerTitleClass}
                 >
                   Novo cliente
                 </h1>
@@ -286,7 +297,7 @@ export function NewClientDrawer({
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-5">
-            <div className="space-y-4 rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
+            <div className={`${adminCardInnerClass} space-y-4`}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <SettingsField label="Nome">
                   <input
@@ -300,7 +311,7 @@ export function NewClientDrawer({
                       }))
                     }
                     placeholder="Ex.: Lucas"
-                    className={settingsInputClass}
+                    className={adminInputClass}
                   />
                 </SettingsField>
 
@@ -316,7 +327,7 @@ export function NewClientDrawer({
                       }))
                     }
                     placeholder="Ex.: Mendes"
-                    className={settingsInputClass}
+                    className={adminInputClass}
                   />
                 </SettingsField>
               </div>
@@ -345,7 +356,7 @@ export function NewClientDrawer({
                   }}
                   placeholder="(61) 99999-9999"
                   maxLength={15}
-                  className={settingsInputClass}
+                  className={adminInputClass}
                 />
               </SettingsField>
 
@@ -364,7 +375,7 @@ export function NewClientDrawer({
                     handleEmailChange(e.clipboardData.getData("text"));
                   }}
                   placeholder="piloto@email.com"
-                  className={settingsInputClass}
+                  className={adminInputClass}
                 />
               </SettingsField>
 
@@ -381,7 +392,7 @@ export function NewClientDrawer({
                   }}
                   placeholder="dd/mm/aaaa"
                   maxLength={10}
-                  className={settingsInputClass}
+                  className={adminInputClass}
                   aria-label="Data de nascimento"
                 />
               </SettingsField>
@@ -397,13 +408,10 @@ export function NewClientDrawer({
                     return (
                       <li key={category.id}>
                         <div
-                          className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition ${
-                            disabled
-                              ? "cursor-not-allowed border-[rgba(17,17,17,0.06)] bg-neutral-50 opacity-50"
-                              : checked
-                                ? "border-accent/30 bg-[rgba(13,31,60,0.04)]"
-                                : "border-[rgba(17,17,17,0.1)] bg-[#fafbfc] hover:border-accent/25"
-                          }`}
+                          className={adminChoiceTileClass({
+                            checked,
+                            disabled,
+                          })}
                         >
                           <SettingsCheckbox
                             checked={checked}
@@ -472,9 +480,14 @@ export function NewClientDrawer({
             : "Cadastro concluído com sucesso."
         }
         confirmLabel="Entendi"
+        secondaryConfirmLabel={onGenerateCharge ? "Gerar cobrança" : undefined}
         hideCancel
         onConfirm={finishSuccess}
         onCancel={finishSuccess}
+        onSecondaryConfirm={() => {
+          finishSuccess();
+          onGenerateCharge?.();
+        }}
       />
     </>
   );

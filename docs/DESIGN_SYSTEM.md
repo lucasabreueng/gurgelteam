@@ -1,8 +1,8 @@
 # DESIGN_SYSTEM — Gurgel Team
 
 > **Última atualização:** 2026-05-28  
-> **Fonte:** `tailwind.config.ts`, `app/globals.css`, `components/ui/`, padrões admin  
-> **Legenda:** `[CONFIRMADO]` = token/classe no código · `[INFERIDO]` = padrão recorrente não abstraído
+> **Versão:** v2 (Fase 1 — 100%)  
+> **Fonte:** `tailwind.config.ts`, `app/globals.css`, `components/ui/`
 
 ---
 
@@ -367,7 +367,7 @@ Ordem de blocos:
 2. `OperationalAgenda` + `StudentsOverview` (2 colunas)
 3. `KartStatusGrid`
 
-Blocos adicionais disponíveis: `telemetry-overview.tsx`, `championship-card.tsx`, `financial-overview.tsx`
+Blocos adicionais disponíveis: `telemetry-overview.tsx`, `financial-overview.tsx`
 
 ### 10.3 Dashboard piloto (`student-dashboard-page.tsx`)
 
@@ -388,6 +388,9 @@ Cards: `results-card`, `timeline-card`, `achievements-card`, `evolution-goal-car
 | Arquivo | Exporta |
 |---------|---------|
 | `button.tsx` | `ButtonLink`, `ButtonNative` |
+| `empty-state.tsx` | `EmptyState` |
+| `page-error-state.tsx` | `PageErrorState` |
+| `status-badge.tsx` | `StatusBadge` |
 | `kpi-card.tsx` | `KpiCard` |
 | `app-modal.tsx` | `AppModal` |
 | `app-dropdown.tsx` | `AppDropdown` |
@@ -488,12 +491,14 @@ md:grid-cols-2 xl:grid-cols-3       // listas de cards
 
 ---
 
-## 13. Gaps e recomendações
+## 13. Componentes unificados (v2)
 
-| Gap | Prioridade | Ação sugerida |
-|-----|------------|---------------|
-| Cores hardcoded no admin | Alta | Migrar para tokens CSS |
-| Badges por domínio | Média | Criar `StatusBadge` genérico |
-| Paginação duplicada | Média | Unificar em `TablePagination` |
-| Dark mode parcial | Média | Decidir: completar ou desativar no admin |
-| Micro-tipografia (10px, 11px) | Baixa | Definir escala tipográfica admin formal |
+| Componente | Path | Substitui |
+|------------|------|-----------|
+| `StatusBadge` | `components/ui/status-badge.tsx` | badges por domínio (wrappers finos mantidos) |
+| `AdminTablePagination` | `components/admin/admin-table-pagination.tsx` | paginações por módulo |
+| `AdminActionButton` | `components/admin/admin-action-button.tsx` | botões inline admin |
+| `EmptyState` | `components/ui/empty-state.tsx` | empty states ad hoc |
+| `PageErrorState` | `components/ui/page-error-state.tsx` | error states ad hoc |
+
+**Pendências pós-Fase 1 (não bloqueiam Fase 5):** dark mode admin completo; tokens CSS para cores hardcoded `#0d1f3c`.

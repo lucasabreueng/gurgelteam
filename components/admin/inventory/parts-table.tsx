@@ -10,6 +10,8 @@ import {
   InventoryTableActions,
   InventoryTableShell,
   TableIconButton,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -34,8 +36,8 @@ const DEFAULT_FILTERS: PartsFilterState = {
 
 type Props = {
   onOpenPart: (id: string) => void;
-  onEditPart: (id: string) => void;
-  onDeletePart: (id: string) => void;
+  onEditPart?: (id: string) => void;
+  onDeletePart?: (id: string) => void;
 };
 
 export function PartsTable({ onOpenPart, onEditPart, onDeletePart }: Props) {
@@ -107,7 +109,7 @@ export function PartsTable({ onOpenPart, onEditPart, onDeletePart }: Props) {
           }
         >
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+            <tr className={adminTableHeadRowClass}>
               <th className={inventoryThFirstClass}>Código</th>
               <th className={inventoryThClass}>Descrição</th>
               <th className={inventoryThClass}>Categoria</th>
@@ -121,7 +123,7 @@ export function PartsTable({ onOpenPart, onEditPart, onDeletePart }: Props) {
             {paginatedItems.map((part) => (
               <tr
                 key={part.id}
-                className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+                className={adminTableBodyRowClass}
               >
                 <td className={inventoryTdFirstClass}>{part.code}</td>
                 <td className={inventoryTdDescClass}>{part.name}</td>
@@ -137,8 +139,8 @@ export function PartsTable({ onOpenPart, onEditPart, onDeletePart }: Props) {
                 </td>
                 <InventoryTableActions
                   onView={() => onOpenPart(part.id)}
-                  onEdit={() => onEditPart(part.id)}
-                  onDelete={() => onDeletePart(part.id)}
+                  onEdit={onEditPart ? () => onEditPart(part.id) : undefined}
+                  onDelete={onDeletePart ? () => onDeletePart(part.id) : undefined}
                 />
               </tr>
             ))}
@@ -178,16 +180,20 @@ export function PartsTable({ onOpenPart, onEditPart, onDeletePart }: Props) {
                         label="Visualizar"
                         onClick={() => onOpenPart(part.id)}
                       />
-                      <TableIconButton
-                        icon={HiPencil}
-                        label="Editar"
-                        onClick={() => onEditPart(part.id)}
-                      />
-                      <TableIconButton
-                        icon={HiTrash}
-                        label="Excluir"
-                        onClick={() => onDeletePart(part.id)}
-                      />
+                      {onEditPart ? (
+                        <TableIconButton
+                          icon={HiPencil}
+                          label="Editar"
+                          onClick={() => onEditPart(part.id)}
+                        />
+                      ) : null}
+                      {onDeletePart ? (
+                        <TableIconButton
+                          icon={HiTrash}
+                          label="Excluir"
+                          onClick={() => onDeletePart(part.id)}
+                        />
+                      ) : null}
                     </div>
                   </div>
 

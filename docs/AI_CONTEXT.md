@@ -1,25 +1,37 @@
 # AI_CONTEXT — Gurgel Team (resumo para agentes)
 
-> **Leia este arquivo primeiro** em qualquer chat novo. Detalhes em `/docs/*.md`.  
-> **Atualizado:** 2026-05-28
+> **Leia primeiro:** [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) (status + última sessão) · depois este arquivo.  
+> **Migração mock→HTTP:** [`MIGRATION_STATUS.md`](MIGRATION_STATUS.md) · Validação manual: [`VALIDATION_CHECKLIST.md`](VALIDATION_CHECKLIST.md)  
+> **Atualizado:** 2026-06-05
 
 ---
 
 ## O que é este projeto
 
-Frontend **Next.js 15** (`gurgel-team-site`) para o kartódromo **Gurgel Team**: landing, reserva pública, auth, painel admin operacional e área do piloto com telemetria. **Não há backend/banco** — dados via mocks; agenda tem bridge HTTP parcial.
+Frontend **Next.js 15** (`gurgel-team-site`) para o kartódromo **Gurgel Team**: landing, reserva pública, auth, painel admin operacional e área do piloto com telemetria.
+
+**Backend:** Route Handlers Next.js + **Prisma + PostgreSQL (Supabase)**. Modo `http` liga UI aos endpoints `/api/v1/*`. Modo `mock` (padrão) funciona sem banco.
 
 ```
-UI → React Query hooks / getAppServices() → services/ → repositories/ → mocks | HTTP
+UI → React Query / getAppServices() → services/ → repositories/ → mocks | HTTP → Prisma/DB
 ```
 
 ---
 
 ## Stack essencial
 
-Next.js 15 · React 19 · Tailwind 3 · TypeScript strict · TanStack Query · Zod · ECharts · Sora font
+Next.js 15 · React 19 · Tailwind 3 · TypeScript strict · TanStack Query · Zod · Prisma · Supabase · ECharts · Sora font
 
-Env: `NEXT_PUBLIC_DATA_SOURCE=mock|http` · `NEXT_PUBLIC_API_URL=` (vazio = rotas `/api` locais)
+### Env crítico
+
+| Variável | Valores |
+|----------|---------|
+| `NEXT_PUBLIC_DATA_SOURCE` | `mock` (padrão) \| `http` |
+| `DATABASE_URL` / `DIRECT_URL` | PostgreSQL Supabase |
+| `SESSION_SECRET` | Cookie sessão |
+| `ENABLE_ROUTE_GUARD` | `true` → protege `/admin/*`, `/piloto/*` |
+
+Login demo: `ana.silva@gurgelteam.com.br` / `Gurgel@123` · Piloto: `piloto@gurgelteam.com.br` / `Gurgel@123`
 
 ---
 
@@ -28,11 +40,12 @@ Env: `NEXT_PUBLIC_DATA_SOURCE=mock|http` · `NEXT_PUBLIC_API_URL=` (vazio = rota
 | Área | Rotas |
 |------|-------|
 | Público | `/`, `/reserva`, `/login`, `/cadastro` |
-| Piloto | `/piloto`, `/piloto/perfil`, `/piloto/telemetria/*` |
-| Admin | `/admin`, `/admin/agenda`, `/admin/clientes`, `/admin/karts`, `/admin/manutencao`, `/admin/estoque`, `/admin/financeiro`, `/admin/registro-aulas`, `/admin/configuracoes`, `/admin/telemetria/*` |
-| API | `/api/admin/schedule/*` (GET), `/api/admin/lesson-registration/ocr` (POST) |
+| Piloto | `/piloto`, `/piloto/reservar`, `/piloto/perfil`, `/piloto/telemetria/*` |
+| Admin | `/admin`, `/admin/agenda`, `/admin/clientes`, `/admin/equipe`, `/admin/karts`, `/admin/manutencao`, `/admin/estoque`, `/admin/financeiro`, `/admin/registro-aulas`, `/admin/configuracoes`, `/admin/telemetria/*` |
+| API v1 | `/api/v1/auth/*`, `/api/v1/schedule/*`, `/api/v1/clients/*`, `/api/v1/karts/*`, `/api/v1/lessons/*`, `/api/v1/pilot/*`, `/api/v1/reference/catalog` |
+| Legado | `/api/admin/*` — proxy para v1 (deprecado); preferir `/api/v1/*` |
 
-**Sem middleware** — rotas admin/piloto não protegidas server-side.
+**Middleware:** `middleware.ts` — guard opcional via `ENABLE_ROUTE_GUARD`.
 
 ---
 
@@ -41,133 +54,111 @@ Env: `NEXT_PUBLIC_DATA_SOURCE=mock|http` · `NEXT_PUBLIC_API_URL=` (vazio = rota
 | Camada | Pasta | Regra |
 |--------|-------|-------|
 | Contratos/DTOs | `lib/contracts/` | Tipos e Zod schemas |
-| Mocks/dados | `lib/*-mocks.ts` | Seed + regras de negócio |
-| Repositories | `repositories/` | Acesso a dados |
+| API v1 schemas | `lib/contracts/api/v1/` | Validação rotas |
+| Backend | `lib/server/` | Repositories Prisma, auth, responses |
+| Mocks/dados | `lib/*-mocks.ts` | Seed + regras (modo mock) |
+| Repositories | `repositories/` | Mock ou `*RepositoryHttp.ts` |
 | Services | `services/` | UI consome só isto |
 | Registry | `lib/data-source/app-services.ts` | `getAppServices()` |
 | Hooks | `lib/query/hooks/` | React Query |
-| UI | `components/admin/`, `components/student-area/`, `components/ui/` | **Não importar mocks diretamente** |
-| Telemetria engine | `lib/telemetry-engine/` | Pipeline client-side (MyChron, Alfano, GPS, GoPro) |
+| UI | `components/admin/`, `components/student-area/` | **Não importar mocks diretamente** |
 
-Agenda é o **único domínio com HTTP**: `services/schedule/scheduleService.ts` → mock ou `ScheduleRepositoryHttp`.
+---
+
+## Estado da migração HTTP (2026-06-05)
+
+→ Matriz completa: **`MIGRATION_STATUS.md` §3** · Status detalhado: **`SESSION_HANDOFF.md` §2**
+
+| Status | Domínios |
+|--------|----------|
+| ✅ HTTP | Agenda, auth, dashboard admin, financeiro/estoque/manutenção (core), settings, equipe, clientes, karts, aulas, **piloto home/perfil/account** |
+| ⚠️ Parcial | Piloto **reserva (só GET slots)**, telemetria (nuvem sem GPS), finance export PDF |
+| ❌ Pendente | Reserva para dependente na UI, telemetria laps no Prisma (P2) |
+
+### Piloto — arquivos importantes
+
+- `components/student-area/booking/pilot-booking-page.tsx` — reservar horário
+- `components/student-area/profile/profile-page.tsx` — perfil + vinculados
+- `lib/server/pilot/build-pilot-booking-slots.ts` — grade do dia para piloto
+- `lib/admin/pilot-nav-modules.ts` — `/piloto/reservar` → `pilotoAgenda`
+
+### Agenda admin — arquivos importantes
+
+- `components/admin/schedule-page.tsx`, `schedule/operational-timeline.tsx`
+- `lib/schedule/build-day-timeline.ts` — timeline da grade real
+- `lib/server/schedule/week-schedule-repository.ts` — persistência grade
 
 ---
 
 ## Módulos admin (nav)
 
-dashboard · agenda · registroAulas · alunos(clientes) · karts · manutencao · estoque · financeiro · telemetria · configuracoes
+dashboard · agenda · registroAulas · alunos(clientes) · **equipe** · karts · manutencao · estoque · financeiro · telemetria · configuracoes
 
-**Planejados sem rota:** instrutores, campeonatos, relatorios
+Módulos piloto: `pilotoDashboard`, **`pilotoAgenda`** (`/piloto/reservar`), `pilotoTelemetria`, …
 
 ---
 
 ## Regras de negócio críticas
 
-→ Detalhes completos: `docs/BUSINESS_RULES.md`
+→ `docs/BUSINESS_RULES.md`
 
-- Menor de 14 anos **não se cadastra** — responsável ≥18 cadastra e vincula
-- Permissões mock: admin, instrutor, recepcao, financeiro (+ granular por ModuleKey) — **sem enforcement server-side**
-- Agenda: slots 50min, instrutor fixo "Gurgel", conflitos detectados (kart, instrutor, pagamento)
-- Checklist/inspeção: fail crítico → kart **bloqueado**
-- Estoque: saída > stock = **erro**; critical/low gera alertas
-- Manutenção OS: fluxo detectado → … → liberado; kart client tem fluxo orçamento
-- Financeiro: receber/pagar com status pago/pendente/vencido/parcial; DRE hierárquica
-- Registro aulas: evento finalizado → sessão pendente_registro; OCR via OpenAI
-- Cancelamento: 24h antes = crédito; no-show = não reembolsável
+- Menor de 14 anos → responsável ≥18 cadastra
+- Permissões por ModuleKey — enforcement server-side em `/api/v1/*`
+- Agenda: slots da grade configurada; conflitos → 409
+- DELETE bloqueios: permissão `edit` (não `delete`)
+- Cancelamento: 24h = crédito; no-show = não reembolsável
 
 ---
 
-## Design system — regras rápidas
+## Fase do projeto
 
-→ Detalhes: `docs/DESIGN_SYSTEM.md`
+| Fase | Status |
+|------|--------|
+| 1 — UI visual | ✅ Concluída |
+| 2 — Arquitetura funcional | ✅ Documentada |
+| 3 — Prisma/schema | ✅ Migration + seed |
+| 4 — API spec | ✅ v1 |
+| 5 — Backend | ⚠️ P0 implementado |
+| 6 — Integração HTTP | ⚠️ **Admin maduro**; piloto em polimento (reserva GET/POST ✅) |
 
-- **Admin:** cores hardcoded `#0d1f3c` / `#f3f5f9`; cards `rounded-2xl border rgba(17,17,17,0.08)`
-- **Breakpoint pivot:** `lg` (1024px) — tabela↔cards, filtros inline↔sheet
-- **Primitivos:** `components/ui/` (11 arquivos — KpiCard, AppModal, FilterBox, etc.)
-- **Problema conhecido:** badges, paginações, drawers e botões duplicados por módulo
-- **Botões admin:** classes `.btn-primary-sm/md`, `.btn-outline-sm/md` em globals.css OU inline
-
----
-
-## Modelo de dados
-
-→ Detalhes: `docs/DATABASE_REFERENCE.md`
-
-**Não existe banco.** Entidades lógicas: User, Client, Kart, ScheduleEvent, LessonSession, MaintenanceOrder, InventoryPart, Supplier, AccountReceivable/Payable, TelemetrySession, ModulePermission, Consent.
-
-Contratos em `lib/contracts/`; enums centrais em `lib/contracts/enums.ts` (LessonStatus, TelemetryStatus, ConsentStatus).
-
----
-
-## Componentes
-
-→ Inventário: `docs/COMPONENT_INVENTORY.md` (412 `.tsx`)
-
-Unificar prioritariamente: StatusBadge (9), TablePagination (5), DrawerShell (~15), KpiCard (6).
-
----
-
-## Estado do projeto
-
-→ Roadmap: `docs/ROADMAP.md`
-
-| Status | Itens |
-|--------|-------|
-| **Concluído** | UI admin completa (mock), área piloto, telemetria engine, arquitetura em camadas, agenda HTTP bridge, OCR |
-| **Em andamento** | Registro aulas (store local), estoque (stores locais), migração mock→services |
-| **Pendente** | Backend, banco, auth real, middleware, HTTP outros domínios, módulos instrutores/campeonatos/relatórios |
-| **Não pronto p/ backend** | Design system fragmentado, estados loading/error incompletos |
-
----
-
-## UI — problemas conhecidos
-
-→ Auditoria: `docs/UI_AUDIT.md`
-
-- 3 sistemas de botões paralelos
-- Tabelas sem padrão único (exceto estoque `inventory-table-shared`)
-- Inputs inconsistentes entre módulos
-- Loading/skeleton ausente na maioria dos módulos admin
-- Dark mode parcial (admin hardcoded light)
+→ Fluxo oficial: `PRE_BACKEND_FLOW.md` · Roadmap: `ROADMAP.md`
 
 ---
 
 ## Comandos úteis
 
 ```bash
-npm run dev          # dev server (predev: build gopro vendor)
-npm run build        # production build
-npx tsc --noEmit     # validar tipos
-npm run lint         # eslint
+npm run dev
+npm run db:migrate && npm run db:seed
+npm run smoke:setup && npm run smoke:checklist
+npx tsx scripts/repair-staff-permissions.ts   # se admin 403 no dashboard
+npm run validate
 ```
 
-Testar agenda HTTP: `.env.local` → `NEXT_PUBLIC_DATA_SOURCE=http`, `NEXT_PUBLIC_API_URL=`
+Modo HTTP: `.env` → `NEXT_PUBLIC_DATA_SOURCE=http`, `DATABASE_URL=...`, `SESSION_SECRET=...`  
+Após pull com schema novo: parar dev → `npx prisma db push` → `npx prisma generate`
 
 ---
 
-## Documentação completa
+## Documentação — ordem de leitura
 
-| Arquivo | Conteúdo |
-|---------|----------|
-| `PROJECT_CONTEXT.md` | Visão geral, rotas, tech, convenções |
-| `DESIGN_SYSTEM.md` | Cores, tipografia, padrões UI |
-| `BUSINESS_RULES.md` | Regras de negócio por domínio |
-| `DATABASE_REFERENCE.md` | Entidades, relacionamentos, integridade |
-| `ROADMAP.md` | Concluído, em andamento, pendente |
-| `COMPONENT_INVENTORY.md` | 412 componentes, duplicações, unificações |
-| `UI_AUDIT.md` | Inconsistências visuais e UX |
-| `frontend-architecture.md` | Arquitetura em camadas (legado) |
-
-Docs raiz (referência histórica): `FRONTEND_AUDIT.md`, `CHECKPOINT.md`, `FRONTEND_ARCHITECTURE_REPORT.md`
+| Prioridade | Arquivo | Conteúdo |
+|------------|---------|----------|
+| 1 | **`SESSION_HANDOFF.md`** | Status do projeto + última sessão |
+| 2 | **`MIGRATION_STATUS.md`** | Matriz mock vs HTTP + marcos |
+| 3 | `AI_CONTEXT.md` | Este arquivo |
+| 4 | `VALIDATION_CHECKLIST.md` | Testes manuais por rota |
+| 5 | `API_SPEC.md` | Contratos HTTP |
+| 6 | `BUSINESS_RULES.md` | Regras por domínio |
 
 ---
 
 ## Regras para o agente
 
 1. **Não inventar** — basear-se no código e docs `/docs`
-2. **UI não importa mocks** — usar `getAppServices()` ou hooks React Query
-3. **Minimizar escopo** — diffs focados, seguir convenções do arquivo
-4. **Scrollbars** — ver `DESIGN_SYSTEM.md` §4.6: painéis/drawers/modais usam overflow + estilo automático; tabs/KPI strip usam `app-scrollbar-hidden`; dropdowns usam `app-dropdown-scrollbar`
+2. **Ler `SESSION_HANDOFF.md` + `MIGRATION_STATUS.md`** antes de propor próximo domínio
+3. **UI não importa mocks** — usar `getAppServices()` ou hooks
+4. **Minimizar escopo** — diffs focados
 5. **Não commitar** sem pedido explícito
 6. **Responder em português**
-7. Distinguir `[CONFIRMADO]` (código) vs `[INFERIDO]` (dedução/planejado)
+7. Distinguir `[CONFIRMADO]` vs `[INFERIDO]` vs `[PLANEJADO]`

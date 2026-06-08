@@ -1,9 +1,6 @@
-import { ScheduleRescheduleRepositoryMock } from "@/repositories/schedule/ScheduleRescheduleRepositoryMock";
+import { createScheduleRescheduleService } from "@/services/schedule/scheduleRescheduleService";
 
-export const ScheduleRescheduleServiceMock = {
-  getPilotCategoryIdsForEvent:
-    ScheduleRescheduleRepositoryMock.getPilotCategoryIdsForEvent,
-  getRescheduleSlotOptions: ScheduleRescheduleRepositoryMock.getRescheduleSlotOptions,
-};
+/** @deprecated Use getAppServices().scheduleReschedule */
+export const ScheduleRescheduleServiceMock = createScheduleRescheduleService();
 
-export type { RescheduleSlotOption } from "@/repositories/schedule/ScheduleRescheduleRepositoryMock";
+export type { RescheduleSlotOption } from "@/services/schedule/scheduleRescheduleService";

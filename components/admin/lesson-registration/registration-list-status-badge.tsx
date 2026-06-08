@@ -1,29 +1,35 @@
 "use client";
 
 import { LessonStatus } from "@/lib/contracts/enums";
+import {
+  adminBadgeInfoClass,
+  adminBadgeNeutralStatusClass,
+  adminBadgeSuccessClass,
+  adminBadgeWarningClass,
+} from "@/lib/design";
 
 const STYLES: Record<
   "concluido" | "em_andamento" | "pendente" | "cancelado",
   { wrap: string; dot: string; label: string; pulse?: boolean }
 > = {
   concluido: {
-    wrap: "bg-emerald-50 text-emerald-900 ring-emerald-200/70",
+    wrap: adminBadgeSuccessClass,
     dot: "bg-emerald-500",
     label: "Concluído",
   },
   em_andamento: {
-    wrap: "bg-amber-50 text-amber-950 ring-amber-200/70",
+    wrap: adminBadgeWarningClass,
     dot: "bg-amber-500",
     label: "Em andamento",
     pulse: true,
   },
   pendente: {
-    wrap: "bg-violet-50 text-violet-950 ring-violet-200/70",
+    wrap: adminBadgeInfoClass,
     dot: "bg-violet-500",
     label: "Pendente",
   },
   cancelado: {
-    wrap: "bg-neutral-50 text-neutral-700 ring-neutral-200/70",
+    wrap: adminBadgeNeutralStatusClass,
     dot: "bg-neutral-500",
     label: "Cancelado",
   },

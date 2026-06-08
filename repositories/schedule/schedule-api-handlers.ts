@@ -10,22 +10,15 @@ export function buildScheduleMetaDTO(): ScheduleMetaDTO {
     viewTabs: [...ScheduleRepositoryMock.getViewTabs()],
     kpis: [...ScheduleRepositoryMock.getKpis()],
     availableKartsNow: [...ScheduleRepositoryMock.getAvailableKartsNow()],
-    availableInstructorsNow: [
-      ...ScheduleRepositoryMock.getAvailableInstructorsNow(),
-    ],
     operationalSidebarAlerts: [
       ...ScheduleRepositoryMock.getOperationalSidebarAlerts(),
     ],
     quickActions: [...ScheduleRepositoryMock.getQuickActions()],
-    instructors: [...ScheduleRepositoryMock.getInstructors()],
     kartScheduleRows: [...ScheduleRepositoryMock.getKartScheduleRows()],
     conflicts: [...ScheduleRepositoryMock.getConflicts()],
     insights: [...ScheduleRepositoryMock.getInsights()],
     eventTypeOptions: [...ScheduleRepositoryMock.getEventTypeOptions()],
     eventStatusOptions: [...ScheduleRepositoryMock.getEventStatusOptions()],
-    instructorFilterOptions: [
-      ...ScheduleRepositoryMock.getInstructorFilterOptions(),
-    ],
     categoryFilterOptions: [
       ...ScheduleRepositoryMock.getCategoryFilterOptions(),
     ],

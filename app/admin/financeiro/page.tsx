@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { FinancialPage } from "@/components/admin/financial-page";
+import { AdminTabPanelSkeleton } from "@/components/admin/admin-page-skeletons";
 
 export const metadata = {
   title: "Controle Financeiro — Gurgel Team",
@@ -7,5 +9,9 @@ export const metadata = {
 };
 
 export default function AdminFinanceiroPage() {
-  return <FinancialPage />;
+  return (
+    <Suspense fallback={<AdminTabPanelSkeleton />}>
+      <FinancialPage />
+    </Suspense>
+  );
 }

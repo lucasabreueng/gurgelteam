@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import type { LessonSessionDTO } from "@/lib/contracts/lessons/lesson.types";
-import { ScheduleServiceMock } from "@/services/schedule/scheduleServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { ScheduleDrawerShell } from "../schedule/schedule-drawer-shell";
 import { LessonSessionWorkspace } from "./lesson-session-workspace";
 
@@ -12,7 +12,6 @@ type Props = {
   session: LessonSessionDTO | null;
   onClose: () => void;
   onFinalized: (message: string) => void;
-  sessionVersion: number;
 };
 
 export function LessonRegistrationDrawer({
@@ -20,7 +19,6 @@ export function LessonRegistrationDrawer({
   session,
   onClose,
   onFinalized,
-  sessionVersion,
 }: Props) {
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
 
@@ -34,7 +32,7 @@ export function LessonRegistrationDrawer({
 
   if (!open || !session) return null;
 
-  const dateLabel = ScheduleServiceMock.formatDateShort(session.date);
+  const dateLabel = getAppServices().schedule.formatDateShort(session.date);
 
   return (
     <div className="lg:hidden">
@@ -53,7 +51,7 @@ export function LessonRegistrationDrawer({
       >
         <div className="p-4 md:p-5">
           <LessonSessionWorkspace
-            key={`${session.id}-${sessionVersion}`}
+            key={`${session.id}-${session.status}`}
             session={session}
             hideTitleHeader
             onHeaderActionsChange={setHeaderActions}

@@ -1,10 +1,7 @@
 "use client";
 
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
-
 import type { GeneralCondition } from "@/lib/contracts/maintenance";
-
-
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
 
 const OPTIONS: GeneralCondition[] = [
   "excelente",
@@ -20,7 +17,20 @@ type Props = {
 };
 
 export function GeneralConditionCard({ value, score, onChange }: Props) {
-  const meta = InspectionServiceMock.getGeneralConditionMeta()[value];
+  const { data: template, isLoading } = useInspectionTemplate();
+  const metaMap = (template?.generalConditionMeta ?? {}) as Record<
+    GeneralCondition,
+    { label: string; color: string; bar: string; summary: string }
+  >;
+  const meta = metaMap[value];
+
+  if (isLoading || !meta) {
+    return (
+      <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm md:p-6">
+        <div className="h-28 animate-pulse rounded-xl bg-[#fafbfc]" />
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm md:p-6">
@@ -46,7 +56,8 @@ export function GeneralConditionCard({ value, score, onChange }: Props) {
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {OPTIONS.map((opt) => {
-          const m = InspectionServiceMock.getGeneralConditionMeta()[opt];
+          const m = metaMap[opt];
+          if (!m) return null;
           const active = value === opt;
           return (
             <button

@@ -7,7 +7,6 @@ import { settingsInputClass } from "../settings/settings-section";
 
 export type ScheduleFilterState = {
   search: string;
-  instructorId: string;
   kart: string;
   type: string;
   status: string;
@@ -27,7 +26,6 @@ export function ScheduleFilters({ filters, onChange, onClear }: Props) {
   const { data: meta } = useScheduleMeta();
   const active = filtersActive([
     filters.search,
-    filters.instructorId,
     filters.kart,
     filters.type,
     filters.status,

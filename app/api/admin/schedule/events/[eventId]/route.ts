@@ -1,25 +1,12 @@
-import { NextResponse } from "next/server";
-import { ScheduleRepositoryMock } from "@/repositories/schedule/ScheduleRepositoryMock";
+import type { NextRequest } from "next/server";
+
+import { handleLegacyAdminScheduleEventById } from "@/lib/server/api/legacy-admin-schedule-handlers";
 
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ eventId: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   const { eventId } = await params;
-  const event = ScheduleRepositoryMock.getEventDetail(eventId) ?? null;
-  if (!event) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "NOT_FOUND",
-          message: "Evento não encontrado.",
-          httpStatus: 404,
-        },
-      },
-      { status: 404 },
-    );
-  }
-  return NextResponse.json({ success: true, data: event });
+  return handleLegacyAdminScheduleEventById(request, eventId);
 }

@@ -5,6 +5,7 @@ type Props = {
   onRelease: () => void;
   onCancel: () => void;
   compactSummary?: string;
+  disabled?: boolean;
 };
 
 export function InspectionFooterActions({
@@ -14,6 +15,7 @@ export function InspectionFooterActions({
   onRelease,
   onCancel,
   compactSummary,
+  disabled = false,
 }: Props) {
   return (
     <footer className="shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(13,31,60,0.06)] md:px-6 md:py-4">
@@ -32,6 +34,7 @@ export function InspectionFooterActions({
         </button>
         <button
           type="button"
+          disabled={disabled}
           onClick={onSaveDraft}
           className="rounded-xl border border-[rgba(13,31,60,0.2)] px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-[#0d1f3c]"
         >
@@ -39,6 +42,7 @@ export function InspectionFooterActions({
         </button>
         <button
           type="button"
+          disabled={disabled}
           onClick={onGenerateOs}
           className="rounded-xl border-2 border-accent/40 bg-accent/5 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-accent"
         >
@@ -46,6 +50,7 @@ export function InspectionFooterActions({
         </button>
         <button
           type="button"
+          disabled={disabled}
           onClick={onRelease}
           className="rounded-xl border-2 border-emerald-300/60 bg-emerald-50 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-emerald-900"
         >
@@ -53,6 +58,7 @@ export function InspectionFooterActions({
         </button>
         <button
           type="button"
+          disabled={disabled}
           onClick={onFinish}
           className="rounded-xl bg-[#0d1f3c] px-5 py-3 text-[10px] font-bold uppercase tracking-wide text-white shadow-[0_4px_16px_rgba(13,31,60,0.2)]"
         >

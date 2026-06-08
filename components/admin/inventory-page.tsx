@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { IconType } from "react-icons/lib";
 import {
@@ -14,15 +14,16 @@ import {
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { InventoryTabKey, PurchaseOrder } from "@/lib/contracts/inventory";
 import { useInventoryKpis } from "@/lib/query/hooks/use-inventory-catalog";
-import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
+import { getAppServices } from "@/lib/data-source/app-services";
 import {
-  deleteInventoryPart,
-  getInventoryPartById,
-} from "@/lib/inventory-parts-store";
+  useInventoryPartMutations,
+  useInventoryParts,
+} from "./inventory/use-inventory-parts";
 import {
-  deleteInventorySupplier,
-  getInventorySupplierById,
-} from "@/lib/inventory-suppliers-store";
+  useInventorySupplierMutations,
+  useInventorySuppliers,
+} from "./inventory/use-inventory-suppliers";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { AppModal } from "@/components/ui/app-modal";
 import { AdminShell } from "./admin-shell";
@@ -43,6 +44,8 @@ import { PartFormDrawer } from "./inventory/part-form-drawer";
 import { PartsTable } from "./inventory/parts-table";
 import { PurchaseOrders } from "./inventory/purchase-orders";
 import { SuppliersTable } from "./inventory/suppliers-table";
+import { AdminInventoryOverviewSkeleton } from "./admin-page-skeletons";
+import { AdminTabPanelSkeleton } from "./admin-page-skeletons";
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -65,9 +68,15 @@ const KPI_ICONS: Record<string, IconType> = {
 };
 
 export function InventoryPage() {
-  const { data: inventoryKpis = [] } = useInventoryKpis();
+  const { data: inventoryKpis = [], isPending: kpisLoading } = useInventoryKpis();
+  const { canEdit, canDelete } = useModuleAccess("estoque");
+  const parts = useInventoryParts();
+  const suppliers = useInventorySuppliers();
+  const { deleteMutation: deletePartMutation } = useInventoryPartMutations();
+  const { deleteMutation: deleteSupplierMutation } = useInventorySupplierMutations();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<InventoryTabKey>("overview");
+  const [isTabPending, startTabTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [entryOpen, setEntryOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
@@ -86,12 +95,12 @@ export function InventoryPage() {
   const [deletePartId, setDeletePartId] = useState<string | null>(null);
   const [purchasePrefill, setPurchasePrefill] = useState<string | undefined>();
 
-  const tabMeta = InventoryServiceMock.getTabMeta()[activeTab];
+  const tabMeta = getAppServices().inventory.getTabMeta()[activeTab];
   const deleteTarget = deletePartId
-    ? getInventoryPartById(deletePartId)
+    ? parts.find((p) => p.id === deletePartId) ?? null
     : null;
   const deleteSupplierTarget = deleteSupplierId
-    ? getInventorySupplierById(deleteSupplierId)
+    ? suppliers.find((s) => s.id === deleteSupplierId) ?? null
     : null;
 
   const onNav = useCallback(
@@ -122,15 +131,15 @@ export function InventoryPage() {
     setSupplierFormOpen(true);
   }, []);
 
-  const confirmDeleteSupplier = useCallback(() => {
+  const confirmDeleteSupplier = useCallback(async () => {
     if (!deleteSupplierId) return;
-    const supplier = getInventorySupplierById(deleteSupplierId);
+    const supplier = suppliers.find((s) => s.id === deleteSupplierId);
     if (!supplier) {
       handleAction("Fornecedor não encontrado.");
       setDeleteSupplierId(null);
       return;
     }
-    deleteInventorySupplier(deleteSupplierId);
+    await deleteSupplierMutation.mutateAsync(deleteSupplierId);
     if (supplierDetailsId === deleteSupplierId) setSupplierDetailsId(null);
     if (supplierFormEditId === deleteSupplierId) {
       setSupplierFormEditId(null);
@@ -138,21 +147,28 @@ export function InventoryPage() {
     }
     handleAction(`Fornecedor ${supplier.name} excluído.`);
     setDeleteSupplierId(null);
-  }, [deleteSupplierId, handleAction, supplierDetailsId, supplierFormEditId]);
+  }, [
+    deleteSupplierId,
+    deleteSupplierMutation,
+    handleAction,
+    supplierDetailsId,
+    supplierFormEditId,
+    suppliers,
+  ]);
 
-  const confirmDeletePart = useCallback(() => {
+  const confirmDeletePart = useCallback(async () => {
     if (!deletePartId) return;
-    const part = getInventoryPartById(deletePartId);
+    const part = parts.find((p) => p.id === deletePartId);
     if (!part) {
       handleAction("Peça não encontrada.");
       setDeletePartId(null);
       return;
     }
-    deleteInventoryPart(deletePartId);
+    await deletePartMutation.mutateAsync(deletePartId);
     if (partId === deletePartId) setPartId(null);
     handleAction(`Peça ${part.name} excluída.`);
     setDeletePartId(null);
-  }, [deletePartId, handleAction, partId]);
+  }, [deletePartId, deletePartMutation, handleAction, partId, parts]);
 
   const tabContent = () => {
     switch (activeTab) {
@@ -162,8 +178,8 @@ export function InventoryPage() {
         return (
           <PartsTable
             onOpenPart={setPartId}
-            onEditPart={(id) => openPartForm(id)}
-            onDeletePart={setDeletePartId}
+            onEditPart={canEdit ? (id) => openPartForm(id) : undefined}
+            onDeletePart={canDelete ? setDeletePartId : undefined}
           />
         );
       case "movements":
@@ -185,8 +201,8 @@ export function InventoryPage() {
         return (
           <SuppliersTable
             onOpenSupplier={setSupplierDetailsId}
-            onEditSupplier={(id) => openSupplierForm(id)}
-            onDeleteSupplier={setDeleteSupplierId}
+            onEditSupplier={canEdit ? (id) => openSupplierForm(id) : undefined}
+            onDeleteSupplier={canDelete ? setDeleteSupplierId : undefined}
           />
         );
       case "history":
@@ -206,15 +222,18 @@ export function InventoryPage() {
           <InventoryHeader
             title={tabMeta.title}
             subtitle={tabMeta.subtitle}
-            onRegisterEntry={() => setEntryOpen(true)}
-            onRegisterExit={() => setExitOpen(true)}
-            onRequestPurchase={() => openPurchase()}
-            onRegisterPart={() => openPartForm(null)}
-            onRegisterSupplier={() => openSupplierForm(null)}
+            onRegisterEntry={canEdit ? () => setEntryOpen(true) : undefined}
+            onRegisterExit={canEdit ? () => setExitOpen(true) : undefined}
+            onRequestPurchase={canEdit ? () => openPurchase() : undefined}
+            onRegisterPart={canEdit ? () => openPartForm(null) : undefined}
+            onRegisterSupplier={canEdit ? () => openSupplierForm(null) : undefined}
           />
         }
         fixedSubHeader={
-          <InventoryTabs active={activeTab} onChange={setActiveTab} />
+          <InventoryTabs
+            active={activeTab}
+            onChange={(tab) => startTabTransition(() => setActiveTab(tab))}
+          />
         }
       >
         {feedback ? (
@@ -226,22 +245,33 @@ export function InventoryPage() {
           </p>
         ) : null}
 
-        {activeTab === "overview" ? (
-          <AdminResponsiveKpis
-            kpis={inventoryKpis}
-            icons={KPI_ICONS}
-            desktopClassName="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6"
-          />
-        ) : null}
+        {activeTab === "overview" && kpisLoading ? (
+          <AdminInventoryOverviewSkeleton />
+        ) : (
+          <>
+            {activeTab === "overview" ? (
+              <AdminResponsiveKpis
+                kpis={inventoryKpis}
+                icons={KPI_ICONS}
+                desktopClassName="admin-page-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6"
+                showDeltaBadge={false}
+              />
+            ) : null}
 
-        <div
-          role="tabpanel"
-          id={`inventory-panel-${activeTab}`}
-          aria-labelledby={`inventory-tab-${activeTab}`}
-          className="admin-page-stack pb-10 lg:pb-12"
-        >
-          {tabContent()}
-        </div>
+            <div
+              role="tabpanel"
+              id={`inventory-panel-${activeTab}`}
+              aria-labelledby={`inventory-tab-${activeTab}`}
+              className="admin-page-stack pb-10 lg:pb-12"
+            >
+              {isTabPending && activeTab !== "overview" ? (
+                <AdminTabPanelSkeleton />
+              ) : (
+                tabContent()
+              )}
+            </div>
+          </>
+        )}
       </AdminShell>
 
       <PartDetailsDrawer partId={partId} onClose={() => setPartId(null)} />

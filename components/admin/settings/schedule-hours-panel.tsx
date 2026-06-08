@@ -4,12 +4,24 @@ import type { KartCategory, SkillLevel, WeekDaySchedule, SpecificDateSchedule, S
 
 import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  formatScheduleCategoryLabels,
+  formatScheduleLevelLabels,
+  syncSlotCategoryAndLevelIds,
+  toggleSlotSelectionId,
+} from "@/lib/schedule/schedule-slot-selection";
+
+import { useCallback, useEffect, useImperativeHandle, useState, forwardRef } from "react";
 import { HiCheck, HiChevronDown, HiPlus, HiTrash } from "react-icons/hi2";
 
+import {
+  adminAccordionItemClass,
+  adminAccordionPanelClass,
+  adminAccordionTriggerIconClass,
+} from "@/lib/design/classes";
 import { ConfirmDialog } from "./confirm-dialog";
+import { SettingsCheckbox } from "./settings-checkbox";
 import { SettingsDatePicker } from "./settings-date-picker";
-import { SettingsDropdown } from "./settings-dropdown";
 import { SettingsTimeInput } from "./settings-time-input";
 import {
   SettingsField,
@@ -17,11 +29,32 @@ import {
   settingsInputClass,
   settingsOutlineButtonClass,
 } from "./settings-section";
+import { adminLabelClass } from "@/lib/design/classes";
+
+const scheduleSlotRowGridClass =
+  "grid w-full grid-cols-[minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,1.6fr)_minmax(0,1.6fr)_auto] gap-x-3 gap-y-2";
+
+/** Mesma altura visual dos campos de horário (adminInputClass). */
+const scheduleSlotOptionBoxClass =
+  "flex h-[46px] items-center gap-2 rounded-xl border border-[rgba(17,17,17,0.1)] bg-[#fafbfc] px-3 text-[14px] text-[#111]";
 
 type Props = {
   kartCategories: KartCategory[];
   skillLevels: SkillLevel[];
   onDirty: () => void;
+  initialWeekDays?: WeekDaySchedule[];
+  initialSpecificDates?: SpecificDateSchedule[];
+  initialExceptions?: ScheduleException[];
+  configLoading?: boolean;
+};
+
+export type ScheduleHoursPanelHandle = {
+  getWeekDays: () => WeekDaySchedule[];
+  getScheduleHoursConfig: () => {
+    days: WeekDaySchedule[];
+    specificDates: SpecificDateSchedule[];
+    exceptions: ScheduleException[];
+  };
 };
 
 type View = "grade" | "bloqueios" | "especifico";
@@ -32,43 +65,6 @@ type PendingDelete =
   | { type: "specificDateSlot"; scheduleId: string; slotId: string; label: string }
   | { type: "exception"; id: string; label: string }
   | null;
-
-function cloneSchedule(
-  days: WeekDaySchedule[],
-  specificDates: SpecificDateSchedule[],
-  exceptions: ScheduleException[]
-) {
-  return {
-    days: days.map((d) => ({
-      ...d,
-      slots: d.slots.map((s) => ({ ...s })),
-    })),
-    specificDates: specificDates.map((d) => ({
-      ...d,
-      slots: d.slots.map((s) => ({ ...s })),
-    })),
-    exceptions: exceptions.map((e) => ({ ...e, slotIds: [...e.slotIds] })),
-  };
-}
-
-function syncSlotCategories(
-  slots: ScheduleTimeSlot[],
-  kartCategories: KartCategory[],
-  skillLevels: SkillLevel[]
-): ScheduleTimeSlot[] {
-  const catFallback = kartCategories[0]?.id;
-  const levelFallback = skillLevels[0]?.id;
-  if (!catFallback || !levelFallback) return slots;
-  return slots.map((s) => ({
-    ...s,
-    categoryId: kartCategories.some((c) => c.id === s.categoryId)
-      ? s.categoryId
-      : catFallback,
-    levelId: skillLevels.some((l) => l.id === s.levelId)
-      ? s.levelId
-      : levelFallback,
-  }));
-}
 
 function formatExceptionDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -106,10 +102,6 @@ function ExceptionSlotPicker({
   onChange: (slotIds: string[]) => void;
 }) {
   const slots = slotsForDate(days, date);
-  const categoryName = (id: string) =>
-    kartCategories.find((c) => c.id === id)?.name ?? "—";
-  const levelName = (id: string) =>
-    skillLevels.find((l) => l.id === id)?.name ?? "—";
 
   if (!date) {
     return (
@@ -166,10 +158,59 @@ function ExceptionSlotPicker({
                   {slot.start} – {slot.end}
                 </span>
                 <span className="mt-0.5 block text-neutral-500">
-                  {categoryName(slot.categoryId)} · {levelName(slot.levelId)}
+                  {formatScheduleCategoryLabels(slot.categoryIds, kartCategories)} ·{" "}
+                  {formatScheduleLevelLabels(slot.levelIds, skillLevels)}
                 </span>
               </span>
             </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function ScheduleSlotSelectionGroup({
+  options,
+  selectedIds,
+  onToggle,
+  disabled,
+  ariaPrefix,
+}: {
+  options: { id: string; name: string }[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  disabled?: boolean;
+  ariaPrefix: string;
+}) {
+  return (
+    <ul className="flex min-w-0 flex-wrap items-center gap-2">
+      {options.map((option) => {
+        const checked = selectedIds.includes(option.id);
+        return (
+          <li key={option.id}>
+            <div
+              className={`${scheduleSlotOptionBoxClass} transition ${
+                checked
+                  ? "border-accent bg-[rgba(13,31,60,0.06)]"
+                  : "bg-[#fafbfc] hover:border-accent/30"
+              }`}
+            >
+              <SettingsCheckbox
+                checked={checked}
+                disabled={disabled}
+                onChange={() => onToggle(option.id)}
+                aria-label={`${ariaPrefix}: ${option.name}`}
+              />
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onToggle(option.id)}
+                className="text-left text-[13px] font-medium text-[#111] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {option.name}
+              </button>
+            </div>
           </li>
         );
       })}
@@ -217,55 +258,61 @@ function DaySlotsList({
       {slots.map((slot) => (
         <li
           key={slot.id}
-          className="grid gap-3 rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] p-4 sm:grid-cols-[1fr_1fr_1.1fr_1.1fr_auto]"
+          className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-3 py-3"
         >
-          <SettingsField label="Início">
+          <div className={scheduleSlotRowGridClass}>
+            <label className={adminLabelClass}>Início</label>
+            <label className={adminLabelClass}>Fim</label>
+            <label className={adminLabelClass}>Categorias</label>
+            <label className={adminLabelClass}>Níveis</label>
+            <span aria-hidden className="block" />
+
             <SettingsTimeInput
               aria-label="Horário de início"
               value={slot.start}
               onChange={(start) => onUpdateSlot(slot.id, { start })}
             />
-          </SettingsField>
-          <SettingsField label="Fim">
             <SettingsTimeInput
               aria-label="Horário de fim"
               value={slot.end}
               onChange={(end) => onUpdateSlot(slot.id, { end })}
             />
-          </SettingsField>
-          <SettingsField label="Categoria">
-            <SettingsDropdown
-              aria-label="Categoria do horário"
-              value={slot.categoryId}
-              options={kartCategories.map((c) => ({
-                value: c.id,
-                label: c.name,
-              }))}
-              onSelect={(categoryId) => onUpdateSlot(slot.id, { categoryId })}
-              disabled={kartCategories.length === 0}
-            />
-          </SettingsField>
-          <SettingsField label="Nível">
-            <SettingsDropdown
-              aria-label="Nível do horário"
-              value={slot.levelId}
-              options={skillLevels.map((l) => ({
-                value: l.id,
-                label: l.name,
-              }))}
-              onSelect={(levelId) => onUpdateSlot(slot.id, { levelId })}
-              disabled={skillLevels.length === 0}
-            />
-          </SettingsField>
-          <div className="flex items-end justify-end pb-1">
-            <button
-              type="button"
-              onClick={() => onRequestRemoveSlot(slot)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#c41e3a]/20 text-[#c41e3a] transition hover:bg-red-50"
-              aria-label="Remover horário"
-            >
-              <HiTrash className="h-4 w-4" />
-            </button>
+            <div className="flex min-h-[46px] min-w-0 items-center">
+              <ScheduleSlotSelectionGroup
+                options={kartCategories}
+                selectedIds={slot.categoryIds}
+                disabled={!canConfigure || kartCategories.length === 0}
+                ariaPrefix="Categoria"
+                onToggle={(categoryId) =>
+                  onUpdateSlot(slot.id, {
+                    categoryIds: toggleSlotSelectionId(categoryId, slot.categoryIds),
+                  })
+                }
+              />
+            </div>
+            <div className="flex min-h-[46px] min-w-0 items-center">
+              <ScheduleSlotSelectionGroup
+                options={skillLevels}
+                selectedIds={slot.levelIds}
+                disabled={!canConfigure || skillLevels.length === 0}
+                ariaPrefix="Nível"
+                onToggle={(levelId) =>
+                  onUpdateSlot(slot.id, {
+                    levelIds: toggleSlotSelectionId(levelId, slot.levelIds),
+                  })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => onRequestRemoveSlot(slot)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#c41e3a]/20 text-[#c41e3a] transition hover:bg-red-50"
+                aria-label="Remover horário"
+              >
+                <HiTrash className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </li>
       ))}
@@ -273,27 +320,28 @@ function DaySlotsList({
   );
 }
 
-export function ScheduleHoursPanel({
-  kartCategories,
-  skillLevels,
-  onDirty,
-}: Props) {
-  const initial = cloneSchedule(
-    SettingsServiceMock.getWeekSchedule(),
-    SettingsServiceMock.getSpecificDateSchedules(),
-    SettingsServiceMock.getScheduleExceptions()
-  );
-  const [days, setDays] = useState(initial.days);
-  const [specificDateSchedules, setSpecificDateSchedules] = useState(
-    initial.specificDates
-  );
-  const [exceptions, setExceptions] = useState(initial.exceptions);
+export const ScheduleHoursPanel = forwardRef<ScheduleHoursPanelHandle, Props>(
+  function ScheduleHoursPanel(
+    {
+      kartCategories,
+      skillLevels,
+      onDirty,
+      initialWeekDays,
+      initialSpecificDates,
+      initialExceptions,
+      configLoading = false,
+    },
+    ref,
+  ) {
+  const [days, setDays] = useState<WeekDaySchedule[]>([]);
+  const [specificDateSchedules, setSpecificDateSchedules] = useState<
+    SpecificDateSchedule[]
+  >([]);
+  const [exceptions, setExceptions] = useState<ScheduleException[]>([]);
   const [view, setView] = useState<View>("grade");
-  const [expandedDay, setExpandedDay] = useState<string | null>(
-    SettingsServiceMock.getWeekSchedule()[0]?.dayKey ?? null
-  );
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [expandedExceptionId, setExpandedExceptionId] = useState<string | null>(
-    SettingsServiceMock.getScheduleExceptions()[0]?.id ?? null
+    null,
   );
   const [expandedSpecificId, setExpandedSpecificId] = useState<string | null>(
     null
@@ -301,6 +349,55 @@ export function ScheduleHoursPanel({
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
 
   const touch = () => onDirty();
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getWeekDays: () => days,
+      getScheduleHoursConfig: () => ({
+        days,
+        specificDates: specificDateSchedules,
+        exceptions,
+      }),
+    }),
+    [days, specificDateSchedules, exceptions],
+  );
+
+  const syncSlotsIfCatalogReady = useCallback(
+    (slots: ScheduleTimeSlot[]) => {
+      const cloned = slots.map((slot) => ({ ...slot }));
+      if (!kartCategories.length || !skillLevels.length) return cloned;
+      return syncSlotCategoryAndLevelIds(cloned, kartCategories, skillLevels);
+    },
+    [kartCategories, skillLevels],
+  );
+
+  useEffect(() => {
+    if (!initialWeekDays?.length) return;
+    setDays(
+      initialWeekDays.map((day) => ({
+        ...day,
+        slots: syncSlotsIfCatalogReady(day.slots),
+      })),
+    );
+    setExpandedDay((prev) => prev ?? initialWeekDays[0]?.dayKey ?? null);
+  }, [initialWeekDays, syncSlotsIfCatalogReady]);
+
+  useEffect(() => {
+    if (!initialSpecificDates) return;
+    setSpecificDateSchedules(
+      initialSpecificDates.map((schedule) => ({
+        ...schedule,
+        slots: syncSlotsIfCatalogReady(schedule.slots),
+      })),
+    );
+  }, [initialSpecificDates, syncSlotsIfCatalogReady]);
+
+  useEffect(() => {
+    if (!initialExceptions) return;
+    setExceptions(initialExceptions.map((exception) => ({ ...exception })));
+    setExpandedExceptionId((prev) => prev ?? initialExceptions[0]?.id ?? null);
+  }, [initialExceptions]);
 
   const defaultCategoryId = () => kartCategories[0]?.id ?? "";
   const defaultLevelId = () => skillLevels[0]?.id ?? "";
@@ -311,13 +408,13 @@ export function ScheduleHoursPanel({
     setDays((prev) =>
       prev.map((d) => ({
         ...d,
-        slots: syncSlotCategories(d.slots, kartCategories, skillLevels),
+        slots: syncSlotCategoryAndLevelIds(d.slots, kartCategories, skillLevels),
       }))
     );
     setSpecificDateSchedules((prev) =>
       prev.map((d) => ({
         ...d,
-        slots: syncSlotCategories(d.slots, kartCategories, skillLevels),
+        slots: syncSlotCategoryAndLevelIds(d.slots, kartCategories, skillLevels),
       }))
     );
   }, [kartCategories, skillLevels]);
@@ -432,7 +529,7 @@ export function ScheduleHoursPanel({
               ...d,
               slots: [
                 ...d.slots,
-                SettingsServiceMock.createSpecificDateTimeSlot(scheduleId, catId, levelId),
+                SettingsServiceMock.createSpecificDateTimeSlot(scheduleId, [catId], [levelId]),
               ],
             }
           : d
@@ -459,7 +556,7 @@ export function ScheduleHoursPanel({
     setDays((prev) =>
       prev.map((d) =>
         d.dayKey === dayKey
-          ? { ...d, slots: [...d.slots, SettingsServiceMock.createTimeSlot(catId, levelId)] }
+          ? { ...d, slots: [...d.slots, SettingsServiceMock.createTimeSlot([catId], [levelId])] }
           : d
       )
     );
@@ -529,14 +626,13 @@ export function ScheduleHoursPanel({
     a.date.localeCompare(b.date)
   );
 
-  const categoryName = (id: string) =>
-    kartCategories.find((c) => c.id === id)?.name ?? "—";
+  const slotCategoryLabels = (slot: ScheduleTimeSlot) =>
+    formatScheduleCategoryLabels(slot.categoryIds, kartCategories);
 
-  const levelName = (id: string) =>
-    skillLevels.find((l) => l.id === id)?.name ?? "—";
+  const slotLevelLabels = (slot: ScheduleTimeSlot) =>
+    formatScheduleLevelLabels(slot.levelIds, skillLevels);
 
-  const canConfigure =
-    kartCategories.length > 0 && skillLevels.length > 0;
+  const canConfigure = kartCategories.length > 0 && skillLevels.length > 0;
 
   const viewToggle = (
     <div className="inline-flex flex-wrap rounded-xl border border-[rgba(17,17,17,0.1)] bg-[#fafbfc] p-1">
@@ -571,8 +667,14 @@ export function ScheduleHoursPanel({
     >
       {!canConfigure ? (
         <p className="mb-6 rounded-xl border border-dashed border-amber-200/80 bg-amber-50/50 px-4 py-3 text-sm text-amber-900">
-          Cadastre categorias e níveis em{" "}
-          <strong>Categorias e níveis</strong> para configurar horários.
+          Cadastre categorias em <strong>Categorias e níveis</strong> para
+          configurar horários.
+        </p>
+      ) : null}
+
+      {configLoading ? (
+        <p className="mb-4 text-sm font-semibold text-neutral-500">
+          Carregando grade semanal…
         </p>
       ) : null}
 
@@ -608,11 +710,7 @@ export function ScheduleHoursPanel({
                 return (
                   <li
                     key={ex.id}
-                    className={`rounded-2xl border transition ${
-                      isOpen
-                        ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                        : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-                    }`}
+                    className={adminAccordionItemClass(isOpen)}
                   >
                     <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
                       <button
@@ -621,11 +719,7 @@ export function ScheduleHoursPanel({
                         aria-expanded={isOpen}
                         aria-controls={panelId}
                         onClick={() => toggleException(ex.id)}
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                          isOpen
-                            ? "bg-accent text-white"
-                            : "bg-[rgba(13,31,60,0.07)] text-accent"
-                        }`}
+                        className={adminAccordionTriggerIconClass(isOpen)}
                         aria-label={
                           isOpen ? "Recolher bloqueio" : "Expandir bloqueio"
                         }
@@ -772,11 +866,7 @@ export function ScheduleHoursPanel({
                 return (
                   <li
                     key={entry.id}
-                    className={`rounded-2xl border transition ${
-                      isOpen
-                        ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                        : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-                    }`}
+                    className={adminAccordionItemClass(isOpen)}
                   >
                     <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
                       <button
@@ -785,11 +875,7 @@ export function ScheduleHoursPanel({
                         aria-expanded={isOpen}
                         aria-controls={panelId}
                         onClick={() => toggleSpecificDate(entry.id)}
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                          isOpen
-                            ? "bg-accent text-white"
-                            : "bg-[rgba(13,31,60,0.07)] text-accent"
-                        }`}
+                        className={adminAccordionTriggerIconClass(isOpen)}
                         aria-label={
                           isOpen ? "Recolher data" : "Expandir data"
                         }
@@ -886,7 +972,7 @@ export function ScheduleHoursPanel({
                               type: "specificDateSlot",
                               scheduleId: entry.id,
                               slotId: slot.id,
-                              label: `${entry.date ? formatExceptionDate(entry.date) : "Data"} · ${slot.start} – ${slot.end} · ${categoryName(slot.categoryId)} · ${levelName(slot.levelId)}`,
+                              label: `${entry.date ? formatExceptionDate(entry.date) : "Data"} · ${slot.start} – ${slot.end} · ${slotCategoryLabels(slot)} · ${slotLevelLabels(slot)}`,
                             })
                           }
                         />
@@ -919,11 +1005,7 @@ export function ScheduleHoursPanel({
           return (
             <li
               key={day.dayKey}
-              className={`rounded-2xl border transition ${
-                isOpen
-                  ? "border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                  : "border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-              }`}
+              className={adminAccordionItemClass(isOpen)}
             >
               <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
                 <button
@@ -932,11 +1014,7 @@ export function ScheduleHoursPanel({
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                   onClick={() => toggleDay(day.dayKey)}
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                    isOpen
-                      ? "bg-accent text-white"
-                      : "bg-[rgba(13,31,60,0.07)] text-accent"
-                  }`}
+                  className={adminAccordionTriggerIconClass(isOpen)}
                   aria-label={isOpen ? "Recolher dia" : "Expandir dia"}
                 >
                   <HiChevronDown
@@ -995,7 +1073,7 @@ export function ScheduleHoursPanel({
                         type: "slot",
                         dayKey: day.dayKey,
                         slotId: slot.id,
-                        label: `${slot.start} – ${slot.end} · ${categoryName(slot.categoryId)} · ${levelName(slot.levelId)}`,
+                        label: `${slot.start} – ${slot.end} · ${slotCategoryLabels(slot)} · ${slotLevelLabels(slot)}`,
                       })
                     }
                   />
@@ -1030,4 +1108,7 @@ export function ScheduleHoursPanel({
       />
     </SettingsSection>
   );
-}
+},
+);
+
+ScheduleHoursPanel.displayName = "ScheduleHoursPanel";

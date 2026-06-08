@@ -38,16 +38,19 @@ export type AppDropdownProps<T extends string | number = string | number> = {
 };
 
 const listBase =
-  "app-dropdown__list absolute left-0 right-0 top-[calc(100%+4px)] z-[60] min-w-0 overflow-y-auto rounded-xl border-2 border-divider bg-background py-1 shadow-lg outline-none dark:bg-[#080808] app-dropdown-scrollbar";
+  "app-dropdown__list absolute left-0 right-0 top-full z-[60] mt-2 min-w-0 overflow-y-auto rounded-xl border border-[var(--ds-border-field)] bg-[var(--ds-bg-elevated)] py-1 shadow-[var(--ds-shadow-popover)] outline-none app-dropdown-scrollbar";
 
 const triggerBase =
   "app-dropdown__trigger flex w-full min-w-0 cursor-pointer items-center text-left outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
 
+const optionSelectedClass =
+  "border border-accent bg-[var(--ds-bg-elevated)] text-[var(--ds-text-primary)]";
+
 const optionBase =
-  "app-dropdown__option flex w-full items-center rounded-lg px-2.5 py-2 text-left text-[14px] font-semibold text-primary transition";
+  "app-dropdown__option flex w-full items-center rounded-lg border border-transparent px-2.5 py-2 text-left text-[14px] font-semibold text-[var(--ds-text-body)] transition";
 
 const nativeSelectClass =
-  "app-native-select block h-full min-h-12 w-full min-w-0 cursor-pointer appearance-none rounded-xl border-0 bg-transparent px-4 py-0 pr-10 text-left text-[14px] text-[#111] outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
+  "app-native-select block h-full min-h-12 w-full min-w-0 cursor-pointer appearance-none rounded-xl border-0 bg-transparent px-4 py-0 pr-10 text-left text-[14px] text-[var(--ds-text-body)] outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
 
 type NativeSelectProps<T extends string | number> = Pick<
   AppDropdownProps<T>,
@@ -201,6 +204,7 @@ export function AppDropdown<T extends string | number = string | number>({
     <span
       ref={rootRef}
       data-disabled={disabled}
+      data-open={open ? "true" : undefined}
       className={rootClassName}
       style={style}
     >
@@ -221,7 +225,7 @@ export function AppDropdown<T extends string | number = string | number>({
       >
         <span className={labelClassName}>
           {triggerMuted ? (
-            <span className="text-neutral-400">{triggerLabel}</span>
+            <span className="text-[var(--ds-text-muted)]">{triggerLabel}</span>
           ) : (
             triggerLabel
           )}
@@ -253,10 +257,8 @@ export function AppDropdown<T extends string | number = string | number>({
                     `${optionBase} ${optionClassName ?? ""} ` +
                     (opt.disabled
                       ? "cursor-not-allowed opacity-40"
-                      : "hover:bg-[rgba(13,31,60,0.08)] dark:hover:bg-white/[0.08]") +
-                    (isActive
-                      ? " bg-[rgba(13,31,60,0.12)] text-[var(--color-accent)] dark:bg-white/[0.1]"
-                      : "")
+                      : "hover:bg-[var(--ds-bg-muted)]") +
+                    (isActive ? ` ${optionSelectedClass}` : "")
                   }
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {

@@ -12,7 +12,7 @@ export type NewMaintenanceTypeKey =
   | "revisao"
   | "setup"
   | "pos_incidente"
-  | "pre_campeonato";
+  | "pre_evento";
 
 export type NewMaintenancePriority = "baixa" | "media" | "alta" | "critica";
 
@@ -172,8 +172,8 @@ export const MAINTENANCE_TYPE_OPTIONS: {
     icon: "flag",
   },
   {
-    key: "pre_campeonato",
-    label: "Pré-campeonato",
+    key: "pre_evento",
+    label: "Pré-evento",
     description: "Preparação homologada para evento.",
     icon: "trophy",
   },
@@ -328,7 +328,7 @@ export const AFFECTED_BOOKINGS: AffectedBooking[] = [
 
 export const SIGNATURE_MAINTENANCE = {
   mechanic: "Carlos Silva",
-  instructor: "Lucas Mendes",
+  supervisor: "Lucas Mendes",
   signedAt: NOW_MAINTENANCE_LABEL,
 };
 

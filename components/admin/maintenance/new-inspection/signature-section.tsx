@@ -1,12 +1,35 @@
-import { InspectionServiceMock } from "@/services/maintenance/inspectionServiceMock";
+"use client";
+
+import { useInspectionTemplate } from "@/lib/query/hooks/use-inspection-template";
 
 import { HiFingerPrint } from "react-icons/hi2";
+
+type SignatureStaff = {
+  mechanic: string;
+  supervisor: string;
+  signedAt: string;
+};
 
 type Props = {
   responsible: string;
 };
 
 export function SignatureSection({ responsible }: Props) {
+  const { data: template, isLoading } = useInspectionTemplate();
+  const staff = (template?.signatureStaff ?? {
+    mechanic: "—",
+    supervisor: "—",
+    signedAt: "—",
+  }) as SignatureStaff;
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
+        <div className="h-32 animate-pulse rounded-xl bg-[#fafbfc]" />
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-sm">
       <h2 className="text-sm font-bold text-[#0d1f3c]">
@@ -23,10 +46,10 @@ export function SignatureSection({ responsible }: Props) {
         </div>
         <div className="rounded-xl bg-[#fafbfc] px-3 py-2.5 ring-1 ring-[rgba(17,17,17,0.06)]">
           <dt className="text-[10px] font-bold uppercase text-neutral-500">
-            Instrutor
+            Supervisor operacional
           </dt>
           <dd className="mt-1 text-sm font-bold text-[#0d1f3c]">
-            {InspectionServiceMock.getSignatureStaff().instructor}
+            {staff.supervisor}
           </dd>
         </div>
         <div className="rounded-xl bg-[#fafbfc] px-3 py-2.5 ring-1 ring-[rgba(17,17,17,0.06)]">
@@ -34,7 +57,7 @@ export function SignatureSection({ responsible }: Props) {
             Mecânico
           </dt>
           <dd className="mt-1 text-sm font-bold text-[#0d1f3c]">
-            {InspectionServiceMock.getSignatureStaff().mechanic}
+            {staff.mechanic}
           </dd>
         </div>
         <div className="rounded-xl bg-[#fafbfc] px-3 py-2.5 ring-1 ring-[rgba(17,17,17,0.06)]">
@@ -42,7 +65,7 @@ export function SignatureSection({ responsible }: Props) {
             Data e hora
           </dt>
           <dd className="mt-1 text-sm font-bold text-[#0d1f3c]">
-            {InspectionServiceMock.getSignatureStaff().signedAt}
+            {staff.signedAt}
           </dd>
         </div>
       </dl>

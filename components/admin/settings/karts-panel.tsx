@@ -8,6 +8,13 @@ import { SettingsServiceMock } from "@/services/settings/settingsServiceMock";
 import { useCallback, useState } from "react";
 import { HiChevronDown, HiPlus, HiTrash } from "react-icons/hi2";
 
+import {
+  adminAccordionItemClass,
+  adminAccordionPanelClass,
+  adminAccordionSubtitleClass,
+  adminAccordionTitleClass,
+  adminAccordionTriggerIconClass,
+} from "@/lib/design";
 import { ConfirmDialog } from "./confirm-dialog";
 import { SettingsDropdown } from "./settings-dropdown";
 import {
@@ -177,11 +184,9 @@ function KartListByCategory({
                   return (
                     <li
                       key={kart.id}
-                      className={`rounded-2xl border transition ${
-                        isOpen
-                          ? "overflow-visible border-accent/25 bg-white shadow-[0_4px_20px_rgba(13,31,60,0.08)]"
-                          : "overflow-hidden border-[rgba(17,17,17,0.08)] bg-[#fafbfc]"
-                      }`}
+                      className={adminAccordionItemClass(isOpen, {
+                        overflowVisible: true,
+                      })}
                     >
                       <div className="flex items-center gap-2 px-3 py-3 md:px-4 md:py-4">
                         <button
@@ -190,11 +195,7 @@ function KartListByCategory({
                           aria-expanded={isOpen}
                           aria-controls={panelId}
                           onClick={() => onToggleKart(kart.id)}
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-                            isOpen
-                              ? "bg-accent text-white"
-                              : "bg-[rgba(13,31,60,0.07)] text-accent"
-                          }`}
+                          className={adminAccordionTriggerIconClass(isOpen)}
                           aria-label={
                             isOpen ? "Recolher kart" : "Expandir kart"
                           }
@@ -212,10 +213,10 @@ function KartListByCategory({
                           className="min-w-0 flex-1 text-left"
                           onClick={() => onToggleKart(kart.id)}
                         >
-                          <span className="block text-base font-bold text-[#0d1f3c] md:text-lg">
+                          <span className={`block ${adminAccordionTitleClass}`}>
                             {kartNumberLabel(kart.number)}
                           </span>
-                          <span className="mt-0.5 block text-[12px] text-neutral-500">
+                          <span className={adminAccordionSubtitleClass}>
                             {subtitle}
                           </span>
                         </button>
@@ -240,7 +241,7 @@ function KartListByCategory({
                         hidden={!isOpen}
                         className={isOpen ? "block" : "hidden"}
                       >
-                        <div className="border-t border-[rgba(17,17,17,0.08)] px-4 pb-5 pt-4 md:px-5 md:pb-6 md:pt-5">
+                        <div className={`md:pt-5 ${adminAccordionPanelClass}`}>
                           <KartAccordionFields
                             kart={kart}
                             showClientName={showClientName}

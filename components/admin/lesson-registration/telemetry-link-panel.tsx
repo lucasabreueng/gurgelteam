@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { TelemetrySessionOptionDTO } from "@/lib/contracts/telemetry/telemetry.types";
-import { LessonServiceMock } from "@/services/lessons/lessonServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 import { lessonRegistrationSelectionClass } from "./lesson-registration-selection";
 
 type Props = {
@@ -24,9 +24,9 @@ export function TelemetryLinkPanel({
 }: Props) {
   const options = useMemo(
     () =>
-      LessonServiceMock.getTelemetrySessionOptions().filter((t) =>
-        matchesPilot(t.pilotName, pilotName),
-      ),
+      getAppServices()
+        .lessons.getTelemetrySessionOptions()
+        .filter((t) => matchesPilot(t.pilotName, pilotName)),
     [pilotName],
   );
 

@@ -11,6 +11,7 @@ import { SectorsPageSkeleton } from "./telemetry/sectors/sectors-page-skeleton";
 import { SectorsSessionHeader } from "./telemetry/sectors/sectors-session-header";
 import { TelemetryEmptyState } from "./telemetry/telemetry-empty-state";
 import { SECTION_TITLE } from "./telemetry/sectors/sectors-styles";
+import { telemetryWorkspaceBgClass } from "@/lib/design";
 
 /** Página dedicada de setores — `/piloto/telemetria/setores` */
 export function StudentTelemetrySectorsPage() {
@@ -34,7 +35,7 @@ export function StudentTelemetrySectorsPage() {
 
   if (!activeSessionId || activeSessionId === TELEMETRY_NO_SESSION) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+      <div className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}>
         <TelemetryEmptyState
           onOpenSessions={openSessionsModal}
           onOpenLoad={openLoadModal}
@@ -45,7 +46,7 @@ export function StudentTelemetrySectorsPage() {
 
   if (processedLoading) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+      <div className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}>
         <SectorsPageSkeleton />
       </div>
     );
@@ -53,7 +54,7 @@ export function StudentTelemetrySectorsPage() {
 
   if (!data || !data.laps.some((l) => !l.invalid)) {
     return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f3f5f9]">
+      <div className={`flex h-full min-h-0 flex-col overflow-hidden ${telemetryWorkspaceBgClass}`}>
         <TelemetryEmptyState
           onOpenSessions={openSessionsModal}
           onOpenLoad={openLoadModal}

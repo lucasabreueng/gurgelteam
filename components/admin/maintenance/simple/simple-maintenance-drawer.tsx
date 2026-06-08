@@ -12,6 +12,7 @@ import type {
 import { INSPECTION_ITEM_LABELS } from "@/lib/contracts/maintenance/simple";
 import { ScheduleDrawerShell } from "@/components/admin/schedule/schedule-drawer-shell";
 import { DrawerFooterActions } from "@/components/ui/drawer-footer";
+import { setKartStatusByNumber } from "@/lib/karts-runtime-store";
 import { ConfirmDialog } from "@/components/admin/settings/confirm-dialog";
 import { SettingsDatePicker } from "@/components/admin/settings/settings-date-picker";
 import { SettingsDropdown } from "@/components/admin/settings/settings-dropdown";
@@ -103,6 +104,14 @@ export function SimpleMaintenanceDrawer({
     const label = kart
       ? `Kart ${String(kart.number).padStart(2, "0")}`
       : "Kart";
+
+    if (kart) {
+      if (status === "concluida") {
+        setKartStatusByNumber(kart.number, "disponivel");
+      } else {
+        setKartStatusByNumber(kart.number, "manutencao");
+      }
+    }
 
     let msg = `Manutenção registrada para ${label}.`;
     if (createExpense && costCents > 0) {

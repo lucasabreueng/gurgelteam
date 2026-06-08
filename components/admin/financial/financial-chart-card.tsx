@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { adminCardClass, adminHintClass, adminTextAccentClass } from "@/lib/design";
+
 type Props = {
   title: string;
   subtitle?: string;
@@ -16,14 +18,12 @@ export function FinancialChartCard({
   className = "",
 }: Props) {
   return (
-    <section
-      className={`rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-4 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-5 ${className}`}
-    >
+    <section className={`${adminCardClass} p-4 md:p-5 ${className}`.trim()}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-[#0d1f3c]">{title}</h3>
+          <h3 className={`text-sm ${adminTextAccentClass}`}>{title}</h3>
           {subtitle ? (
-            <p className="mt-0.5 text-xs text-neutral-500">{subtitle}</p>
+            <p className={`mt-0.5 ${adminHintClass}`}>{subtitle}</p>
           ) : null}
         </div>
         {headerAction ? <div className="shrink-0">{headerAction}</div> : null}

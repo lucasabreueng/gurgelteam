@@ -8,6 +8,8 @@ export type UserTrackRecord = {
   name: string;
   city: string;
   center: { latitude: number; longitude: number };
+  /** Referência de mapa — apenas Google Maps (satélite) na UI. */
+  map?: { kind: "google" };
   /** S1 = largada/chegada (início e fim de volta) */
   lines: {
     s1: SectorLineInput;

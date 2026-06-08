@@ -17,3 +17,17 @@ export function useClientsKpis() {
     queryFn: () => getAppServices().clients.getKpis(),
   });
 }
+
+export function useClientsReference() {
+  return useQuery({
+    queryKey: [...queryKeys.clients.all, "reference"] as const,
+    queryFn: async () => {
+      const services = getAppServices().clients;
+      const [categories, skillLevels] = await Promise.all([
+        services.getKartCategories(),
+        services.getSkillLevels(),
+      ]);
+      return { categories, skillLevels };
+    },
+  });
+}

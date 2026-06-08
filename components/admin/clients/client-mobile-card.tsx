@@ -3,14 +3,20 @@
 import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { HiCalendarDays, HiChevronRight } from "react-icons/hi2";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import {type ClientListItem} from "@/lib/contracts/clients";
 import type { KartCategory, SkillLevel } from "@/lib/contracts/settings";
 import {
+  adminEmptyStateClass,
+  adminMobileListCardClass,
+  adminTextAccentBoldClass,
+} from "@/lib/design";
+import {
   ClientCategoriesBadges,
   ClientLevelBadge,
-  ClientStatusBadge} from "./client-badges";
+  ClientStatusBadge,
+} from "./client-badges";
 
 const MOBILE_BATCH_SIZE = 12;
 
@@ -37,21 +43,19 @@ export function ClientMobileCard({
     <button
       type="button"
       onClick={() => onViewProfile(client.id)}
-      className="grid w-full grid-cols-[48px_minmax(0,1fr)_auto] grid-rows-[auto_auto_auto] items-start gap-x-3 gap-y-1.5 rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-3 py-3 text-left shadow-[0_1px_8px_rgba(13,31,60,0.04)] transition active:scale-[0.99] hover:border-accent/20"
+      className={`grid w-full grid-cols-[48px_minmax(0,1fr)_auto] grid-rows-[auto_auto_auto] items-start gap-x-3 gap-y-1.5 ${adminMobileListCardClass}`}
     >
-      <span className="relative row-span-3 h-full min-h-[72px] w-12 overflow-hidden rounded-2xl ring-2 ring-white shadow-sm">
-        <Image
-          src={client.avatar}
-          alt=""
-          fill
-          className="object-cover"
-          sizes="48px"
-        />
-      </span>
+      <UserAvatar
+        src={client.avatar}
+        name={client.name}
+        size={48}
+        roundedClass="rounded-2xl"
+        className="row-span-3 self-start"
+      />
 
       <div className="col-start-2 row-start-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="truncate text-[13px] font-bold text-[#0d1f3c]">
+          <span className={`truncate text-[13px] ${adminTextAccentBoldClass}`}>
             {client.name}
           </span>
           <ClientStatusBadge status={client.status} />
@@ -176,7 +180,7 @@ export function ClientMobileList({
   return (
     <div className="lg:hidden">
       {clients.length === 0 ? (
-        <p className="rounded-xl border border-[rgba(17,17,17,0.08)] bg-white px-4 py-10 text-center text-sm text-neutral-500">
+        <p className={adminEmptyStateClass}>
           Nenhum cliente encontrado com os filtros atuais.
         </p>
       ) : (

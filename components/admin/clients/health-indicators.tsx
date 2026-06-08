@@ -6,6 +6,7 @@ import {
   HiFire,
 } from "react-icons/hi2";
 import type { ClientHealthFlag } from "@/lib/contracts/clients";
+import { adminBodyClass, adminSubsectionTitleClass } from "@/lib/design";
 
 type Props = {
   flags: ClientHealthFlag[];
@@ -36,8 +37,8 @@ function severityIcon(severity: ClientHealthFlag["severity"]) {
 export function HealthIndicators({ flags }: Props) {
   return (
     <section>
-      <h3 className="text-lg font-bold text-[#0d1f3c]">Saúde do cliente</h3>
-      <p className="mt-1 text-sm text-neutral-600">
+      <h3 className={adminSubsectionTitleClass}>Saúde do cliente</h3>
+      <p className={`mt-1 ${adminBodyClass}`}>
         Sinais de engajamento, risco e evolução.
       </p>
 

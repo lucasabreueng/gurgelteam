@@ -1,6 +1,6 @@
+export type { KartOwnership, KartStatus } from "../enums";
+
 export type {
-  KartOwnership,
-  KartStatus,
   KartTabKey,
   NewKartFormData,
   RegisteredMotor,

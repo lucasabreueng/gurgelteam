@@ -1,14 +1,45 @@
-import { FinancialServiceMock } from "@/services/finance/financialServiceMock";
+"use client";
 
+import { useFinanceInsights } from "@/lib/query/hooks/use-finance-insights";
 
 export function KartFinancialOverview() {
-  const sorted = [...FinancialServiceMock.getKartFinancials()].sort((a, b) =>
-    a.profitPositive === b.profitPositive
-      ? 0
-      : a.profitPositive
-        ? -1
-        : 1
+  const { data, isLoading } = useFinanceInsights();
+  const kartFinancials = data?.kartFinancials ?? [];
+
+  const sorted = [...kartFinancials].sort((a, b) =>
+    a.profitPositive === b.profitPositive ? 0 : a.profitPositive ? -1 : 1,
   );
+
+  const mostProfitable = [...kartFinancials]
+    .filter((k) => k.profitPositive)
+    .sort(
+      (a, b) =>
+        parseFloat(b.estimatedProfit.replace(/[^\d.-]/g, "")) -
+        parseFloat(a.estimatedProfit.replace(/[^\d.-]/g, "")),
+    )[0];
+  const highestCost = [...kartFinancials].sort(
+    (a, b) =>
+      parseFloat(b.costPerHour.replace(/[^\d]/g, "")) -
+      parseFloat(a.costPerHour.replace(/[^\d]/g, "")),
+  )[0];
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-6">
+        <div className="h-40 animate-pulse rounded-xl bg-[#fafbfc]" />
+      </section>
+    );
+  }
+
+  if (sorted.length === 0) {
+    return (
+      <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-6">
+        <p className="text-sm text-neutral-500">
+          Nenhum dado de rentabilidade por kart no mês.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-5 shadow-[0_2px_12px_rgba(13,31,60,0.04)] md:p-6">
@@ -69,11 +100,23 @@ export function KartFinancialOverview() {
           </article>
         ))}
       </div>
-      <p className="mt-4 text-[11px] text-neutral-500">
-        <span className="font-bold text-emerald-700">Mais lucrativo:</span> Kart 7
-        ·{" "}
-        <span className="font-bold text-red-700">Maior custo:</span> Kart 12
-      </p>
+      {mostProfitable || highestCost ? (
+        <p className="mt-4 text-[11px] text-neutral-500">
+          {mostProfitable ? (
+            <>
+              <span className="font-bold text-emerald-700">Mais lucrativo:</span>{" "}
+              Kart {mostProfitable.number}
+            </>
+          ) : null}
+          {mostProfitable && highestCost ? " · " : null}
+          {highestCost ? (
+            <>
+              <span className="font-bold text-red-700">Maior custo/hora:</span>{" "}
+              Kart {highestCost.number}
+            </>
+          ) : null}
+        </p>
+      ) : null}
     </section>
   );
 }

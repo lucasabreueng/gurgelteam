@@ -3,7 +3,7 @@
 import type { SectorId, SectorsLapRecord } from "@/lib/contracts/telemetry/sectors";
 import { TelemetryServiceMock } from "@/services/telemetry/telemetryServiceMock";
 import { useMemo } from "react";
-import ReactECharts from "echarts-for-react";
+import { ThemedECharts } from "@/components/charts/themed-echarts";
 import type { EChartsOption } from "echarts";
 
 import { CHART_LIGHT, SECTION_LABEL, SECTOR_SECTION } from "./sectors-styles";
@@ -240,21 +240,21 @@ export function SectorsChartsSection({
   return (
     <section className="grid gap-4 lg:grid-cols-3">
       <ChartShell title="Evolução de voltas">
-        <ReactECharts
+        <ThemedECharts
           option={evolutionOption}
           style={{ height: "100%", width: "100%" }}
           opts={{ renderer: "svg" }}
         />
       </ChartShell>
       <ChartShell title="Tempos por setor">
-        <ReactECharts
+        <ThemedECharts
           option={sectorOption}
           style={{ height: "100%", width: "100%" }}
           opts={{ renderer: "svg" }}
         />
       </ChartShell>
       <ChartShell title="Delta acumulado">
-        <ReactECharts
+        <ThemedECharts
           option={deltaOption}
           style={{ height: "100%", width: "100%" }}
           opts={{ renderer: "svg" }}

@@ -1,8 +1,7 @@
 "use client";
 
 import type { MaintenanceOrderListItem } from "@/lib/contracts/maintenance";
-
-import { MaintenanceServiceMock } from "@/services/maintenance/maintenanceServiceMock";
+import { getAppServices } from "@/lib/data-source/app-services";
 
 import Image from "next/image";
 import { HiChevronRight, HiEye } from "react-icons/hi2";
@@ -10,9 +9,14 @@ import { HiChevronRight, HiEye } from "react-icons/hi2";
 import { MaintenancePriorityBadge } from "./maintenance-priority-badge";
 import { MaintenanceStatusBadge } from "./maintenance-status-badge";
 import { MaintenanceTablePagination } from "./maintenance-table-pagination";
-
-const metaBadge =
-  "inline-flex rounded-md border border-[rgba(17,17,17,0.08)] bg-[#fafbfc] px-2 py-0.5 text-[11px] font-semibold text-[#0d1f3c]";
+import {
+  adminMetaBadgeClass,
+  adminTableActionButtonClass,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
+  adminTableScrollClass,
+  adminTableWrapClass,
+} from "@/lib/design";
 
 type Props = {
   orders: MaintenanceOrderListItem[];
@@ -33,13 +37,16 @@ export function MaintenanceOrderTable({
   onPageSizeChange,
   onViewDetails,
 }: Props) {
+  const maintenance = getAppServices().maintenance;
+  const typeLabels = maintenance.getTypeLabels();
+
   return (
     <div>
-      <div className="hidden overflow-visible rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white shadow-[0_2px_12px_rgba(13,31,60,0.04)] lg:block">
-        <div className="overflow-x-auto rounded-t-2xl">
+      <div className={`hidden lg:block ${adminTableWrapClass}`}>
+        <div className={adminTableScrollClass}>
           <table className="w-full min-w-[1100px] text-left text-sm">
           <thead>
-            <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc] text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+            <tr className={adminTableHeadRowClass}>
               <th className="px-4 py-3.5">OS / Kart</th>
               <th className="px-3 py-3.5">Categoria</th>
               <th className="px-3 py-3.5">Tipo</th>
@@ -57,7 +64,7 @@ export function MaintenanceOrderTable({
             {orders.map((order) => (
               <tr
                 key={order.id}
-                className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+                className={adminTableBodyRowClass}
               >
                 <td className="px-4 py-3.5">
                   <button
@@ -78,7 +85,7 @@ export function MaintenanceOrderTable({
                       <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                         {order.osNumber}
                       </span>
-                      <span className="block font-semibold text-[#0d1f3c]">
+                      <span className="block font-semibold text-[var(--ds-text-primary)]">
                         Kart {String(order.kartNumber).padStart(2, "0")}
                       </span>
                       {order.ownerName ? (
@@ -90,11 +97,11 @@ export function MaintenanceOrderTable({
                   </button>
                 </td>
                 <td className="px-3 py-3.5">
-                  <span className={metaBadge}>{order.categoryName}</span>
+                  <span className={adminMetaBadgeClass}>{order.categoryName}</span>
                 </td>
                 <td className="px-3 py-3.5">
-                  <span className={metaBadge}>
-                    {MaintenanceServiceMock.getTypeLabels()[order.type]}
+                  <span className={adminMetaBadgeClass}>
+                    {typeLabels[order.type]}
                   </span>
                 </td>
                 <td className="max-w-[200px] px-3 py-3.5">
@@ -110,7 +117,7 @@ export function MaintenanceOrderTable({
                   {order.mechanicName}
                 </td>
                 <td className="px-3 py-3.5 text-neutral-700">{order.openedAt}</td>
-                <td className="px-3 py-3.5 font-semibold tabular-nums text-[#0d1f3c]">
+                <td className="px-3 py-3.5 font-semibold tabular-nums text-[var(--ds-text-primary)]">
                   {order.stoppedDays}d
                 </td>
                 <td className="px-3 py-3.5 text-neutral-700">
@@ -123,7 +130,7 @@ export function MaintenanceOrderTable({
                       title="Ver detalhes"
                       aria-label="Ver detalhes"
                       onClick={() => onViewDetails(order.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-[#0d1f3c]/5 hover:text-[#0d1f3c]"
+                      className={adminTableActionButtonClass}
                     >
                       <HiEye className="h-4 w-4" />
                     </button>
@@ -193,9 +200,9 @@ export function MaintenanceOrderTable({
 
                   <div className="col-start-2 row-start-2 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={metaBadge}>{order.categoryName}</span>
-                      <span className={metaBadge}>
-                        {MaintenanceServiceMock.getTypeLabels()[order.type]}
+                      <span className={adminMetaBadgeClass}>{order.categoryName}</span>
+                      <span className={adminMetaBadgeClass}>
+                        {typeLabels[order.type]}
                       </span>
                     </div>
                   </div>

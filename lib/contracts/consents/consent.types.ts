@@ -1,12 +1,14 @@
-import type { ConsentStatus } from "../enums";
+import type { ConsentStatus, ConsentType } from "../enums";
+
+export type { ConsentStatus, ConsentType } from "../enums";
 
 export type ConsentDTO = {
   id: string;
   userId: string;
-  type: "TERMS" | "PRIVACY" | "MEDIA";
+  type: ConsentType;
   status: ConsentStatus;
+  version: string;
   acceptedAt?: string;
   revokedAt?: string;
   ipAddress?: string;
 };
-

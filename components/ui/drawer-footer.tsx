@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /** Classes do `<footer>` fixo em drawers laterais (`app-drawer-panel`). */
 export const DRAWER_FOOTER_SHELL_CLASS =
-  "shrink-0 border-t border-[rgba(17,17,17,0.08)] bg-white";
+  "shrink-0 border-t border-[var(--ds-border)] bg-[var(--ds-bg-card)]";
 
 /** Padding interno padrão do rodapé. */
 export const DRAWER_FOOTER_INNER_CLASS = "drawer-footer px-4 py-4 md:px-5";

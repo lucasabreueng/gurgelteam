@@ -52,8 +52,8 @@ export type DashboardEvolutionGoal = {
 };
 
 export type DashboardFeedback = {
-  instructorName: string;
-  instructorPhoto: string;
+  authorName: string;
+  authorPhoto: string;
   dateLabel: string;
   commentary: string;
   strengths: string[];
@@ -246,7 +246,7 @@ const THEO_VIEW: DashboardViewData = {
   ],
   feedback: {
     ...FEEDBACK,
-    instructorName: "Instrutor Rafael",
+    authorName: "Rafael Costa",
     dateLabel: "15 de Maio de 2025",
     commentary:
       "Theo está mais confiante na freada e na retomada. Continue reforçando a referência visual antes de acelerar.",
@@ -326,7 +326,7 @@ const LARA_VIEW: DashboardViewData = {
   ],
   feedback: {
     ...FEEDBACK,
-    instructorName: "Instrutora Paula",
+    authorName: "Paula Mendes",
     dateLabel: "11 de Maio de 2025",
     commentary:
       "Lara demonstrou mais atenção ao traçado e menos correções no volante. Seguir com exercícios de referência fixa.",

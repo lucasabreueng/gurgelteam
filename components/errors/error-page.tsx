@@ -57,7 +57,7 @@ export function ErrorPage({ config, pageKey, onRetry }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] px-4 py-10 sm:px-6 sm:py-14">
+    <div className="error-page-surface flex min-h-screen items-center justify-center bg-[var(--ds-bg-page)] px-4 py-10 sm:px-6 sm:py-14">
       <div className="w-full max-w-[480px]">
         <div className="rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white p-6 text-center shadow-[0_8px_32px_rgba(13,31,60,0.06)] sm:p-10">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(13,31,60,0.06)] text-accent">

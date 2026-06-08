@@ -1,10 +1,12 @@
 "use client";
 
-import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
+import { useInventoryHistory } from "@/lib/query/hooks/use-inventory-history";
 
 import { InventoryTablePagination } from "./inventory-table-pagination";
 import {
   InventoryTableShell,
+  adminTableBodyRowClass,
+  adminTableHeadRowClass,
   inventoryTdClass,
   inventoryTdDescClass,
   inventoryTdFirstClass,
@@ -23,6 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function InventoryHistoryTimeline() {
+  const { data: history = [] } = useInventoryHistory();
   const {
     page,
     setPage,
@@ -30,7 +33,7 @@ export function InventoryHistoryTimeline() {
     handlePageSizeChange,
     paginatedItems,
     totalItems,
-  } = useInventoryTableState(InventoryServiceMock.getHistory(), []);
+  } = useInventoryTableState(history, []);
 
   return (
     <div className="admin-page-stack">
@@ -48,7 +51,7 @@ export function InventoryHistoryTimeline() {
         }
       >
         <thead>
-          <tr className="border-b border-[rgba(17,17,17,0.08)] bg-[#fafbfc]">
+          <tr className={adminTableHeadRowClass}>
             <th className={inventoryThFirstClass}>Data/hora</th>
             <th className={inventoryThClass}>Tipo</th>
             <th className={inventoryThClass}>Evento</th>
@@ -60,7 +63,7 @@ export function InventoryHistoryTimeline() {
           {paginatedItems.map((ev) => (
             <tr
               key={ev.id}
-              className="border-b border-[rgba(17,17,17,0.05)] transition last:border-0 hover:bg-[#fafbfc]/80"
+              className={adminTableBodyRowClass}
             >
               <td className={`${inventoryTdFirstClass} whitespace-nowrap`}>
                 {ev.datetime}

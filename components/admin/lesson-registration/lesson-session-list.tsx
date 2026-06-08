@@ -22,7 +22,7 @@ export function LessonSessionList({
         {Array.from({ length: 5 }).map((_, i) => (
           <li
             key={i}
-            className="h-24 animate-pulse rounded-2xl bg-white/80 ring-1 ring-[rgba(17,17,17,0.06)]"
+            className="h-24 animate-pulse rounded-2xl bg-[var(--ds-bg-muted)] ring-1 ring-[var(--ds-border-subtle)]"
           />
         ))}
       </ul>
@@ -31,7 +31,7 @@ export function LessonSessionList({
 
   if (sessions.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-neutral-200 bg-white px-4 py-12 text-center text-sm text-neutral-500">
+      <div className="rounded-2xl border border-dashed border-[var(--ds-border-dashed)] bg-[var(--ds-bg-card)] px-4 py-12 text-center text-sm text-[var(--ds-text-muted)]">
         Nenhuma aula encontrada com os filtros atuais.
       </div>
     );
