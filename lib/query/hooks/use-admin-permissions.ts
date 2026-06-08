@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import { useAreaBootstrap } from "@/components/auth/area-session-provider";
 import { SETTINGS_USERS } from "@/lib/admin-settings-mocks";
 import {
   buildPermissionIndex,
@@ -38,12 +39,15 @@ function buildMockPermissions(templateId: string): ModulePermissionSnapshot[] {
 
 function useSessionPermissionState(mockTemplateId: string) {
   const isHttpMode = getDataSourceMode() === "http";
+  const bootstrap = useAreaBootstrap();
+  const initialSession = bootstrap?.session;
 
   const { data, isPending, isFetching, isError } = useQuery({
     queryKey: queryKeys.auth.session(),
     queryFn: () => AuthRepositoryHttp.getSession(),
     enabled: isHttpMode,
-    staleTime: 60_000,
+    initialData: initialSession,
+    staleTime: 5 * 60_000,
     retry: 1,
   });
 
@@ -59,7 +63,9 @@ function useSessionPermissionState(mockTemplateId: string) {
   const accessOptions = { roleKey, clientId };
 
   const sessionLoading =
-    isHttpMode && (isPending || isFetching || (!data && !isError));
+    isHttpMode &&
+    !initialSession &&
+    (isPending || isFetching || (!data && !isError));
 
   return {
     isHttpMode,

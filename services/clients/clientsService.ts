@@ -24,6 +24,13 @@ export function createClientsService() {
       isHttpMode()
         ? ClientsRepositoryHttp.getKpis()
         : Promise.resolve(ClientsRepositoryMock.getKpis()),
+    getPageBundle: () =>
+      isHttpMode()
+        ? ClientsRepositoryHttp.getPageBundle()
+        : Promise.resolve({
+            list: ClientsRepositoryMock.getList(),
+            kpis: ClientsRepositoryMock.getKpis(),
+          }),
     getList: () =>
       isHttpMode()
         ? ClientsRepositoryHttp.getList()

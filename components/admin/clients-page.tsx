@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ import {
 } from "react-icons/hi2";
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { ClientListItem } from "@/lib/contracts/clients";
-import { useClientsKpis, useClientsList, useClientsReference } from "@/lib/query/hooks/use-clients";
+import { useClientsPageData, useClientsReference } from "@/lib/query/hooks/use-clients";
 import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
 import { getAppServices } from "@/lib/data-source/app-services";
 import { queryKeys } from "@/lib/query/keys";
@@ -20,9 +21,6 @@ import { ClientsServiceMock } from "@/services/clients/clientsServiceMock";
 import { exportClientsToExcel } from "@/lib/export-clients-excel";
 import { AdminShell } from "./admin-shell";
 import { ConfirmDialog } from "./settings/confirm-dialog";
-import { ClientProfileDrawer } from "./clients/client-profile-drawer";
-import { ClientEditDrawer } from "./clients/client-edit-drawer";
-import { NewClientDrawer } from "./clients/new-client-drawer";
 import { ClientTable } from "./clients/client-table";
 import { ClientMobileList } from "./clients/client-mobile-card";
 import {
@@ -32,12 +30,43 @@ import {
 import { ClientsHeader } from "./clients/clients-header";
 import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
-import { EvolutionRanking } from "./clients/evolution-ranking";
 import {
   AdminKpiStripSkeleton,
   AdminTableSkeleton,
 } from "./admin-page-skeletons";
 import { AdminErrorState } from "./admin-error-state";
+
+const ClientProfileDrawer = dynamic(
+  () =>
+    import("./clients/client-profile-drawer").then((m) => ({
+      default: m.ClientProfileDrawer,
+    })),
+  { ssr: false },
+);
+
+const ClientEditDrawer = dynamic(
+  () =>
+    import("./clients/client-edit-drawer").then((m) => ({
+      default: m.ClientEditDrawer,
+    })),
+  { ssr: false },
+);
+
+const NewClientDrawer = dynamic(
+  () =>
+    import("./clients/new-client-drawer").then((m) => ({
+      default: m.NewClientDrawer,
+    })),
+  { ssr: false },
+);
+
+const EvolutionRanking = dynamic(
+  () =>
+    import("./clients/evolution-ranking").then((m) => ({
+      default: m.EvolutionRanking,
+    })),
+  { ssr: false, loading: () => <AdminTableSkeleton rows={4} /> },
+);
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -102,10 +131,14 @@ function countActiveFilters(filters: ClientsFilterState): number {
 
 export function ClientsPage() {
   const queryClient = useQueryClient();
-  const { data: clientsList = [], isPending: listLoading, isError: listError, refetch: refetchList } = useClientsList();
-  const { data: clientsKpis = [], isPending: kpisLoading, isError: kpisError, refetch: refetchKpis } = useClientsKpis();
-  const isPageLoading = listLoading || kpisLoading;
-  const isPageError = listError || kpisError;
+  const {
+    list: clientsList,
+    kpis: clientsKpis,
+    isPageLoading,
+    isError: pageError,
+    refetch: refetchPage,
+  } = useClientsPageData();
+  const isPageError = pageError;
   const { data: reference } = useClientsReference();
   const { canEdit, canDelete } = useModuleAccess("alunos");
   const kartCategories = useMemo(
@@ -243,8 +276,7 @@ export function ClientsPage() {
         {isPageError ? (
           <AdminErrorState
             onRetry={() => {
-              void refetchList();
-              void refetchKpis();
+              void refetchPage();
             }}
           />
         ) : isPageLoading ? (

@@ -67,6 +67,13 @@ export function createKartsService() {
       isHttpMode()
         ? KartsRepositoryHttp.getKpis()
         : Promise.resolve(KartsRepositoryMock.getKpis()),
+    getPageBundle: () =>
+      isHttpMode()
+        ? KartsRepositoryHttp.getPageBundle()
+        : Promise.resolve({
+            fleet: KartsRepositoryMock.getFleet(),
+            kpis: KartsRepositoryMock.getKpis(),
+          }),
     getTablePageSizes: () => KartsRepositoryMock.getTablePageSizes(),
     getFleet: () =>
       isHttpMode()

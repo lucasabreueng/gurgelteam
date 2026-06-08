@@ -41,6 +41,7 @@ export const v1ApiPaths = {
   },
   clients: {
     list: "/api/v1/clients",
+    pageBundle: "/api/v1/clients/page-bundle",
     rankings: "/api/v1/clients/rankings",
     byId: (clientId: string) =>
       `/api/v1/clients/${encodeURIComponent(clientId)}`,
@@ -63,6 +64,7 @@ export const v1ApiPaths = {
   },
   karts: {
     list: "/api/v1/karts",
+    pageBundle: "/api/v1/karts/page-bundle",
     photo: "/api/v1/karts/photo",
     paddock: "/api/v1/karts/paddock",
     byId: (kartId: string) => `/api/v1/karts/${encodeURIComponent(kartId)}`,

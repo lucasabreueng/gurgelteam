@@ -28,6 +28,7 @@
     "smoke:checklist": "npx tsx scripts/smoke-checklist.ts",
     "validate": "npm run db:validate && tsc --noEmit && npm run lint",
     "validate:smoke": "npm run smoke:setup && npm run smoke:checklist",
+    "analyze": "npx cross-env ANALYZE=true npm run build",
     "repair:staff-permissions": "npx tsx scripts/repair-staff-permissions.ts",
     "repair:pilot-permissions": "npx tsx scripts/repair-pilot-permissions.ts",
     "repair:week-schedule": "npx tsx scripts/repair-week-schedule.ts",
@@ -56,6 +57,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.19",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

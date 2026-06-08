@@ -10,6 +10,9 @@ import { FieldError } from "@/components/cadastro/field-error";
 import { apiFetch } from "@/lib/api/http-client";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import type { LoginResponse } from "@/lib/contracts/api/v1/auth.api.schemas";
+import { getAppServices } from "@/lib/data-source/app-services";
+import { getDataSourceMode } from "@/lib/data-source/mode";
+import { fetchLegalCompliance } from "@/lib/query/hooks/use-legal-compliance";
 import { queryKeys } from "@/lib/query/keys";
 import { AuthRepositoryHttp } from "@/repositories/auth/AuthRepositoryHttp";
 import { AuthServiceMock } from "@/services/auth/authServiceMock";
@@ -56,20 +59,40 @@ export function LoginForm() {
 
     if (result.success && result.data) {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.session() });
-      await queryClient.prefetchQuery({
+
+      const session = await queryClient.fetchQuery({
         queryKey: queryKeys.auth.session(),
         queryFn: () => AuthRepositoryHttp.getSession(),
       });
 
       const nextPath = searchParams.get("next");
-      const session = queryClient.getQueryData<Awaited<
-        ReturnType<typeof AuthRepositoryHttp.getSession>
-      >>(queryKeys.auth.session());
       const destination = resolvePostLoginPath(
         result.data.user,
         nextPath,
         session?.modulePermissions,
       );
+
+      const prefetches: Promise<unknown>[] = [
+        queryClient.prefetchQuery({
+          queryKey: queryKeys.auth.legalCompliance(),
+          queryFn: fetchLegalCompliance,
+        }),
+      ];
+
+      if (
+        getDataSourceMode() === "http" &&
+        destination.startsWith("/admin")
+      ) {
+        prefetches.push(
+          queryClient.prefetchQuery({
+            queryKey: queryKeys.dashboard.summary(),
+            queryFn: () => getAppServices().dashboard.getDashboardSummary(),
+          }),
+        );
+      }
+
+      await Promise.all(prefetches);
+
       router.push(destination);
       return;
     }

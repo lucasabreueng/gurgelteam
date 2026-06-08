@@ -1,14 +1,15 @@
 import { apiFetch, unwrapApiResponse } from "@/lib/api/http-client";
 import { mapClientListItemDtoToUi } from "@/lib/api/mappers/v1-mappers";
 import { v1ApiPaths } from "@/lib/api/v1-api-paths";
-import { buildClientsKpisFromList } from "@/lib/clients/build-clients-kpis";
 import type {
   ClientDetailDTO,
   ClientListItemDTO,
   ClientRankingsApiDTO,
 } from "@/lib/contracts/api/v1/clients.api.schemas";
 import type { EvolutionRankingEntry } from "@/lib/admin-clients-mocks";
+import type { ClientKpi } from "@/lib/admin-clients-mocks";
 import type { ClientListItem } from "@/lib/contracts/clients";
+import type { ClientsPageData } from "@/lib/server/pages/load-clients-page";
 import type { NewClientFormData } from "@/components/admin/clients/new-client-drawer";
 import { buildClientProfile } from "@/lib/admin-clients-mocks";
 import type { ClientProfileDetail } from "@/lib/contracts/clients";
@@ -23,6 +24,11 @@ type PaginatedClients = {
 };
 
 export const ClientsRepositoryHttp = {
+  async getPageBundle(): Promise<ClientsPageData> {
+    const res = await apiFetch<ClientsPageData>(v1ApiPaths.clients.pageBundle);
+    return unwrapApiResponse(res);
+  },
+
   async getList(): Promise<ClientListItem[]> {
     const res = await apiFetch<PaginatedClients>(
       `${v1ApiPaths.clients.list}?page=1&pageSize=100`,
@@ -64,9 +70,9 @@ export const ClientsRepositoryHttp = {
     return mapClientListItemDtoToUi(created);
   },
 
-  async getKpis() {
-    const list = await ClientsRepositoryHttp.getList();
-    return buildClientsKpisFromList(list);
+  async getKpis(): Promise<ClientKpi[]> {
+    const bundle = await ClientsRepositoryHttp.getPageBundle();
+    return bundle.kpis;
   },
 
   async getTimeline(clientId: string) {

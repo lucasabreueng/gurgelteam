@@ -1,11 +1,23 @@
 "use client";
 
-import ReactECharts from "echarts-for-react";
+import dynamic from "next/dynamic";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
 
 import { mergeChartTheme } from "@/lib/echarts/merge-chart-theme";
 import { useChartTheme } from "@/lib/hooks/use-chart-theme";
+
+const ReactECharts = dynamic(() => import("echarts-for-react"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex min-h-[200px] items-center justify-center rounded-xl bg-[var(--ds-surface-muted)] text-sm text-[var(--ds-text-muted)]"
+      aria-hidden
+    >
+      Carregando gráfico…
+    </div>
+  ),
+});
 
 type ReactEChartsProps = React.ComponentProps<typeof ReactECharts>;
 

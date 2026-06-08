@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,13 +15,12 @@ import {
 import type { AdminNavKey } from "@/lib/contracts/dashboard";
 import type { FleetKartListItem, NewKartFormData } from "@/lib/contracts/karts";
 import { getAppServices } from "@/lib/data-source/app-services";
-import { useKartsFleet, useKartsKpis } from "@/lib/query/hooks/use-karts";
+import { useKartsPageData } from "@/lib/query/hooks/use-karts";
 import { useKartTerms } from "@/lib/query/hooks/use-kart-terms";
 import { useModuleAccess } from "@/lib/query/hooks/use-module-access";
 import { queryKeys } from "@/lib/query/keys";
 import { AdminShell } from "./admin-shell";
 import { ConfirmDialog } from "./settings/confirm-dialog";
-import { KartDetailDrawer } from "./karts/kart-detail-drawer";
 import { KartsFleetTable } from "./karts/karts-fleet-table";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import {
@@ -30,11 +30,26 @@ import {
 import { ResponsiveTableFilters } from "@/components/ui/responsive-table-filters";
 import { countActiveFilters } from "@/components/ui/filter-box";
 import { KartsHeader } from "./karts/karts-header";
-import { NewKartDrawer } from "./karts/new-kart-drawer";
 import {
   AdminKpiStripSkeleton,
   AdminTableSkeleton,
 } from "./admin-page-skeletons";
+
+const KartDetailDrawer = dynamic(
+  () =>
+    import("./karts/kart-detail-drawer").then((m) => ({
+      default: m.KartDetailDrawer,
+    })),
+  { ssr: false },
+);
+
+const NewKartDrawer = dynamic(
+  () =>
+    import("./karts/new-kart-drawer").then((m) => ({
+      default: m.NewKartDrawer,
+    })),
+  { ssr: false },
+);
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",
@@ -102,9 +117,11 @@ function matchesFilters(
 
 export function KartsPage() {
   const queryClient = useQueryClient();
-  const { data: fleetKarts = [], isPending: fleetLoading } = useKartsFleet();
-  const { data: kartsKpis = [], isPending: kpisLoading } = useKartsKpis();
-  const isPageLoading = fleetLoading || kpisLoading;
+  const {
+    fleet: fleetKarts,
+    kpis: kartsKpis,
+    isPageLoading,
+  } = useKartsPageData();
   const { canEdit, canDelete } = useModuleAccess("karts");
   const { data: kartTerms } = useKartTerms();
   const registeredMotors =

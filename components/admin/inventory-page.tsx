@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { IconType } from "react-icons/lib";
@@ -27,25 +28,93 @@ import {
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
 import { AppModal } from "@/components/ui/app-modal";
 import { AdminShell } from "./admin-shell";
-import {
-  InventoryEntryDrawer,
-  InventoryExitDrawer,
-  InventoryPurchaseDrawer,
-} from "./inventory/inventory-drawers";
-import { SupplierDetailsDrawer } from "./inventory/supplier-details-drawer";
-import { SupplierFormDrawer } from "./inventory/supplier-form-drawer";
 import { InventoryHeader } from "./inventory/inventory-header";
-import { InventoryHistoryTimeline } from "./inventory/inventory-history-timeline";
-import { InventoryMovements } from "./inventory/inventory-movements";
-import { InventoryOverview } from "./inventory/inventory-overview";
 import { InventoryTabs } from "./inventory/inventory-tabs";
-import { PartDetailsDrawer } from "./inventory/part-details-drawer";
-import { PartFormDrawer } from "./inventory/part-form-drawer";
 import { PartsTable } from "./inventory/parts-table";
 import { PurchaseOrders } from "./inventory/purchase-orders";
 import { SuppliersTable } from "./inventory/suppliers-table";
 import { AdminInventoryOverviewSkeleton } from "./admin-page-skeletons";
 import { AdminTabPanelSkeleton } from "./admin-page-skeletons";
+
+const InventoryOverview = dynamic(
+  () =>
+    import("./inventory/inventory-overview").then((m) => ({
+      default: m.InventoryOverview,
+    })),
+  { loading: () => <AdminInventoryOverviewSkeleton /> },
+);
+
+const InventoryMovements = dynamic(
+  () =>
+    import("./inventory/inventory-movements").then((m) => ({
+      default: m.InventoryMovements,
+    })),
+  { loading: () => <AdminTabPanelSkeleton /> },
+);
+
+const InventoryHistoryTimeline = dynamic(
+  () =>
+    import("./inventory/inventory-history-timeline").then((m) => ({
+      default: m.InventoryHistoryTimeline,
+    })),
+  { loading: () => <AdminTabPanelSkeleton /> },
+);
+
+const InventoryEntryDrawer = dynamic(
+  () =>
+    import("./inventory/inventory-drawers").then((m) => ({
+      default: m.InventoryEntryDrawer,
+    })),
+  { ssr: false },
+);
+
+const InventoryExitDrawer = dynamic(
+  () =>
+    import("./inventory/inventory-drawers").then((m) => ({
+      default: m.InventoryExitDrawer,
+    })),
+  { ssr: false },
+);
+
+const InventoryPurchaseDrawer = dynamic(
+  () =>
+    import("./inventory/inventory-drawers").then((m) => ({
+      default: m.InventoryPurchaseDrawer,
+    })),
+  { ssr: false },
+);
+
+const SupplierDetailsDrawer = dynamic(
+  () =>
+    import("./inventory/supplier-details-drawer").then((m) => ({
+      default: m.SupplierDetailsDrawer,
+    })),
+  { ssr: false },
+);
+
+const SupplierFormDrawer = dynamic(
+  () =>
+    import("./inventory/supplier-form-drawer").then((m) => ({
+      default: m.SupplierFormDrawer,
+    })),
+  { ssr: false },
+);
+
+const PartDetailsDrawer = dynamic(
+  () =>
+    import("./inventory/part-details-drawer").then((m) => ({
+      default: m.PartDetailsDrawer,
+    })),
+  { ssr: false },
+);
+
+const PartFormDrawer = dynamic(
+  () =>
+    import("./inventory/part-form-drawer").then((m) => ({
+      default: m.PartFormDrawer,
+    })),
+  { ssr: false },
+);
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",

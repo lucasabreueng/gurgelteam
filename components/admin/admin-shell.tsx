@@ -60,9 +60,7 @@ export function AdminShell({
   const isHttpMode = getDataSourceMode() === "http";
   const { canAccessArea, canViewNav, isPending: permissionsPending, isSessionError } =
     useAdminPermissions();
-  const { isPending: legalCompliancePending } = useLegalComplianceGuard(
-    !skipAccessGuard,
-  );
+  useLegalComplianceGuard(!skipAccessGuard);
   const accessDenied =
     isHttpMode &&
     !skipAccessGuard &&
@@ -249,7 +247,7 @@ export function AdminShell({
           <div className={`admin-page-stack ${stackClassName}`.trim()}>
             {isHttpMode &&
             !skipAccessGuard &&
-            (permissionsPending || legalCompliancePending) ? (
+            permissionsPending ? (
               <AdminTabPanelSkeleton />
             ) : accessDenied ? null : (
               children

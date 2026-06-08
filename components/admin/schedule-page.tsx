@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,11 +25,32 @@ import { TimelineView } from "./schedule/timeline-view";
 import { WeekView } from "./schedule/week-view";
 import { DayReservationsSummary } from "./schedule/day-reservations-summary";
 import { ScheduleDayAppointmentsSheet } from "./schedule/schedule-day-appointments-sheet";
-import { ScheduleDetailsDrawer } from "./schedule/schedule-details-drawer";
-import { BlockScheduleDrawer } from "./schedule/block-schedule-drawer";
-import { NewClassModal } from "./schedule/new-class/new-class-modal";
 import { AdminScheduleSkeleton } from "./admin-page-skeletons";
 import { AdminErrorState } from "./admin-error-state";
+
+const ScheduleDetailsDrawer = dynamic(
+  () =>
+    import("./schedule/schedule-details-drawer").then((m) => ({
+      default: m.ScheduleDetailsDrawer,
+    })),
+  { ssr: false },
+);
+
+const BlockScheduleDrawer = dynamic(
+  () =>
+    import("./schedule/block-schedule-drawer").then((m) => ({
+      default: m.BlockScheduleDrawer,
+    })),
+  { ssr: false },
+);
+
+const NewClassModal = dynamic(
+  () =>
+    import("./schedule/new-class/new-class-modal").then((m) => ({
+      default: m.NewClassModal,
+    })),
+  { ssr: false },
+);
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",

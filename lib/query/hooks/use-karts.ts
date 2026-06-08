@@ -18,6 +18,21 @@ export function useKartsKpis() {
   });
 }
 
+/** Frota + KPIs em uma query (bundle HTTP ou hidratação RSC). */
+export function useKartsPageData() {
+  const query = useQuery({
+    queryKey: queryKeys.karts.pageBundle(),
+    queryFn: () => getAppServices().karts.getPageBundle(),
+  });
+
+  return {
+    ...query,
+    fleet: query.data?.fleet ?? [],
+    kpis: query.data?.kpis ?? [],
+    isPageLoading: query.isPending && !query.data,
+  };
+}
+
 export function useKartDetail(kartId: string | null) {
   return useQuery({
     queryKey: queryKeys.karts.detail(kartId ?? ""),

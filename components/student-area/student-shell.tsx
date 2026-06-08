@@ -57,9 +57,7 @@ export function StudentShell({
   const isHttpMode = getDataSourceMode() === "http";
   const { canAccessArea, canViewNav, isPending: permissionsPending, isSessionError } =
     usePilotPermissions();
-  const { isPending: legalCompliancePending } = useLegalComplianceGuard(
-    !skipAccessGuard,
-  );
+  useLegalComplianceGuard(!skipAccessGuard);
   const areaDenied =
     isHttpMode &&
     !skipAccessGuard &&
@@ -245,7 +243,7 @@ export function StudentShell({
           <div className={`admin-page-stack ${stackClassName}`.trim()}>
             {isHttpMode &&
             !skipAccessGuard &&
-            (permissionsPending || legalCompliancePending) ? (
+            permissionsPending ? (
               <AdminTabPanelSkeleton />
             ) : areaDenied || navDenied ? null : (
               children

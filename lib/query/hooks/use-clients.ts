@@ -18,6 +18,21 @@ export function useClientsKpis() {
   });
 }
 
+/** Lista + KPIs em uma query (bundle HTTP ou hidratação RSC). */
+export function useClientsPageData() {
+  const query = useQuery({
+    queryKey: queryKeys.clients.pageBundle(),
+    queryFn: () => getAppServices().clients.getPageBundle(),
+  });
+
+  return {
+    ...query,
+    list: query.data?.list ?? [],
+    kpis: query.data?.kpis ?? [],
+    isPageLoading: query.isPending && !query.data,
+  };
+}
+
 export function useClientsReference() {
   return useQuery({
     queryKey: [...queryKeys.clients.all, "reference"] as const,

@@ -13,44 +13,22 @@ import {
 
 
 import { v1ApiPaths } from "@/lib/api/v1-api-paths";
-
-
-
-import { buildKartsKpisFromFleet } from "@/lib/karts/build-karts-kpis";
-
 import { mergeMaintenanceFleetKart } from "@/lib/karts/enrich-fleet-kart";
-
-
-
 import type {
-
   CreateKartRequest,
-
   KartApiDTO,
-
   KartsPaddockApiDTO,
-
   UpdateKartRequest,
-
 } from "@/lib/contracts/api/v1/karts.api.schemas";
-
-
-
 import type { MaintenanceFleetKart } from "@/lib/contracts/maintenance/simple";
-
-
-
 import type {
-
   FleetKartListItem,
-
   KartAlert,
-
   KartDetail,
-
+  KartKpi,
   PaddockBox,
-
 } from "@/lib/admin-karts-mocks";
+import type { KartsPageData } from "@/lib/server/pages/load-karts-page";
 
 
 
@@ -75,6 +53,11 @@ async function fetchMaintenanceFleetMap(): Promise<Map<string, MaintenanceFleetK
 
 
 export const KartsRepositoryHttp = {
+
+  async getPageBundle(): Promise<KartsPageData> {
+    const res = await apiFetch<KartsPageData>(v1ApiPaths.karts.pageBundle);
+    return unwrapApiResponse(res);
+  },
 
   async getFleet(): Promise<FleetKartListItem[]> {
 
@@ -106,12 +89,9 @@ export const KartsRepositoryHttp = {
 
 
 
-  async getKpis() {
-
-    const fleet = await KartsRepositoryHttp.getFleet();
-
-    return buildKartsKpisFromFleet(fleet);
-
+  async getKpis(): Promise<KartKpi[]> {
+    const bundle = await KartsRepositoryHttp.getPageBundle();
+    return bundle.kpis;
   },
 
 

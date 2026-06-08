@@ -55,6 +55,7 @@ export const queryKeys = {
     all: ["clients"] as const,
     list: () => [...queryKeys.clients.all, "list"] as const,
     kpis: () => [...queryKeys.clients.all, "kpis"] as const,
+    pageBundle: () => [...queryKeys.clients.all, "page-bundle"] as const,
   },
   karts: {
     all: ["karts"] as const,
@@ -62,6 +63,7 @@ export const queryKeys = {
     categories: () => [...queryKeys.karts.all, "categories"] as const,
     fleet: () => [...queryKeys.karts.all, "fleet", "v2"] as const,
     kpis: () => [...queryKeys.karts.all, "kpis", "v2"] as const,
+    pageBundle: () => [...queryKeys.karts.all, "page-bundle"] as const,
     detail: (kartId: string) =>
       [...queryKeys.karts.all, "detail", kartId] as const,
     technicalTimeline: (kartId: string) =>

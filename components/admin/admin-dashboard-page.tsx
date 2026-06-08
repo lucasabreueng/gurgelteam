@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IconType } from "react-icons/lib";
@@ -14,11 +15,32 @@ import { useDashboardKpis } from "@/lib/query/hooks/use-dashboard";
 import { AdminShell } from "./admin-shell";
 import { DashboardHeader } from "./dashboard-header";
 import { AdminResponsiveKpis } from "./admin-responsive-kpis";
-import { OperationalAgenda } from "./operational-agenda";
-import { StudentsOverview } from "./students-overview";
-import { KartStatusGrid } from "./kart-status-grid";
 import { AdminDashboardSkeleton } from "./admin-page-skeletons";
 import { AdminErrorState } from "./admin-error-state";
+
+const OperationalAgenda = dynamic(
+  () =>
+    import("./operational-agenda").then((m) => ({
+      default: m.OperationalAgenda,
+    })),
+  { ssr: false, loading: () => <AdminDashboardSkeleton /> },
+);
+
+const StudentsOverview = dynamic(
+  () =>
+    import("./students-overview").then((m) => ({
+      default: m.StudentsOverview,
+    })),
+  { ssr: false, loading: () => <AdminDashboardSkeleton /> },
+);
+
+const KartStatusGrid = dynamic(
+  () =>
+    import("./kart-status-grid").then((m) => ({
+      default: m.KartStatusGrid,
+    })),
+  { ssr: false, loading: () => <AdminDashboardSkeleton /> },
+);
 
 const ADMIN_NAV_HREF: Partial<Record<AdminNavKey, string>> = {
   dashboard: "/admin",

@@ -1,12 +1,35 @@
+"use client";
+
 import type { MovementType } from "@/lib/contracts/inventory";
+import dynamic from "next/dynamic";
 import { useInventoryMovements } from "@/lib/query/hooks/use-inventory-catalog";
 import { InventoryServiceMock } from "@/services/inventory/inventoryServiceMock";
 
-import {
-  CategoryConsumptionChart,
-  ConsumptionChart,
-  MovementChart,
-} from "./inventory-charts";
+const chartLoading = () => (
+  <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-[rgba(17,17,17,0.08)] bg-white text-sm text-neutral-500">
+    Carregando gráfico…
+  </div>
+);
+
+const ConsumptionChart = dynamic(
+  () =>
+    import("./inventory-charts").then((m) => ({ default: m.ConsumptionChart })),
+  { ssr: false, loading: chartLoading },
+);
+
+const MovementChart = dynamic(
+  () =>
+    import("./inventory-charts").then((m) => ({ default: m.MovementChart })),
+  { ssr: false, loading: chartLoading },
+);
+
+const CategoryConsumptionChart = dynamic(
+  () =>
+    import("./inventory-charts").then((m) => ({
+      default: m.CategoryConsumptionChart,
+    })),
+  { ssr: false, loading: chartLoading },
+);
 
 type Props = {
   onOpenPart?: (id: string) => void;
