@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { checkDatabaseHealth } from "@/lib/server/health/database-health";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { testSupabaseKartCategories } from "@/lib/supabase/test-connection";
@@ -8,47 +9,74 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/supabase/health
- * Testa conexão PostgREST consultando `kart_categories` via chave publishable.
+ * Diagnóstico: Prisma (DATABASE_URL) + PostgREST (Supabase API).
  */
 export async function GET() {
+  const database = await checkDatabaseHealth();
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json(
       {
-        ok: false,
-        error:
-          "Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY no .env.",
+        ok: database.ok,
+        database,
+        supabase: {
+          ok: false,
+          error:
+            "Supabase API não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+        },
       },
-      { status: 503 },
+      { status: database.ok ? 200 : 503 },
     );
   }
 
   try {
     const supabase = await createSupabaseServerClient();
     const result = await testSupabaseKartCategories(supabase);
+    const supabaseOk = result.ok;
+    const ok = database.ok && supabaseOk;
 
-    if (!result.ok) {
+    if (!ok) {
       return NextResponse.json(
         {
           ok: false,
-          table: result.table,
-          error: result.error,
-          hint:
-            "Verifique RLS em kart_categories, migrations (`npm run db:migrate`) e seed (`npm run db:seed`).",
+          database,
+          supabase: supabaseOk
+            ? { ok: true, table: result.table, count: result.count }
+            : {
+                ok: false,
+                table: result.table,
+                error: result.error,
+                hint:
+                  "Verifique RLS, migrations (`npm run db:migrate`) e seed (`npm run db:seed`).",
+              },
         },
-        { status: 502 },
+        { status: 503 },
       );
     }
 
     return NextResponse.json({
       ok: true,
-      table: result.table,
-      count: result.count,
-      sample: result.sample,
+      database,
+      supabase: {
+        ok: true,
+        table: result.table,
+        count: result.count,
+        sample: result.sample,
+      },
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erro desconhecido ao conectar ao Supabase.";
+      error instanceof Error
+        ? error.message
+        : "Erro desconhecido ao conectar ao Supabase.";
 
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        database,
+        supabase: { ok: false, error: message },
+      },
+      { status: 503 },
+    );
   }
 }
